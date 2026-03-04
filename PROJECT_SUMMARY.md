@@ -166,7 +166,7 @@ python src/main.py
 ```
 
 **What you'll see:**
-1. Two demo children (Mia & Sofia) with different personalities
+1. Two demo children (Ale & Sofi) with different personalities
 2. Twin Intelligence analyzing their traits
 3. Complementary powers assigned (action + thinking)
 4. A story generated with dual perspectives
@@ -437,7 +437,7 @@ You have the foundation of a **$100M+ company** that will create **treasured mem
 
 ---
 
-*Built with love for Mia, Sofia, and every pair of siblings who deserve to know how special their bond truly is.*
+*Built with love for Ale, Sofi, and every pair of siblings who deserve to know how special their bond truly is.*
 
 **Welcome to TwinSpark Chronicles.** 🌟
 

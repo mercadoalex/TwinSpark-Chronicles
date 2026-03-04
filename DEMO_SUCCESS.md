@@ -9,26 +9,26 @@ You successfully ran **Phase 1: The Twin Intelligence Foundation** of TwinSpark 
 ### 1. **Twin Intelligence Engine in Action**
 
 The AI successfully:
-- ✅ Created personality profiles for two children (Mia & Sofia)
+- ✅ Created personality profiles for two children (Ale & Sofi)
 - ✅ Detected different personality traits (bold vs. thoughtful)
 - ✅ Assigned complementary powers that require teamwork
-  - Mia: super_strength, shape_shifting (action-oriented)
-  - Sofia: pattern_reading (thinking-oriented)
+  - Ale: super_strength, shape_shifting (action-oriented)
+  - Sofi: pattern_reading (thinking-oriented)
 - ✅ Generated a story directive that balances both personalities
 - ✅ Adapted to emotional states (excited vs. calm)
 
 ### 2. **Dual-Perspective Storytelling**
 
 The story was presented from BOTH perspectives:
-- 👧 **Mia's Perspective**: "Mia felt a surge of super_strength energy..."
-- 👧 **Sofia's Perspective**: "Sofia's pattern_reading helped sense where..."
+- 👧 **Ale's Perspective**: "Ale felt a surge of super_strength energy..."
+- 👧 **Sofi's Perspective**: "Sofi's pattern_reading helped sense where..."
 
 This is the **CORE DIFFERENTIATOR** - no other AI does this!
 
 ### 3. **Relationship Dynamics**
 
 The engine determined:
-- Role distribution: Mia as leader, Sofia as supporter (will flip in future sessions)
+- Role distribution: Ale as leader, Sofi as supporter (will flip in future sessions)
 - Teamwork requirement: YES - they need each other
 - Story adapts to keep both children feeling heroic
 
@@ -36,8 +36,8 @@ The engine determined:
 
 ```
 Today's adventure features:
-  🌟 Mia - bold, creative, playful
-  🌟 Sofia - thoughtful, analytical, empathetic
+  🌟 Ale - bold, creative, playful
+  🌟 Sofi - thoughtful, analytical, empathetic
 ```
 
 **Personality Detection**: ✅ Working
@@ -46,8 +46,8 @@ Today's adventure features:
 
 ```
 ⚡ Assigned Powers:
-  • Mia: super_strength, shape_shifting
-  • Sofia: pattern_reading
+  • Ale: super_strength, shape_shifting
+  • Sofi: pattern_reading
 ```
 
 **Complementary Powers System**: ✅ Working
@@ -66,8 +66,8 @@ Today's adventure features:
 
 ```
 😊 Emotional Adaptation:
-  • Mia is feeling: excited
-  • Sofia is feeling: calm
+  • Ale is feeling: excited
+  • Sofi is feeling: calm
   • Story difficulty adjusted accordingly
 ```
 
@@ -122,7 +122,7 @@ You now have:
 
 ## 🎨 The Story That Was Generated
 
-**Title**: "The Quest of Mia and Sofia"
+**Title**: "The Quest of Ale and Sofi"
 
 **Opening**: A magical kingdom where two friends discover they have special powers and must help a fairy restore a crystal's magic.
 
@@ -144,7 +144,7 @@ You now have:
 
 2. **Customize for Your Daughters**
    - Edit `src/main.py` → `create_demo_profiles()`
-   - Change names from Mia/Sofia to your daughters' names
+   - Change names from Ale/Sofi to your daughters' names
    - Observe their play and adjust personality traits
    - Add their real interests
 

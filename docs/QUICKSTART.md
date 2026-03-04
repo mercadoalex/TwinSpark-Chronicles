@@ -96,13 +96,13 @@ The revolutionary AI system with 4 layers:
 
 The demo creates two fictional children:
 
-- **Mia**: Bold, Creative, Playful
-- **Sofia**: Thoughtful, Analytical, Empathetic
+- **Ale**: Bold, Creative, Playful
+- **Sofi**: Thoughtful, Analytical, Empathetic
 
 You'll see how the Twin Intelligence Engine:
 
 1. Recognizes their different personalities
-2. Assigns complementary powers (Ale gets action powers, Sofia gets thinking powers)
+2. Assigns complementary powers (Ale gets action powers, Sofi gets thinking powers)
 3. Creates a story where BOTH feel heroic
 4. Adapts to their emotional states
 5. Balances leadership roles

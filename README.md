@@ -4,6 +4,8 @@
 
 An AI-powered interactive storytelling platform that creates personalized dual-protagonist narratives for siblings, using multimodal inputs (video, audio, gestures) and generating synchronized video/image outputs through Google's Live API.
 
+![TwinSpark Chronicles](/TwinSpark.png "AI That Understands Sibling Dynamics")   
+
 ## 🚀 Project Vision
 
 TwinSpark Chronicles doesn't just tell stories—it observes, learns, and nurtures the unique bond between siblings by creating experiences that celebrate their differences, strengthen their connection, and evolve with their individual personalities over time.
