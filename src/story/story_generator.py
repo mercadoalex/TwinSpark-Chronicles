@@ -344,3 +344,80 @@ Format as before with narration, dual perspectives, and interaction prompt.
                 "child2_perspective": f"{child2_name} knew exactly what to do to help!",
                 "interaction_prompt": "What happens next? Do you celebrate, or continue the adventure?"
             }
+    
+    def _generate_mock_story(self, directive: Dict) -> Dict:
+        """Generate initial mock story with rich character profiles."""
+        child1_name = directive["child1"]["name"]
+        child2_name = directive["child2"]["name"]
+        lang = directive.get("language", "en")
+        
+        # Extract rich profile data
+        c1_spirit = directive["child1"].get("spirit_animal", "dragon")
+        c2_spirit = directive["child2"].get("spirit_animal", "owl")
+        c1_tool = directive["child1"].get("favorite_tool", "sword")
+        c2_tool = directive["child2"].get("favorite_tool", "book")
+        c1_outfit = directive["child1"].get("favorite_outfit", "knight_armor")
+        c2_outfit = directive["child2"].get("favorite_outfit", "wizard_robe")
+        c1_toy = directive["child1"].get("favorite_toy", "teddy_bear")
+        c2_toy = directive["child2"].get("favorite_toy", "storybook")
+        c1_toy_name = directive["child1"].get("toy_name")
+        c2_toy_name = directive["child2"].get("toy_name")
+        c1_place = directive["child1"].get("favorite_place", "castle")
+        c2_place = directive["child2"].get("favorite_place", "forest")
+        
+        # Helper function to format names nicely
+        def format_name(text: str) -> str:
+            return text.replace('_', ' ').title()
+        
+        # Create personalized opening based on their preferences
+        if lang == 'es':
+            # Spanish version with rich personalization
+            toy1_ref = f'"{c1_toy_name}"' if c1_toy_name else format_name(c1_toy)
+            toy2_ref = f'"{c2_toy_name}"' if c2_toy_name else format_name(c2_toy)
+            
+            return {
+                "title": f"La Búsqueda de {child1_name} y {child2_name}",
+                "opening": f"En un {format_name(c1_place)} mágico donde la aventura nunca termina, vivía {child1_name}, un valiente héroe con espíritu de {format_name(c1_spirit)}. Vestido con su {format_name(c1_outfit)}, siempre llevaba su {format_name(c1_tool)} a su lado. No muy lejos, en el {format_name(c2_place)}, {child2_name} estudiaba antiguos secretos, con espíritu de {format_name(c2_spirit)}, usando su {format_name(c2_tool)} para descubrir misterios. ¡Juntos, descubrieron que tenían poderes increíbles!",
+                "beats": [
+                    {
+                        "narration": f"Una mañana brillante, ambos héroes sintieron algo extraño. Una misteriosa llamada de ayuda resonó a través del reino.",
+                        "child1_perspective": f"{child1_name} agarró su {format_name(c1_tool)} con fuerza. El espíritu del {format_name(c1_spirit)} rugió dentro, llenando su {format_name(c1_outfit)} con energía dorada. Recordó lo que {toy1_ref} siempre decía: '¡Sé valiente cuando otros tengan miedo!' Con súper fuerza fluyendo por sus brazos, {child1_name} estaba listo para actuar.",
+                        "child2_perspective": f"{child2_name} sacó su {format_name(c2_tool)} y ajustó su {format_name(c2_outfit)}. El espíritu del {format_name(c2_spirit)} susurró sabiduría antigua. La lectura de patrones reveló algo importante: ¡esta no era una misión ordinaria! {child2_name} pensó en {toy2_ref} y supo que el trabajo en equipo sería clave.",
+                        "interaction_prompt": f"¿Deberían {child1_name} usar su fuerza mientras {child2_name} busca pistas? ¿O deberían explorar el {format_name(c1_place)} y el {format_name(c2_place)} juntos?"
+                    }
+                ]
+            }
+        elif lang == 'hi':
+            # Hindi version with rich personalization
+            toy1_ref = f'"{c1_toy_name}"' if c1_toy_name else format_name(c1_toy)
+            toy2_ref = f'"{c2_toy_name}"' if c2_toy_name else format_name(c2_toy)
+            
+            return {
+                "title": f"{child1_name} और {child2_name} की खोज",
+                "opening": f"एक जादुई {format_name(c1_place)} में जहां रोमांच कभी खत्म नहीं होता, {child1_name} रहते थे, एक बहादुर नायक जिनकी आत्मा {format_name(c1_spirit)} की थी। अपने {format_name(c1_outfit)} पहने, वे हमेशा अपना {format_name(c1_tool)} साथ रखते थे। दूर नहीं, {format_name(c2_place)} में, {child2_name} प्राचीन रहस्यों का अध्ययन करते थे, {format_name(c2_spirit)} की आत्मा के साथ, अपने {format_name(c2_tool)} का उपयोग करके रहस्यों को खोलते थे। साथ में, उन्हें पता चला कि उनके पास अद्भुत शक्तियां हैं!",
+                "beats": [
+                    {
+                        "narration": f"एक चमकीली सुबह, दोनों नायकों ने कुछ अजीब महसूस किया। मदद के लिए एक रहस्यमय पुकार राज्य भर में गूंज उठी।",
+                        "child1_perspective": f"{child1_name} ने अपना {format_name(c1_tool)} मजबूती से पकड़ा। {format_name(c1_spirit)} की आत्मा गर्जना की, उनके {format_name(c1_outfit)} को सुनहरी ऊर्जा से भर दिया। उन्हें याद आया कि {toy1_ref} हमेशा क्या कहते थे: 'जब दूसरे डरें तो बहादुर बनो!' सुपर स्ट्रेंथ उनकी बाहों में बहती हुई, {child1_name} कार्रवाई के लिए तैयार थे।",
+                        "child2_perspective": f"{child2_name} ने अपना {format_name(c2_tool)} निकाला और अपना {format_name(c2_outfit)} ठीक किया। {format_name(c2_spirit)} की आत्मा ने प्राचीन ज्ञान फुसफुसाया। पैटर्न पढ़ने से कुछ महत्वपूर्ण पता चला: यह कोई साधारण मिशन नहीं था! {child2_name} ने {toy2_ref} के बारे में सोचा और जान गए कि टीम वर्क कुंजी होगी।",
+                        "interaction_prompt": f"क्या {child1_name} को अपनी ताकत का उपयोग करना चाहिए जबकि {child2_name} सुराग ढूंढते हैं? या क्या उन्हें {format_name(c1_place)} और {format_name(c2_place)} को एक साथ तलाशना चाहिए?"
+                    }
+                ]
+            }
+        else:
+            # English version with rich personalization
+            toy1_ref = f'"{c1_toy_name}"' if c1_toy_name else f"their {format_name(c1_toy)}"
+            toy2_ref = f'"{c2_toy_name}"' if c2_toy_name else f"their {format_name(c2_toy)}"
+            
+            return {
+                "title": f"The Quest of {child1_name} and {child2_name}",
+                "opening": f"In a magical {format_name(c1_place)} where adventure never ends, lived {child1_name}, a brave hero with the spirit of a {format_name(c1_spirit)}. Dressed in {format_name(c1_outfit)}, they always carried their {format_name(c1_tool)} by their side. Not far away, in the {format_name(c2_place)}, {child2_name} studied ancient secrets, with the spirit of a {format_name(c2_spirit)}, using their {format_name(c2_tool)} to unlock mysteries. Together, they discovered they had incredible powers!",
+                "beats": [
+                    {
+                        "narration": f"One bright morning, both heroes felt something strange. A mysterious call for help echoed across the realm.",
+                        "child1_perspective": f"{child1_name} gripped their {format_name(c1_tool)} tightly. The {format_name(c1_spirit)} spirit roared within, filling their {format_name(c1_outfit)} with golden energy. They remembered what {toy1_ref} always said: 'Be brave when others are scared!' With super_strength flowing through their arms, {child1_name} was ready to act.",
+                        "child2_perspective": f"{child2_name} pulled out their {format_name(c2_tool)} and adjusted their {format_name(c2_outfit)}. The {format_name(c2_spirit)} spirit whispered ancient wisdom. Pattern_reading revealed something important—this was no ordinary mission! {child2_name} thought of {toy2_ref} and knew teamwork would be key.",
+                        "interaction_prompt": f"Should {child1_name} use their strength while {child2_name} searches for clues? Or should they explore the {format_name(c1_place)} and {format_name(c2_place)} together?"
+                    }
+                ]
+            }

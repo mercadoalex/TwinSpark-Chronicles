@@ -4,7 +4,10 @@ import MultimodalControls from './components/MultimodalControls';
 import AlertModal from './components/AlertModal';
 import CharacterSetup from './components/CharacterSetup';
 import ExitModal from './components/ExitModal';
-import { Mic } from 'lucide-react';
+import VoiceOnlyMode from './components/VoiceOnlyMode';
+import LoadingAnimation from './components/LoadingAnimation';
+import { useFeedback } from './components/VisualFeedback';
+import { Mic, Eye, Menu } from 'lucide-react';
 import { translations } from './locales';
 import './App.css';
 
@@ -13,6 +16,9 @@ function App() {
   const [hasCamera, setHasCamera] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState(null);
+  const [voiceOnlyMode, setVoiceOnlyMode] = useState(false);
+  const [storyBeat, setStoryBeat] = useState(null);
+  const [mechanics, setMechanics] = useState(null);
 
   // 0: Language Selection, 1: Character Setup, 2: Main Story Flow, 3: Goodbye
   const [setupStep, setSetupStep] = useState(0);
@@ -24,6 +30,9 @@ function App() {
 
   const [alertMessage, setAlertMessage] = useState(null);
   const ws = useRef(null);
+  
+  // Use the feedback hook
+  const { showFeedback, FeedbackComponent } = useFeedback();
 
   const t = selectedLanguage ? translations[selectedLanguage] : translations.en;
 
@@ -65,9 +74,11 @@ function App() {
     ws.current.onclose = () => {
       console.log('❌ Disconnected from TwinSpark AI Engine');
       setIsConnected(false);
-      // Try to reconnect
+      // Try to reconnect only if we're in the story phase
       setTimeout(() => {
-        if (hasStarted) connectToAI(lang);
+        if (setupStep === 2 && playerProfiles) {
+          connectToAI(selectedLanguage, playerProfiles);
+        }
       }, 2000);
     };
 
@@ -89,6 +100,7 @@ function App() {
   const handleLanguageSelect = (lang) => {
     setSelectedLanguage(lang);
     setSetupStep(1); // Move to Character Setup
+    showFeedback('success', `${lang.toUpperCase()} selected!`, 1500);
   };
 
   const handleSetupComplete = (profiles) => {
@@ -174,37 +186,31 @@ function App() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <button
-              className="lang-button"
+              className="lang-button btn-magic"
               onClick={() => handleLanguageSelect('en')}
               style={{
                 background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
-                border: 'none', padding: '15px 30px', borderRadius: '50px',
-                color: 'white', fontSize: '1.5rem', fontWeight: 'bold', cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)', transition: 'transform 0.2s'
+                width: '100%'
               }}
             >
               🇺🇸 English 🇬🇧
             </button>
             <button
-              className="lang-button"
+              className="lang-button btn-magic"
               onClick={() => handleLanguageSelect('es')}
               style={{
                 background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                border: 'none', padding: '15px 30px', borderRadius: '50px',
-                color: 'white', fontSize: '1.5rem', fontWeight: 'bold', cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)', transition: 'transform 0.2s'
+                width: '100%'
               }}
             >
               🇲🇽 Español 🇪🇸
             </button>
             <button
-              className="lang-button"
+              className="lang-button btn-magic"
               onClick={() => handleLanguageSelect('hi')}
               style={{
                 background: 'linear-gradient(135deg, #f59e0b 0%, #ef4444 100%)',
-                border: 'none', padding: '15px 30px', borderRadius: '50px',
-                color: 'white', fontSize: '1.5rem', fontWeight: 'bold', cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)', transition: 'transform 0.2s'
+                width: '100%'
               }}
             >
               🇮🇳 हिंदी 🪷
@@ -220,58 +226,118 @@ function App() {
 
       {setupStep === 2 && (
         <React.Fragment>
+          {/* Mode Toggle Buttons */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '15px', 
+            marginBottom: '30px',
+            animation: 'slideUp 0.5s ease-out'
+          }}>
+            <button
+              onClick={() => setVoiceOnlyMode(false)}
+              className="btn-magic"
+              style={{
+                background: !voiceOnlyMode 
+                  ? 'linear-gradient(135deg, var(--color-accent-blue) 0%, var(--color-accent-purple) 100%)'
+                  : 'rgba(255,255,255,0.1)',
+                padding: '12px 30px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                border: !voiceOnlyMode ? '2px solid var(--color-accent-blue)' : '2px solid transparent'
+              }}
+            >
+              <Eye size={24} />
+              <span>Full Story</span>
+            </button>
+            <button
+              onClick={() => setVoiceOnlyMode(true)}
+              className="btn-magic"
+              style={{
+                background: voiceOnlyMode 
+                  ? 'linear-gradient(135deg, var(--color-accent-pink) 0%, var(--color-accent-purple) 100%)'
+                  : 'rgba(255,255,255,0.1)',
+                padding: '12px 30px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                border: voiceOnlyMode ? '2px solid var(--color-accent-pink)' : '2px solid transparent'
+              }}
+            >
+              <Mic size={24} />
+              <span>Voice Only</span>
+            </button>
+          </div>
+
           <p style={{
             fontSize: '1.2rem',
             color: isConnected ? '#8b5cf6' : 'rgba(255,255,255,0.7)',
-            marginBottom: '40px',
+            marginBottom: '30px',
             fontWeight: isConnected ? 'bold' : 'normal'
           }}>
             {isConnected ? t.connected : t.connecting}
           </p>
 
-          {/* Main Content Area */}
-          {storyBeat ? (
-            <DualStoryDisplay storyBeat={storyBeat} t={t} profiles={playerProfiles} />
+          {/* Voice-Only Mode */}
+          {voiceOnlyMode ? (
+            <VoiceOnlyMode
+              onVoiceInput={() => {
+                setIsListening(!isListening);
+                showFeedback('sparkle', 'Great job!', 1500);
+              }}
+              isListening={isListening}
+              currentStory={storyBeat ? storyBeat.child1_perspective : null}
+              childName={playerProfiles?.c1_name}
+              t={t}
+            />
           ) : (
-            <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
-              <h2>{t.waiting}</h2>
-            </div>
-          )}
+            <>
+              {/* Main Content Area - Full Story Mode */}
+              {storyBeat ? (
+                <DualStoryDisplay storyBeat={storyBeat} t={t} profiles={playerProfiles} />
+              ) : (
+                <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
+                  <LoadingAnimation type="story" message={t.waiting || "Waiting for the story to begin..."} />
+                </div>
+              )}
 
-          {/* Dynamic Interaction Prompt powered by AI Engine */}
-          {mechanics && storyBeat && (
-            <div className="glass-panel" style={{
-              padding: '25px 50px',
-              marginTop: '20px',
-              marginBottom: '40px',
-              textAlign: 'center',
-              background: mechanics.simultaneous_mode ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255, 255, 255, 0.12)',
-              border: mechanics.simultaneous_mode ? '2px solid var(--color-accent-pink)' : '2px solid rgba(255, 255, 255, 0.3)',
-              boxShadow: mechanics.simultaneous_mode ? '0 0 20px rgba(236, 72, 153, 0.4)' : 'none',
-              transition: 'all 0.5s ease'
-            }}>
-              <h3 style={{
-                fontSize: '1.8rem',
-                fontFamily: 'var(--font-heading)',
-                color: '#fff',
-                marginBottom: '10px'
-              }}>
-                {mechanics.prompt}
-              </h3>
-              <p style={{
-                color: 'rgba(255,255,255,0.7)',
-                fontSize: '1rem',
-                marginTop: '10px'
-              }}>
-                {t.instruction}
-              </p>
-            </div>
-          )}
+              {/* Dynamic Interaction Prompt powered by AI Engine */}
+              {mechanics && storyBeat && (
+                <div className="glass-panel" style={{
+                  padding: '25px 50px',
+                  marginTop: '20px',
+                  marginBottom: '40px',
+                  textAlign: 'center',
+                  background: mechanics.simultaneous_mode ? 'rgba(236, 72, 153, 0.2)' : 'rgba(255, 255, 255, 0.12)',
+                  border: mechanics.simultaneous_mode ? '2px solid var(--color-accent-pink)' : '2px solid rgba(255, 255, 255, 0.3)',
+                  boxShadow: mechanics.simultaneous_mode ? '0 0 20px rgba(236, 72, 153, 0.4)' : 'none',
+                  transition: 'all 0.5s ease',
+                  animation: 'bounce-in 0.5s ease-out'
+                }}>
+                  <h3 style={{
+                    fontSize: '1.8rem',
+                    fontFamily: 'var(--font-heading)',
+                    color: '#fff',
+                    marginBottom: '10px'
+                  }}>
+                    {mechanics.prompt}
+                  </h3>
+                  <p style={{
+                    color: 'rgba(255,255,255,0.7)',
+                    fontSize: '1rem',
+                    marginTop: '10px'
+                  }}>
+                    {t.instruction}
+                  </p>
+                </div>
+              )}
 
-          {/* Controls stick to bottom gracefully */}
-          <div style={{ marginTop: 'auto', paddingTop: '40px' }}>
-            <MultimodalControls isListening={isListening} hasCamera={hasCamera} t={t} />
-          </div>
+              {/* Controls stick to bottom gracefully */}
+              <div style={{ marginTop: 'auto', paddingTop: '40px' }}>
+                <MultimodalControls isListening={isListening} hasCamera={hasCamera} t={t} />
+              </div>
+            </>
+          )}
         </React.Fragment>
       )}
 
@@ -290,6 +356,9 @@ function App() {
 
       {/* Custom Alert Modal for Mechanic Warnings */}
       <AlertModal message={alertMessage} onClose={() => setAlertMessage(null)} />
+
+      {/* Visual Feedback Component */}
+      {FeedbackComponent}
 
       {/* Exit Modal Flow */}
       {showExitModal && (

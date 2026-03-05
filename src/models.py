@@ -24,6 +24,66 @@ class PersonalityTrait(str, Enum):
     THOUGHTFUL = "thoughtful"
 
 
+class SpiritAnimal(str, Enum):
+    """Spirit animals that represent personality archetypes."""
+    DRAGON = "dragon"      # Bold, brave, protective
+    UNICORN = "unicorn"    # Creative, magical, dreamer
+    OWL = "owl"            # Wise, analytical, curious
+    DOLPHIN = "dolphin"    # Playful, social, friendly
+    FOX = "fox"            # Clever, quick, adventurous
+    BEAR = "bear"          # Strong, loyal, caring
+    EAGLE = "eagle"        # Free, confident, visionary
+    CAT = "cat"            # Independent, mysterious, agile
+
+
+class FavoriteTool(str, Enum):
+    """Signature tools that define problem-solving style."""
+    SWORD = "sword"              # Action hero
+    BOOK = "book"                # Knowledge seeker
+    PAINTBRUSH = "paintbrush"    # Artist creator
+    MAGNIFIER = "magnifier"      # Detective mind
+    FLUTE = "flute"              # Musician soul
+    SHIELD = "shield"            # Protector heart
+    WAND = "wand"                # Pure magic
+    TOOLKIT = "toolkit"          # Problem solver
+
+
+class FavoriteOutfit(str, Enum):
+    """Adventure style that reflects character identity."""
+    ROYAL_CAPE = "royal_cape"         # Leader, confident
+    WIZARD_ROBE = "wizard_robe"       # Mysterious, magical
+    KNIGHT_ARMOR = "knight_armor"     # Brave, protective
+    FLOWER_CROWN = "flower_crown"     # Nature lover
+    COLORFUL_SCARF = "colorful_scarf" # Creative, expressive
+    EXPLORER_VEST = "explorer_vest"   # Adventurous
+    PERFORMER_OUTFIT = "performer_outfit" # Entertaining, bold
+    SCIENTIST_COAT = "scientist_coat" # Curious, analytical
+
+
+class FavoriteToy(str, Enum):
+    """Special treasures that provide emotional anchors."""
+    TEDDY_BEAR = "teddy_bear"     # Comforting, loyal
+    TRAIN_SET = "train_set"       # Builder, organizer
+    BOARD_GAME = "board_game"     # Strategic thinker
+    SOCCER_BALL = "soccer_ball"   # Active, team player
+    ART_SUPPLIES = "art_supplies" # Creative maker
+    TELESCOPE = "telescope"       # Dreamer, explorer
+    VIDEO_GAME = "video_game"     # Problem solver
+    STORYBOOK = "storybook"       # Imagination lover
+
+
+class FavoritePlace(str, Enum):
+    """Dream locations that influence story settings."""
+    BEACH = "beach"           # Relaxing, water lover
+    MOUNTAINS = "mountains"   # Adventurous, brave
+    CASTLE = "castle"         # Royal, historical
+    FOREST = "forest"         # Nature connected
+    THEME_PARK = "theme_park" # Fun-seeking, excited
+    BIG_CITY = "big_city"     # Urban explorer
+    CAMPING = "camping"       # Outdoorsy, independent
+    ISLAND = "island"         # Peaceful, unique
+
+
 class EmotionalState(str, Enum):
     """Current emotional state of a child."""
     HAPPY = "happy"
@@ -55,6 +115,14 @@ class ChildProfile(BaseModel):
     gender: str = Field(description="Child's gender", default="unspecified")
     age: int = Field(description="Child's age in years")
     
+    # Rich character identity (NEW!)
+    spirit_animal: Optional[SpiritAnimal] = Field(default=None, description="Character's spirit guide")
+    favorite_tool: Optional[FavoriteTool] = Field(default=None, description="Signature item")
+    favorite_outfit: Optional[FavoriteOutfit] = Field(default=None, description="Adventure style")
+    favorite_toy: Optional[FavoriteToy] = Field(default=None, description="Special treasure")
+    toy_name: Optional[str] = Field(default=None, description="Custom name for favorite toy")
+    favorite_place: Optional[FavoritePlace] = Field(default=None, description="Dream location")
+    
     # Personality modeling
     personality_traits: List[PersonalityTrait] = Field(default_factory=list)
     strengths: List[str] = Field(default_factory=list)
@@ -68,6 +136,10 @@ class ChildProfile(BaseModel):
     character_name: Optional[str] = None
     character_level: int = Field(default=1)
     unlocked_powers: List[str] = Field(default_factory=list)
+    
+    # Avatar
+    avatar_url: Optional[str] = Field(default=None, description="URL to character avatar")
+    avatar_type: str = Field(default="ai_generated", description="photo_filtered or ai_generated")
     
     # Analytics
     total_sessions: int = Field(default=0)

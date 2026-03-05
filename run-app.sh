@@ -78,11 +78,16 @@ fi
 # Quick dependency check (skip reinstall if recent)
 if [ ! -f "venv/.dependencies_installed" ] || [ "requirements.txt" -nt "venv/.dependencies_installed" ]; then
     echo -e "${YELLOW}📦 Installing/updating Python dependencies...${NC}"
-    pip install -q -r requirements.txt
+    echo -e "${YELLOW}   (This may take 30-60 seconds on first run)${NC}"
+    
+    # Show progress instead of hiding it
+    pip install --upgrade pip setuptools wheel > /dev/null 2>&1
+    pip install -r requirements.txt 2>&1 | grep -v "Requirement already satisfied" || true
+    
     touch venv/.dependencies_installed
-    echo -e "${GREEN}✅ Python dependencies OK${NC}"
+    echo -e "${GREEN}✅ Python dependencies installed${NC}"
 else
-    echo -e "${GREEN}✅ Python dependencies already installed (use ./start.sh to force update)${NC}"
+    echo -e "${GREEN}✅ Python dependencies already installed (use ./start.sh to force reinstall)${NC}"
 fi
 
 # Kill any existing backend process
@@ -157,8 +162,9 @@ mkdir -p logs
 
 # Start backend in background
 echo -e "${BLUE}🔵 Starting Backend (FastAPI)...${NC}"
-python src/main.py > logs/backend.log 2>&1 &
+cd src && uvicorn api.session_manager:app --host 0.0.0.0 --port 8000 > ../logs/backend.log 2>&1 &
 BACKEND_PID=$!
+cd ..
 echo -e "${GREEN}✅ Backend started (PID: $BACKEND_PID)${NC}"
 echo -e "${BLUE}   URL: http://localhost:8000${NC}"
 echo -e "${BLUE}   Logs: tail -f logs/backend.log${NC}"

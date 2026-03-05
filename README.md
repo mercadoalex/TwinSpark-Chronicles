@@ -108,6 +108,8 @@ See [docs/](docs/) folder for detailed documentation on:
 - Personality modeling algorithms
 - Story generation logic
 
+![...under construction](/TwinSpark_02.png "TwinSpark Chronicles UI") 
+
 ## 🤝 Contributing
 
 This is a personal project for my daughters, but ideas and feedback are welcome!
