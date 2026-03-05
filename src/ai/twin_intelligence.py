@@ -385,7 +385,8 @@ class TwinIntelligenceEngine:
         self,
         child1_id: str,
         child2_id: str,
-        theme: str
+        theme: str,
+        language: str = "en"
     ) -> Dict:
         """
         Generate high-level story parameters for the narrative engine.
@@ -433,12 +434,15 @@ class TwinIntelligenceEngine:
                 "complementary_strengths": dynamics.complementary_strengths if dynamics else {},
                 "requires_teamwork": True,
                 "divergence_recommended": dynamics and dynamics.communication_effectiveness > 0.7,
+                # Decide if this beat needs simultaneous cooperation based on recent successes
+                "simultaneous_mode": (dynamics.successful_collaborations > 2) if dynamics else False
             },
             "theme": theme,
+            "language": language,
             "timestamp": datetime.now().isoformat(),
         }
         
-        logger.info(f"Generated story directive with role flip: {flip_roles}")
+        logger.info(f"Generated story directive with role flip: {flip_roles} in lang: {language}")
         
         return directive
     

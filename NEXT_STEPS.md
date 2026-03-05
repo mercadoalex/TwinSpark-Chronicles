@@ -200,6 +200,9 @@ src/api/
 
 **Success Metric**: Your daughters can use it independently
 
+## 🔮 Future Considerations
+- **Image Generation Migration**: Currently, image generation is using a free Hugging Face Stable Diffusion API (`stabilityai/stable-diffusion-3.5-large`) rather than Google's Imagen API because Imagen 3/4 requires a paid billing account. Once a budget is established for production, migrate `image_generator.py` back to Google Imagen for optimal Gemini ecosystem integration.
+
 ---
 
 ## 🛠️ Quick Development Commands

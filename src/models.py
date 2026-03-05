@@ -52,6 +52,7 @@ class ChildProfile(BaseModel):
     
     id: str = Field(description="Unique identifier for the child")
     name: str = Field(description="Child's name")
+    gender: str = Field(description="Child's gender", default="unspecified")
     age: int = Field(description="Child's age in years")
     
     # Personality modeling

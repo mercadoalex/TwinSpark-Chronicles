@@ -29,7 +29,7 @@ class StoryGenerator:
         """Initialize the story generator with Google AI."""
         if settings.google_api_key:
             genai.configure(api_key=settings.google_api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
             logger.info("Story generator initialized with Gemini API")
         else:
             self.model = None
@@ -72,6 +72,9 @@ class StoryGenerator:
 - Include moments where BOTH children feel heroic
 - Create scenarios where their different powers must work together
 - Length: 10-15 interactive story beats
+
+**Language Requirement**: 
+- IMPORTANT: You MUST write the entire story, narration, perspectives, and interaction prompts in this language: **{directive.get('language', 'en')}**. Do not use English unless the requested string is 'en'.
 
 {"**Previous Context:**" + previous_context if previous_context else ""}
 
@@ -242,6 +245,9 @@ Generate the next story beat that:
 3. Keeps both children engaged
 4. Moves toward a satisfying resolution
 
+**Language Requirement**: 
+- IMPORTANT: You MUST write the narration, perspectives, and interaction prompts in this exact language: **{directive.get('language', 'en')}**. Do not use English unless the requested string is 'en'.
+
 Format as before with narration, dual perspectives, and interaction prompt.
 """
     
@@ -269,36 +275,72 @@ Format as before with narration, dual perspectives, and interaction prompt.
         """Generate mock story for testing without API."""
         child1_name = directive["child1"]["name"]
         child2_name = directive["child2"]["name"]
-        child1_power = directive["child1"]["powers"][0] if directive["child1"]["powers"] else "magic"
-        child2_power = directive["child2"]["powers"][0] if directive["child2"]["powers"] else "wisdom"
+        lang = directive.get("language", "en")
         
-        return {
-            "title": f"The Quest of {child1_name} and {child2_name}",
-            "opening": f"In a magical kingdom where the sun always shines, two special friends named {child1_name} and {child2_name} discovered they had incredible powers!",
-            "beats": [
-                {
-                    "narration": f"One sunny morning, {child1_name} and {child2_name} were playing in the garden when they heard a gentle voice calling for help.",
-                    "child1_perspective": f"{child1_name} felt a surge of {child1_power} energy and knew someone needed help!",
-                    "child2_perspective": f"{child2_name}'s {child2_power} helped sense where the voice was coming from.",
-                    "interaction_prompt": "Should you follow the voice into the Forest of Wonder, or check the Crystal Cave first?"
-                },
-                {
-                    "narration": "A tiny fairy appeared, her wings shimmering like rainbows. 'The Star Crystal has lost its sparkle!' she said sadly.",
-                    "child1_perspective": f"{child1_name} stepped forward bravely, ready to help!",
-                    "child2_perspective": f"{child2_name} thought carefully about what might have happened.",
-                    "interaction_prompt": "The fairy says you need to work TOGETHER to restore the crystal's magic. Are you ready?"
-                }
-            ]
-        }
+        if lang == 'es':
+            return {
+                "title": f"La Búsqueda de {child1_name} y {child2_name}",
+                "opening": f"¡En un reino mágico donde el sol siempre brilla, dos amigos especiales llamados {child1_name} y {child2_name} descubrieron que tenían poderes increíbles!",
+                "beats": [
+                    {
+                        "narration": f"Una mañana soleada, {child1_name} y {child2_name} estaban jugando en el jardín cuando escucharon una voz suave pidiendo ayuda.",
+                        "child1_perspective": f"¡{child1_name} sintió una oleada de energía de súper fuerza y supo que alguien necesitaba ayuda!",
+                        "child2_perspective": f"La lectura de patrones de {child2_name} ayudó a sentir de dónde venía la voz.",
+                        "interaction_prompt": "¿Deberían seguir la voz hacia el Bosque de Maravillas, o revisar la Cueva de Cristal primero?"
+                    }
+                ]
+            }
+        elif lang == 'hi':
+            return {
+                "title": f"{child1_name} और {child2_name} की खोज",
+                "opening": f"एक जादुई राज्य में जहां हमेशा धूप खिली रहती है, {child1_name} और {child2_name} नाम के दो खास दोस्तों को पता चला कि उनके पास अद्भुत शक्तियां हैं!",
+                "beats": [
+                    {
+                        "narration": f"एक धूप वाली सुबह, {child1_name} और {child2_name} बगीचे में खेल रहे थे जब उन्होंने मदद के लिए पुकारती एक कोमल आवाज़ सुनी।",
+                        "child1_perspective": f"{child1_name} को सुपर स्ट्रेंथ ऊर्जा की एक लहर महसूस हुई और उसे पता चला कि किसी को मदद चाहिए!",
+                        "child2_perspective": f"{child2_name} के पैटर्न पढ़ने से यह पता लगाने में मदद मिली कि आवाज़ कहाँ से आ रही है।",
+                        "interaction_prompt": "क्या आपको अचरज के जंगल में आवाज़ के पीछे जाना चाहिए, या पहले क्रिस्टल गुफा की जाँच करनी चाहिए?"
+                    }
+                ]
+            }
+        else:
+            return {
+                "title": f"The Quest of {child1_name} and {child2_name}",
+                "opening": f"In a magical kingdom where the sun always shines, two special friends named {child1_name} and {child2_name} discovered they had incredible powers!",
+                "beats": [
+                    {
+                        "narration": f"One sunny morning, {child1_name} and {child2_name} were playing in the garden when they heard a gentle voice calling for help.",
+                        "child1_perspective": f"{child1_name} felt a surge of super_strength energy and knew someone needed help!",
+                        "child2_perspective": f"{child2_name}'s pattern_reading helped sense where the voice was coming from.",
+                        "interaction_prompt": "Should you follow the voice into the Forest of Wonder, or check the Crystal Cave first?"
+                    }
+                ]
+            }
     
     def _generate_mock_beat(self, directive: Dict, choices: Dict) -> Dict:
         """Generate mock story beat for testing."""
         child1_name = directive["child1"]["name"]
         child2_name = directive["child2"]["name"]
+        lang = directive.get("language", "en")
         
-        return {
-            "narration": f"{child1_name} and {child2_name} combined their powers in an amazing way!",
-            "child1_perspective": f"{child1_name} used their special ability at just the right moment!",
-            "child2_perspective": f"{child2_name} knew exactly what to do to help!",
-            "interaction_prompt": "What happens next? Do you celebrate, or continue the adventure?"
-        }
+        if lang == 'es':
+            return {
+                "narration": f"¡{child1_name} y {child2_name} combinaron sus poderes de una manera increíble!",
+                "child1_perspective": f"¡{child1_name} usó su habilidad especial en el momento justo!",
+                "child2_perspective": f"¡{child2_name} sabía exactamente qué hacer para ayudar!",
+                "interaction_prompt": "¿Qué pasa después? ¿Ya lo celebraron o continúan la aventura?"
+            }
+        elif lang == 'hi':
+            return {
+                "narration": f"{child1_name} और {child2_name} ने अपनी शक्तियों को एक अद्भुत तरीके से मिलाया!",
+                "child1_perspective": f"{child1_name} ने सही समय पर अपनी विशेष क्षमता का उपयोग किया!",
+                "child2_perspective": f"{child2_name} ठीक से जानता था कि मदद करने के लिए क्या करना है!",
+                "interaction_prompt": "आगे क्या होता है? क्या आप जश्न मनाते हैं, या साहसिक कार्य जारी रखते हैं?"
+            }
+        else:
+            return {
+                "narration": f"{child1_name} and {child2_name} combined their powers in an amazing way!",
+                "child1_perspective": f"{child1_name} used their special ability at just the right moment!",
+                "child2_perspective": f"{child2_name} knew exactly what to do to help!",
+                "interaction_prompt": "What happens next? Do you celebrate, or continue the adventure?"
+            }

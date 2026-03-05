@@ -1,0 +1,100 @@
+# .dockerignore for TwinSpark Chronicles
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Environment
+.env
+.env.local
+.env.development
+.env.production
+*.env
+
+# Documentation
+docs/
+*.md
+README.md
+
+# Git
+.git/
+.gitignore
+
+# Node (frontend)
+node_modules/
+frontend/node_modules/
+frontend/package-lock.json
+
+# Data and logs
+data/*.db
+data/profiles/
+data/sessions/
+data/universe/
+logs/
+*.log
+
+# Test files
+tests/
+*.test.py
+test_*.py
+
+# Media files (handled by Cloud Storage in production)
+assets/*.png
+assets/*.jpg
+assets/*.wav
+assets/*.mp4
+
+# Build artifacts
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Alembic (migrations will be run separately)
+alembic/
+alembic.ini
+
+# Deployment scripts
+*.sh
+validate_*.sh
