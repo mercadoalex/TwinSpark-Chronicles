@@ -14,8 +14,22 @@ Architecture:
 import logging
 import sys
 import os
+import asyncio
 from typing import Dict, List, Tuple, Optional
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from enum import Enum
+
+logger = logging.getLogger(__name__)
+
+try:
+    import google.generativeai as genai
+    from google.generativeai.types import GenerationConfig
+    GENAI_AVAILABLE = True
+except ImportError:
+    logger.warning("Google Generative AI not available")
+    GENAI_AVAILABLE = False
+    genai = None
 
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,462 +43,367 @@ from models import (
     StorySession
 )
 
-logger = logging.getLogger(__name__)
+
+class RelationshipState(Enum):
+    """States of the sibling relationship"""
+    DISCONNECTED = "disconnected"  # Working separately
+    COOPERATING = "cooperating"    # Working together
+    SYNCHRONIZED = "synchronized"  # In perfect harmony
+    CONFLICTED = "conflicted"      # Disagreeing
+    SUPPORTIVE = "supportive"      # One helping the other
+
+
+class EmotionalResonance(Enum):
+    """How emotions transfer between siblings"""
+    HIGH = "high"      # They feel each other's emotions strongly
+    MEDIUM = "medium"  # Some emotional awareness
+    LOW = "low"        # Emotionally independent
+
+
+@dataclass
+class SiblingBond:
+    """Tracks the emotional and collaborative bond between siblings"""
+    child1_id: str
+    child2_id: str
+    bond_strength: float = 0.5  # 0.0 to 1.0
+    current_state: RelationshipState = RelationshipState.DISCONNECTED
+    emotional_resonance: EmotionalResonance = EmotionalResonance.MEDIUM
+    cooperation_history: List[Dict] = field(default_factory=list)
+    empathy_moments: int = 0
+    conflict_moments: int = 0
+    synchronized_actions: int = 0
+    
+    def strengthen_bond(self, amount: float = 0.1):
+        """Strengthen the bond when siblings cooperate"""
+        self.bond_strength = min(1.0, self.bond_strength + amount)
+        logger.info(f"💞 Bond strengthened to {self.bond_strength:.2f}")
+    
+    def weaken_bond(self, amount: float = 0.05):
+        """Weaken the bond during conflict"""
+        self.bond_strength = max(0.0, self.bond_strength - amount)
+        logger.info(f"💔 Bond weakened to {self.bond_strength:.2f}")
+    
+    def record_cooperation(self, action: str, success: bool):
+        """Record a cooperative action"""
+        self.cooperation_history.append({
+            "action": action,
+            "success": success,
+            "timestamp": datetime.now(),
+            "bond_at_time": self.bond_strength
+        })
+        if success:
+            self.synchronized_actions += 1
+
+
+@dataclass
+class ChildEmotionalState:
+    """Real-time emotional state of a child"""
+    child_id: str
+    primary_emotion: str = "neutral"  # joy, fear, excitement, sadness, anger, wonder
+    intensity: float = 0.5  # 0.0 to 1.0
+    needs_support: bool = False
+    is_supporting_sibling: bool = False
+    last_action: Optional[str] = None
+    confidence_level: float = 0.5
 
 
 class TwinIntelligenceEngine:
     """
-    The heart of TwinSpark Chronicles - models and nurtures sibling bonds.
-    
-    This engine observes behavioral patterns across multiple sessions and builds
-    deep personality models for each child and their relationship dynamics.
+    Core AI system that models sibling relationships as a dynamic system.
+    Uses Gemini to understand:
+    1. When siblings need to cooperate vs. act independently
+    2. How emotions transfer between them (emotional resonance)
+    3. Creating teachable moments for empathy
+    4. Balancing challenge to require teamwork
     """
     
-    def __init__(self):
-        self.profiles: Dict[str, ChildProfile] = {}
-        self.relationships: Dict[Tuple[str, str], RelationshipDynamics] = {}
-        self.session_history: List[StorySession] = []
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key
+        self.model = None
+        self.sibling_bonds: Dict[Tuple[str, str], SiblingBond] = {}
+        self.child_states: Dict[str, ChildEmotionalState] = {}
         
-    # ==================== LAYER 1: INDIVIDUAL PROFILE LEARNING ====================
-    
-    def analyze_voice_patterns(
-        self, 
-        child_id: str, 
-        voice_samples: List[MultimodalInput]
-    ) -> Dict[str, float]:
-        """
-        Analyze voice characteristics to infer personality traits.
-        
-        Metrics:
-        - Volume: Bold vs. Cautious
-        - Speed: Excited vs. Thoughtful
-        - Tone variation: Playful vs. Serious
-        """
-        if not voice_samples:
-            return {}
-        
-        # Calculate average characteristics
-        avg_volume = sum(1 if sample.voice_detected else 0 for sample in voice_samples) / len(voice_samples)
-        
-        # Infer traits (simplified - in production, use ML models)
-        traits = {}
-        
-        if avg_volume > 0.7:
-            traits[PersonalityTrait.BOLD] = avg_volume
-        elif avg_volume < 0.3:
-            traits[PersonalityTrait.CAUTIOUS] = 1 - avg_volume
-            
-        return traits
-    
-    def analyze_gesture_patterns(
-        self, 
-        child_id: str, 
-        gesture_samples: List[MultimodalInput]
-    ) -> Dict[str, float]:
-        """
-        Analyze physical gestures to understand personality.
-        
-        Metrics:
-        - Large movements: Bold, Playful
-        - Precise movements: Analytical, Thoughtful
-        - Frequency: Energetic vs. Calm
-        """
-        if not gesture_samples:
-            return {}
-        
-        traits = {}
-        
-        # Count gesture frequency
-        total_gestures = sum(len(sample.gestures_detected) for sample in gesture_samples)
-        avg_gestures = total_gestures / len(gesture_samples)
-        
-        if avg_gestures > 3:
-            traits[PersonalityTrait.PLAYFUL] = min(avg_gestures / 5, 1.0)
-        
-        return traits
-    
-    def analyze_decision_patterns(
-        self, 
-        child_id: str, 
-        sessions: List[StorySession]
-    ) -> Dict[str, float]:
-        """
-        Analyze story choices to understand decision-making style.
-        
-        Patterns:
-        - Risky choices: Bold, Independent
-        - Safe choices: Cautious, Thoughtful
-        - Creative solutions: Creative, Analytical
-        """
-        if not sessions:
-            return {}
-        
-        # In production, track actual choices made
-        # For now, return placeholder
-        return {
-            PersonalityTrait.CREATIVE: 0.6,
-            PersonalityTrait.THOUGHTFUL: 0.5
-        }
-    
-    def update_personality_profile(
-        self, 
-        child_id: str, 
-        new_data: List[MultimodalInput]
-    ) -> ChildProfile:
-        """
-        Update a child's personality profile based on new observational data.
-        
-        This is called after each session to continuously refine the model.
-        """
-        if child_id not in self.profiles:
-            logger.warning(f"Child {child_id} not found in profiles")
-            return None
-        
-        profile = self.profiles[child_id]
-        
-        # Analyze different data sources
-        voice_traits = self.analyze_voice_patterns(child_id, new_data)
-        gesture_traits = self.analyze_gesture_patterns(child_id, new_data)
-        
-        # Update traits with weighted averaging (new data has 30% weight)
-        for trait, confidence in {**voice_traits, **gesture_traits}.items():
-            if trait not in profile.personality_traits:
-                if confidence > 0.6:  # Threshold for adding new trait
-                    profile.personality_traits.append(trait)
-        
-        profile.last_active = datetime.now()
-        logger.info(f"Updated personality profile for {profile.name}: {profile.personality_traits}")
-        
-        return profile
-    
-    # ==================== LAYER 2: RELATIONSHIP DYNAMIC MAPPING ====================
-    
-    def analyze_leadership_patterns(
-        self,
-        child1_id: str,
-        child2_id: str,
-        sessions: List[StorySession]
-    ) -> float:
-        """
-        Determine leadership balance between siblings.
-        
-        Returns: 0-1 scale where 0.5 is perfectly balanced
-        """
-        if not sessions:
-            return 0.5  # Start balanced
-        
-        # In production: track who initiates, who makes decisions, who drives action
-        # For now, simulate based on personality traits
-        
-        child1 = self.profiles.get(child1_id)
-        child2 = self.profiles.get(child2_id)
-        
-        if not child1 or not child2:
-            return 0.5
-        
-        # Bold and Leader traits indicate leadership tendency
-        child1_leadership = (
-            (PersonalityTrait.BOLD in child1.personality_traits) * 0.3 +
-            (PersonalityTrait.LEADER in child1.personality_traits) * 0.5
-        )
-        
-        child2_leadership = (
-            (PersonalityTrait.BOLD in child2.personality_traits) * 0.3 +
-            (PersonalityTrait.LEADER in child2.personality_traits) * 0.5
-        )
-        
-        total = child1_leadership + child2_leadership
-        if total == 0:
-            return 0.5
-        
-        return child2_leadership / total
-    
-    def detect_complementary_strengths(
-        self,
-        child1_id: str,
-        child2_id: str
-    ) -> Dict[str, str]:
-        """
-        Identify how siblings' strengths complement each other.
-        
-        Returns: Dict mapping child1's strength to child2's complementary strength
-        """
-        child1 = self.profiles.get(child1_id)
-        child2 = self.profiles.get(child2_id)
-        
-        if not child1 or not child2:
-            return {}
-        
-        # Define complementary trait pairs
-        complementary_pairs = {
-            PersonalityTrait.BOLD: PersonalityTrait.CAUTIOUS,
-            PersonalityTrait.CREATIVE: PersonalityTrait.ANALYTICAL,
-            PersonalityTrait.LEADER: PersonalityTrait.SUPPORTER,
-            PersonalityTrait.PLAYFUL: PersonalityTrait.THOUGHTFUL,
-        }
-        
-        complements = {}
-        
-        for trait1 in child1.personality_traits:
-            complement = complementary_pairs.get(trait1)
-            if complement and complement in child2.personality_traits:
-                complements[trait1.value] = complement.value
-        
-        # Also check reverse
-        for trait2 in child2.personality_traits:
-            complement = complementary_pairs.get(trait2)
-            if complement and complement in child1.personality_traits:
-                complements[complement.value] = trait2.value
-        
-        return complements
-    
-    def update_relationship_dynamics(
-        self,
-        child1_id: str,
-        child2_id: str,
-        session: StorySession
-    ) -> RelationshipDynamics:
-        """
-        Update relationship model after a session.
-        """
-        key = (child1_id, child2_id)
-        
-        if key not in self.relationships:
-            # Create new relationship model
-            self.relationships[key] = RelationshipDynamics(
-                child1_id=child1_id,
-                child2_id=child2_id
-            )
-        
-        dynamics = self.relationships[key]
-        
-        # Update leadership balance
-        relevant_sessions = [s for s in self.session_history if 
-                           s.child1_id == child1_id and s.child2_id == child2_id]
-        dynamics.leadership_balance = self.analyze_leadership_patterns(
-            child1_id, child2_id, relevant_sessions
-        )
-        
-        # Update complementary strengths
-        dynamics.complementary_strengths = self.detect_complementary_strengths(
-            child1_id, child2_id
-        )
-        
-        # Track successful collaborations
-        if session.reunion_count > 0:
-            dynamics.successful_collaborations += session.reunion_count
-        
-        dynamics.last_updated = datetime.now()
-        
-        logger.info(f"Updated relationship dynamics: leadership_balance={dynamics.leadership_balance:.2f}")
-        
-        return dynamics
-    
-    # ==================== LAYER 3: COMPLEMENTARY SKILLS DISCOVERY ====================
-    
-    def assign_complementary_powers(
-        self,
-        child1_id: str,
-        child2_id: str
-    ) -> Tuple[List[str], List[str]]:
-        """
-        Assign powers/abilities to each child that complement each other.
-        
-        Returns: (child1_powers, child2_powers)
-        
-        Key principle: Powers should require teamwork, not competition.
-        """
-        child1 = self.profiles.get(child1_id)
-        child2 = self.profiles.get(child2_id)
-        
-        if not child1 or not child2:
-            return ([], [])
-        
-        # Power assignment based on personality
-        power_mapping = {
-            PersonalityTrait.BOLD: ["super_strength", "fire_magic", "shield_breaking"],
-            PersonalityTrait.CAUTIOUS: ["invisibility", "shield_creation", "trap_detection"],
-            PersonalityTrait.CREATIVE: ["shape_shifting", "illusion_magic", "artistic_creation"],
-            PersonalityTrait.ANALYTICAL: ["pattern_reading", "puzzle_solving", "tech_mastery"],
-            PersonalityTrait.EMPATHETIC: ["healing", "animal_communication", "emotion_reading"],
-            PersonalityTrait.PLAYFUL: ["super_speed", "flight", "laughter_magic"],
-        }
-        
-        child1_powers = []
-        child2_powers = []
-        
-        # Assign based on traits
-        for trait in child1.personality_traits[:2]:  # Top 2 traits
-            if trait in power_mapping:
-                child1_powers.extend(power_mapping[trait][:1])
-        
-        for trait in child2.personality_traits[:2]:
-            if trait in power_mapping:
-                child2_powers.extend(power_mapping[trait][:1])
-        
-        # Ensure complementarity
-        if not child1_powers:
-            child1_powers = ["light_magic"]
-        if not child2_powers:
-            child2_powers = ["shadow_magic"]
-        
-        return (child1_powers, child2_powers)
-    
-    # ==================== LAYER 4: ADAPTIVE NARRATIVE GENERATION ====================
-    
-    def should_flip_roles(
-        self,
-        child1_id: str,
-        child2_id: str
-    ) -> bool:
-        """
-        Decide if roles should be flipped to balance relationship dynamics.
-        
-        Returns: True if child2 should lead this session
-        """
-        key = (child1_id, child2_id)
-        
-        if key not in self.relationships:
-            return False  # Keep natural order for first sessions
-        
-        dynamics = self.relationships[key]
-        
-        # Flip if leadership is too imbalanced (< 0.3 or > 0.7)
-        if dynamics.leadership_balance < 0.3:
-            logger.info("Flipping roles: child1 leads too often")
-            return True
-        elif dynamics.leadership_balance > 0.7:
-            logger.info("Flipping roles: child2 leads too often")
-            return False
-        
-        # Otherwise, slight randomization with personality bias
-        return dynamics.leadership_balance > 0.5
-    
-    def adapt_story_difficulty(
-        self,
-        child_id: str,
-        current_emotion: EmotionalState
-    ) -> float:
-        """
-        Adjust story challenge level based on emotional state.
-        
-        Returns: Difficulty multiplier (0.5 = easier, 1.5 = harder)
-        """
-        if current_emotion == EmotionalState.FRUSTRATED:
-            return 0.7  # Make it easier - give them a win
-        elif current_emotion == EmotionalState.SAD:
-            return 0.6  # Make it easier and uplifting
-        elif current_emotion == EmotionalState.EXCITED:
-            return 1.2  # Can handle more challenge
-        elif current_emotion == EmotionalState.TIRED:
-            return 0.8  # Slow it down
+        if GENAI_AVAILABLE and api_key:
+            try:
+                genai.configure(api_key=api_key)
+                self.model = genai.GenerativeModel(
+                    model_name='gemini-2.0-flash-exp',
+                    generation_config=GenerationConfig(
+                        temperature=0.8,
+                        top_p=0.9,
+                        max_output_tokens=4096,
+                    ),
+                    system_instruction="""You are the Twin Intelligence Engine, an AI that deeply understands sibling dynamics.
+
+Your role is to:
+1. **Model Empathy**: Create moments where siblings FEEL each other's emotions
+2. **Teach Cooperation**: Design challenges they can only solve together
+3. **Balance Independence**: Sometimes they work separately, sometimes together
+4. **Emotional Resonance**: When one sibling is scared, the other can sense it
+5. **Family Universe**: Their actions affect each other and their shared world
+
+You think in terms of:
+- Bond Strength (0-1): How connected are they?
+- Emotional States: What is each child feeling RIGHT NOW?
+- Cooperation Opportunities: When should they work together?
+- Teachable Moments: Chances to learn empathy and teamwork
+
+Always respond with structured analysis of the sibling relationship system."""
+                )
+                
+                self.chat = self.model.start_chat(history=[])
+                logger.info("✅ Twin Intelligence Engine initialized with Gemini 2.0")
+            except Exception as e:
+                logger.error(f"❌ Failed to initialize Twin Intelligence: {e}")
+                self.model = None
         else:
-            return 1.0  # Normal difficulty
+            logger.warning("⚠️ Twin Intelligence running in MOCK mode")
     
-    def generate_story_directive(
+    def register_child(self, child_profile):
+        """Register a child in the system"""
+        self.child_states[child_profile.id] = ChildEmotionalState(
+            child_id=child_profile.id,
+            primary_emotion="wonder",
+            confidence_level=0.5
+        )
+        logger.info(f"👶 Registered {child_profile.name} in Twin Intelligence Engine")
+    
+    def register_relationship(self, child1_id: str, child2_id: str):
+        """Register the sibling relationship"""
+        bond_key = tuple(sorted([child1_id, child2_id]))
+        self.sibling_bonds[bond_key] = SiblingBond(
+            child1_id=child1_id,
+            child2_id=child2_id,
+            bond_strength=0.5,
+            current_state=RelationshipState.COOPERATING
+        )
+        logger.info(f"👫 Registered sibling bond between {child1_id} and {child2_id}")
+    
+    async def analyze_sibling_dynamics(
         self,
-        child1_id: str,
-        child2_id: str,
-        theme: str,
-        language: str = "en"
+        child1_name: str,
+        child1_action: Optional[str],
+        child1_emotion: str,
+        child2_name: str,
+        child2_action: Optional[str],
+        child2_emotion: str,
+        story_context: str
     ) -> Dict:
         """
-        Generate high-level story parameters for the narrative engine.
-        
-        This is where the Twin Intelligence informs story generation.
+        Use Gemini to deeply analyze the current sibling dynamics
+        and determine how they should interact next.
         """
-        child1 = self.profiles.get(child1_id)
-        child2 = self.profiles.get(child2_id)
         
-        if not child1 or not child2:
-            return {}
+        bond = self.get_bond("c1", "c2")
         
-        # Get relationship dynamics
-        key = (child1_id, child2_id)
-        dynamics = self.relationships.get(key)
+        prompt = f"""Analyze this sibling interaction in TwinSpark Chronicles:
+
+**CURRENT SITUATION:**
+Story Context: {story_context}
+
+**SIBLING STATES:**
+{child1_name}:
+- Last Action: {child1_action or "waiting"}
+- Emotion: {child1_emotion} 
+- Confidence: {self.child_states.get("c1", ChildEmotionalState("c1")).confidence_level:.2f}
+
+{child2_name}:
+- Last Action: {child2_action or "waiting"}  
+- Emotion: {child2_emotion}
+- Confidence: {self.child_states.get("c2", ChildEmotionalState("c2")).confidence_level:.2f}
+
+**RELATIONSHIP STATUS:**
+Bond Strength: {bond.bond_strength:.2f} / 1.0
+Current State: {bond.current_state.value}
+Empathy Moments So Far: {bond.empathy_moments}
+Synchronized Actions: {bond.synchronized_actions}
+
+**YOUR TASK:**
+Analyze their relationship and provide:
+
+1. EMOTIONAL_RESONANCE: Is one child's emotion affecting the other? (YES/NO + explanation)
+2. COOPERATION_REQUIRED: Do they NEED each other for the next challenge? (REQUIRED/OPTIONAL/INDEPENDENT)
+3. TEACHABLE_MOMENT: Is this a chance to teach empathy? (YES/NO + what lesson)
+4. NEXT_CHALLENGE_TYPE: What kind of interaction should happen next?
+   - SYNCHRONIZED: They must act at the exact same time
+   - COMPLEMENTARY: Each has a different role that supports the other
+   - EMOTIONAL_SUPPORT: One helps the other through fear/sadness
+   - INDEPENDENT_THEN_SHARE: They explore separately, then compare discoveries
+5. BOND_CHANGE: Should bond strengthen (+0.1), weaken (-0.1), or stay (0)?
+
+Format your response as:
+EMOTIONAL_RESONANCE: [YES/NO]
+EXPLANATION: [how their emotions connect]
+COOPERATION_REQUIRED: [REQUIRED/OPTIONAL/INDEPENDENT]
+TEACHABLE_MOMENT: [YES/NO]
+LESSON: [what they can learn]
+NEXT_CHALLENGE_TYPE: [type]
+CHALLENGE_DESCRIPTION: [brief description]
+BOND_CHANGE: [+0.1/-0.1/0]
+"""
+
+        if not self.model:
+            # Mock response
+            return {
+                "emotional_resonance": True,
+                "cooperation_required": "REQUIRED",
+                "teachable_moment": True,
+                "lesson": "They need to work together to overcome the obstacle",
+                "next_challenge_type": "SYNCHRONIZED",
+                "challenge_description": "They must both place their hands on the magic door at the same time",
+                "bond_change": 0.1
+            }
         
-        # Determine role distribution
-        flip_roles = self.should_flip_roles(child1_id, child2_id)
-        
-        # Get complementary powers
-        powers1, powers2 = self.assign_complementary_powers(child1_id, child2_id)
-        
-        # Adapt to emotional states
-        difficulty1 = self.adapt_story_difficulty(child1_id, child1.current_emotion)
-        difficulty2 = self.adapt_story_difficulty(child2_id, child2.current_emotion)
-        
-        directive = {
-            "child1": {
-                "name": child1.name,
-                "role": "leader" if not flip_roles else "supporter",
-                "powers": powers1,
-                "difficulty_multiplier": difficulty1,
-                "personality_hints": [trait.value for trait in child1.personality_traits[:3]],
-                "emotional_state": child1.current_emotion.value,
-            },
-            "child2": {
-                "name": child2.name,
-                "role": "supporter" if not flip_roles else "leader",
-                "powers": powers2,
-                "difficulty_multiplier": difficulty2,
-                "personality_hints": [trait.value for trait in child2.personality_traits[:3]],
-                "emotional_state": child2.current_emotion.value,
-            },
-            "relationship": {
-                "complementary_strengths": dynamics.complementary_strengths if dynamics else {},
-                "requires_teamwork": True,
-                "divergence_recommended": dynamics and dynamics.communication_effectiveness > 0.7,
-                # Decide if this beat needs simultaneous cooperation based on recent successes
-                "simultaneous_mode": (dynamics.successful_collaborations > 2) if dynamics else False
-            },
-            "theme": theme,
-            "language": language,
-            "timestamp": datetime.now().isoformat(),
+        try:
+            response = await asyncio.to_thread(
+                self.chat.send_message,
+                prompt
+            )
+            
+            # Parse Gemini's analysis
+            analysis = self._parse_dynamics_response(response.text)
+            
+            # Apply bond changes
+            if analysis["bond_change"] != 0:
+                if analysis["bond_change"] > 0:
+                    bond.strengthen_bond(abs(analysis["bond_change"]))
+                else:
+                    bond.weaken_bond(abs(analysis["bond_change"]))
+            
+            # Update relationship state
+            if analysis["cooperation_required"] == "REQUIRED":
+                bond.current_state = RelationshipState.SYNCHRONIZED
+            elif analysis["cooperation_required"] == "OPTIONAL":
+                bond.current_state = RelationshipState.COOPERATING
+            else:
+                bond.current_state = RelationshipState.DISCONNECTED
+            
+            # Track empathy moments
+            if analysis["teachable_moment"]:
+                bond.empathy_moments += 1
+            
+            logger.info(f"""
+╔════════════════════════════════════════════╗
+║   TWIN INTELLIGENCE ANALYSIS               ║
+╠════════════════════════════════════════════╣
+║ Emotional Resonance: {analysis['emotional_resonance']}
+║ Cooperation: {analysis['cooperation_required']}
+║ Teachable Moment: {analysis['teachable_moment']}
+║ Bond Strength: {bond.bond_strength:.2f}
+║ Next Challenge: {analysis['next_challenge_type']}
+╚════════════════════════════════════════════╝
+            """)
+            
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"❌ Dynamics analysis failed: {e}", exc_info=True)
+            return {
+                "emotional_resonance": True,
+                "cooperation_required": "REQUIRED",
+                "teachable_moment": True,
+                "lesson": "Work together",
+                "next_challenge_type": "SYNCHRONIZED",
+                "challenge_description": "Cooperate to proceed",
+                "bond_change": 0.1
+            }
+    
+    def _parse_dynamics_response(self, text: str) -> Dict:
+        """Parse Gemini's structured response about sibling dynamics"""
+        lines = text.strip().split('\n')
+        analysis = {
+            "emotional_resonance": False,
+            "explanation": "",
+            "cooperation_required": "OPTIONAL",
+            "teachable_moment": False,
+            "lesson": "",
+            "next_challenge_type": "COMPLEMENTARY",
+            "challenge_description": "",
+            "bond_change": 0.0
         }
         
-        logger.info(f"Generated story directive with role flip: {flip_roles} in lang: {language}")
+        for line in lines:
+            if "EMOTIONAL_RESONANCE:" in line:
+                analysis["emotional_resonance"] = "YES" in line.upper()
+            elif "EXPLANATION:" in line:
+                analysis["explanation"] = line.split(":", 1)[1].strip()
+            elif "COOPERATION_REQUIRED:" in line:
+                if "REQUIRED" in line.upper():
+                    analysis["cooperation_required"] = "REQUIRED"
+                elif "INDEPENDENT" in line.upper():
+                    analysis["cooperation_required"] = "INDEPENDENT"
+            elif "TEACHABLE_MOMENT:" in line:
+                analysis["teachable_moment"] = "YES" in line.upper()
+            elif "LESSON:" in line:
+                analysis["lesson"] = line.split(":", 1)[1].strip()
+            elif "NEXT_CHALLENGE_TYPE:" in line:
+                analysis["next_challenge_type"] = line.split(":", 1)[1].strip()
+            elif "CHALLENGE_DESCRIPTION:" in line:
+                analysis["challenge_description"] = line.split(":", 1)[1].strip()
+            elif "BOND_CHANGE:" in line:
+                change_str = line.split(":", 1)[1].strip()
+                try:
+                    analysis["bond_change"] = float(change_str)
+                except:
+                    analysis["bond_change"] = 0.0
         
-        return directive
+        return analysis
     
-    # ==================== PUBLIC API ====================
+    def get_bond(self, child1_id: str, child2_id: str) -> SiblingBond:
+        """Get the bond between two siblings"""
+        bond_key = tuple(sorted([child1_id, child2_id]))
+        return self.sibling_bonds.get(bond_key, SiblingBond(child1_id, child2_id))
     
-    def register_child(self, child: ChildProfile) -> None:
-        """Register a new child in the system."""
-        self.profiles[child.id] = child
-        logger.info(f"Registered child: {child.name} (age {child.age})")
-    
-    def register_relationship(self, child1_id: str, child2_id: str) -> None:
-        """Register a sibling relationship."""
-        key = (child1_id, child2_id)
-        if key not in self.relationships:
-            self.relationships[key] = RelationshipDynamics(
-                child1_id=child1_id,
-                child2_id=child2_id
-            )
-            logger.info(f"Registered relationship: {child1_id} <-> {child2_id}")
-    
-    def process_session_data(
+    def update_emotional_state(
         self,
-        session: StorySession,
-        multimodal_data: List[MultimodalInput]
-    ) -> None:
-        """Process data from a completed session to update all models."""
-        self.session_history.append(session)
+        child_id: str,
+        emotion: str,
+        intensity: float,
+        action: Optional[str] = None
+    ):
+        """Update a child's emotional state"""
+        if child_id in self.child_states:
+            state = self.child_states[child_id]
+            state.primary_emotion = emotion
+            state.intensity = intensity
+            if action:
+                state.last_action = action
+            
+            logger.info(f"😊 {child_id} now feeling {emotion} (intensity: {intensity:.2f})")
+            
+            # Check for emotional resonance with sibling
+            self._check_emotional_resonance(child_id)
+    
+    def _check_emotional_resonance(self, child_id: str):
+        """Check if this child's emotion affects their sibling"""
+        state = self.child_states.get(child_id)
+        if not state:
+            return
         
-        # Update individual profiles
-        child1_data = [d for d in multimodal_data if d.speaker_id == session.child1_id]
-        child2_data = [d for d in multimodal_data if d.speaker_id == session.child2_id]
+        # Find sibling
+        sibling_id = "c2" if child_id == "c1" else "c1"
+        sibling_state = self.child_states.get(sibling_id)
         
-        if child1_data:
-            self.update_personality_profile(session.child1_id, child1_data)
-        if child2_data:
-            self.update_personality_profile(session.child2_id, child2_data)
+        if not sibling_state:
+            return
         
-        # Update relationship dynamics
-        self.update_relationship_dynamics(
-            session.child1_id,
-            session.child2_id,
-            session
-        )
+        bond = self.get_bond(child_id, sibling_id)
         
-        logger.info(f"Processed session data for session: {session.session_id}")
+        # High bond strength = emotions transfer
+        if bond.bond_strength > 0.7 and state.intensity > 0.7:
+            logger.info(f"💫 EMOTIONAL RESONANCE: {sibling_id} is feeling {child_id}'s {state.primary_emotion}")
+            
+            # Sibling feels a portion of the emotion
+            resonance_strength = bond.bond_strength * 0.5
+            sibling_state.intensity = min(1.0, sibling_state.intensity + (state.intensity * resonance_strength))
+    
+    def record_cooperation(self, child1_id: str, child2_id: str, action: str, success: bool):
+        """Record a cooperative action"""
+        bond = self.get_bond(child1_id, child2_id)
+        bond.record_cooperation(action, success)
+        
+        if success:
+            bond.strengthen_bond(0.1)
+            logger.info(f"🤝 Successful cooperation: {action}")
+        else:
+            logger.info(f"😔 Cooperation failed: {action}")

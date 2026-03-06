@@ -1,7 +1,13 @@
 import React from 'react';
 
 export default function DualStoryDisplay({ storyBeat, t, profiles }) {
-    if (!storyBeat) return null;
+    console.log("🎨 DualStoryDisplay props:", { storyBeat, t, profiles });
+    console.log("🖼️ Image URL from props:", storyBeat?.scene_image_url);
+
+    // Si no hay storyBeat, muestra mensaje
+    if (!storyBeat) {
+        return <div>Loading story...</div>;
+    }
 
     return (
         <div className="dual-story-container" style={{
@@ -13,6 +19,32 @@ export default function DualStoryDisplay({ storyBeat, t, profiles }) {
             maxWidth: '1200px',
             animation: 'slideUp 0.5s ease-out'
         }}>
+
+            {/* Show image if available */}
+            {storyBeat?.scene_image_url && (
+                <div className="scene-image" style={{
+                    width: '100%',
+                    maxWidth: '800px',
+                    margin: '0 auto 30px',
+                    borderRadius: '20px',
+                    overflow: 'hidden',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
+                }}>
+                    <img 
+                        src={storyBeat.scene_image_url.startsWith('http') 
+                            ? storyBeat.scene_image_url 
+                            : `http://localhost:8000${storyBeat.scene_image_url}`}
+                        alt="Scene" 
+                        style={{
+                            width: '100%',
+                            height: 'auto',
+                            display: 'block'
+                        }}
+                        onLoad={() => console.log("✅ Image loaded:", storyBeat.scene_image_url)}
+                        onError={(e) => console.error("❌ Image failed:", e.target.src)}
+                    />
+                </div>
+            )}
 
             {/* Ale's Side */}
             <div className="glass-panel" style={{
@@ -39,8 +71,8 @@ export default function DualStoryDisplay({ storyBeat, t, profiles }) {
                             src={profiles.c1_avatar}
                             alt={`${profiles.c1_name} Avatar`}
                             style={{
-                                width: '70px', 
-                                height: '70px', 
+                                width: '70px',
+                                height: '70px',
                                 borderRadius: '50%',
                                 border: '3px solid var(--color-accent-pink)',
                                 boxShadow: '0 0 15px rgba(236,72,153,0.5)',
@@ -93,8 +125,8 @@ export default function DualStoryDisplay({ storyBeat, t, profiles }) {
                             src={profiles.c2_avatar}
                             alt={`${profiles.c2_name} Avatar`}
                             style={{
-                                width: '70px', 
-                                height: '70px', 
+                                width: '70px',
+                                height: '70px',
                                 borderRadius: '50%',
                                 border: '3px solid var(--color-accent-blue)',
                                 boxShadow: '0 0 15px rgba(59,130,246,0.5)',

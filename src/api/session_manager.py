@@ -4,22 +4,37 @@ import time
 import asyncio
 import json
 import logging
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-# Add parent directory to path
+# Ensure src is in path BEFORE any local imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from models import ChildProfile, PersonalityTrait, EmotionalState
-from ai.twin_intelligence import TwinIntelligenceEngine
+# Now import local modules
+from config import settings
+from models import ChildProfile, PersonalityTrait, SpiritAnimal, StoryBeat, Choice
 from story.story_generator import StoryGenerator
+from story.multimodal_coordinator import MultimodalCoordinator, OutputMode
+from ai.creative_director import CreativeDirectorAgent as CreativeDirector, CreativeAsset, MediaType
 
-from multimodal.camera_processor import CameraProcessor
-from multimodal.audio_processor import AudioProcessor
+# Import ImageGenerator - REMOVE THE MOCK BELOW
 from story.image_generator import ImageGenerator
+
+try:
+    from ai.twin_intelligence import TwinIntelligenceEngine as TwinSparkBrain
+except (ImportError, ModuleNotFoundError):
+    logger = logging.getLogger(__name__)
+    logger.warning("TwinIntelligenceEngine not available - using mock")
+    class TwinSparkBrain:
+        def __init__(self):
+            self.child_states = {}
+        def register_child(self, profile):
+            pass
+        def register_relationship(self, id1, id2):
+            pass
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -75,22 +90,26 @@ async def generate_avatar(request: AvatarRequest):
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: list[WebSocket] = []
+        self.active_connections: dict[str, WebSocket] = {}
         self.loop = None
 
-    async def connect(self, websocket: WebSocket):
+    async def connect(self, websocket: WebSocket, client_id: str = "default"):
         await websocket.accept()
-        self.active_connections.append(websocket)
-        import asyncio
-        self.loop = asyncio.get_running_loop()
-        logger.info("New WebSocket connection accepted.")
+        self.active_connections[client_id] = websocket
+        if self.loop is None:
+            self.loop = asyncio.get_event_loop()
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-        logger.info("WebSocket connection closed.")
+    def disconnect(self, client_id: str = "default"):
+        if client_id in self.active_connections:
+            del self.active_connections[client_id]
 
+    async def send_personal_message(self, message: dict, client_id: str = "default"):
+        if client_id in self.active_connections:
+            await self.active_connections[client_id].send_json(message)
+            
     async def broadcast(self, message: dict):
-        for connection in self.active_connections:
+        """Send message to all connected clients."""
+        for connection in self.active_connections.values():
             await connection.send_json(message)
 
 manager = ConnectionManager()
@@ -112,33 +131,29 @@ class TwinSession:
 
 
 class ActiveSessionManager:
-    """
-    Orchestrates the entire TwinSpark experience using WebSockets.
-    """
+    """Manages active storytelling sessions"""
+    
     def __init__(self):
-        logger.info("⚙️ Initializing SessionManager orchestration...")
-        
-        # Load the Core AI Brain
-        self.engine = TwinIntelligenceEngine()
+        self.engine = TwinSparkBrain()
         self.story_gen = StoryGenerator()
+        self.creative_director = CreativeDirector(self.story_gen)
+        self.image_gen = ImageGenerator()
         
-        # Initialize Camera tracking with zone/gesture callbacks
-        self.camera = CameraProcessor(camera_index=0, on_event=self._on_camera_event)
-        
-        # Initialize Audio listening
-        self.audio = AudioProcessor()
-        
-        try:
-            self.image_gen = ImageGenerator()
-        except ValueError as e:
-            logger.warning(f"⚠️ Image generation disabled: {e}")
-            self.image_gen = None
-            
+        self.child1 = None
+        self.child2 = None
         self.active_session = None
+        self.current_websocket = None
+        
+        self.profiles = []
+        
+        logger.info("✅ SessionManager ready!")
 
     def start_session(self, child1: ChildProfile, child2: ChildProfile):
         """Begin a new connected session for the two children."""
         logger.info(f"\n🚀 Starting new TwinSpark Session for {child1.name} and {child2.name}!")
+        
+        self.child1 = child1
+        self.child2 = child2
         
         # Register them with the Brain
         self.engine.register_child(child1)
@@ -149,208 +164,392 @@ class ActiveSessionManager:
         return self.active_session
 
     async def generate_initial_story(self, websocket: WebSocket):
-        """Generates the first story beat and sends it to the newly connected socket."""
-        if not self.active_session:
-            return
+        """Generate story using FULL sibling dynamics modeling."""
+        
+        logger.info("🎬🎬🎬 ENTERING generate_initial_story()")
+        
+        try:
+            self.current_websocket = websocket
             
-        self.active_session.current_story_state = "in_progress"
+            logger.info("   → Sending STATUS message...")
+            await websocket.send_json({
+                "type": "STATUS",
+                "message": "Creative Director is preparing your adventure..."
+            })
+            logger.info("   ✅ STATUS message sent")
+            
+            logger.info(f"   → Checking child profiles: c1={self.child1.name}, c2={self.child2.name}")
+            
+            # Get current emotional states
+            child1_state = self.engine.child_states.get("c1")
+            child2_state = self.engine.child_states.get("c2")
+            
+            logger.info(f"   → Child states: c1_state={child1_state}, c2_state={child2_state}")
+            
+            if not child1_state or not child2_state:
+                logger.warning("   ⚠️ Child states not initialized, using defaults")
+                child1_emotion = "wonder"
+                child2_emotion = "wonder"
+            else:
+                child1_emotion = child1_state.primary_emotion
+                child2_emotion = child2_state.primary_emotion
+            
+            logger.info(f"   ✅ Emotions set: {child1_emotion}, {child2_emotion}")
+            
+            # Extract values safely - handle both enum objects and strings
+            if self.child1.personality_traits:
+                trait = self.child1.personality_traits[0]
+                child1_personality = trait.value if hasattr(trait, 'value') else str(trait)
+            else:
+                child1_personality = "brave"
+            
+            if self.child2.personality_traits:
+                trait = self.child2.personality_traits[0]
+                child2_personality = trait.value if hasattr(trait, 'value') else str(trait)
+            else:
+                child2_personality = "wise"
+            
+            # Handle spirit animal - could be enum or string
+            spirit1 = self.child1.spirit_animal
+            child1_spirit = spirit1.value if hasattr(spirit1, 'value') else str(spirit1)
+            
+            spirit2 = self.child2.spirit_animal
+            child2_spirit = spirit2.value if hasattr(spirit2, 'value') else str(spirit2)
+            
+            child1_toy = self.child1.favorite_toy_name
+            child2_toy = self.child2.favorite_toy_name
+            
+            logger.info(f"   → Profile data extracted:")
+            logger.info(f"      Child 1: {self.child1.name}, {child1_personality}, {child1_spirit}, {child1_toy}")
+            logger.info(f"      Child 2: {self.child2.name}, {child2_personality}, {child2_spirit}, {child2_toy}")
+            
+            logger.info("   → Starting story beat generation...")
+            
+            # Collect all assets first
+            assets = []
+            asset_count = 0
+            
+            logger.info("   → Calling creative_director.generate_story_beat_with_dynamics()...")
+            
+            async for asset in self.creative_director.generate_story_beat_with_dynamics(
+                child1_name=self.child1.name,
+                child1_personality=child1_personality,
+                child1_spirit=child1_spirit,
+                child1_toy=child1_toy,
+                child1_emotion=child1_emotion,
+                child2_name=self.child2.name,
+                child2_personality=child2_personality,
+                child2_spirit=child2_spirit,
+                child2_toy=child2_toy,
+                child2_emotion=child2_emotion,
+                story_context="beginning of the adventure"
+            ):
+                asset_count += 1
+                logger.info(f"   📦 Asset #{asset_count} generated: {asset.media_type.value} - {asset.metadata}")
+                assets.append(asset)
+            
+            logger.info(f"   ✅ Total assets collected: {len(assets)}")
+            
+            if len(assets) == 0:
+                logger.error("   ❌❌❌ NO ASSETS WERE GENERATED!")
+                await websocket.send_json({
+                    "type": "ERROR",
+                    "message": "Story generation produced no content"
+                })
+                return
+            
+            logger.info(f"   → Now sending {len(assets)} assets to frontend...")
+            
+            # Send them one by one
+            for i, asset in enumerate(assets):
+                logger.info(f"   → Delivering asset {i+1}/{len(assets)}: {asset.media_type.value}")
+                await self._deliver_creative_asset(websocket, asset)
+                logger.info(f"   ✅ Asset {i+1}/{len(assets)} delivered")
+                await asyncio.sleep(0.3)
+            
+            logger.info("   → Sending STORY_COMPLETE...")
+            await websocket.send_json({
+                "type": "STORY_COMPLETE",
+                "message": "Your adventure awaits! Make your choice..."
+            })
+            logger.info("   ✅ STORY_COMPLETE sent")
+            
+            logger.info("🎬🎬🎬 EXITING generate_initial_story() - SUCCESS!")
+            
+        except Exception as e:
+            logger.error(f"❌❌❌ EXCEPTION in generate_initial_story(): {e}", exc_info=True)
+            await websocket.send_json({
+                "type": "ERROR",
+                "message": f"Story generation error: {str(e)}"
+            })
+
+    async def _deliver_creative_asset(self, websocket: WebSocket, asset: CreativeAsset):
+        """Deliver a single creative asset to the frontend"""
         
-        # Ask TwinEngine for the best roles and difficulty
-        directive = self.engine.generate_story_directive(
-            self.active_session.child1.id, 
-            self.active_session.child2.id,
-            "Magical Forest"
-        )
-        
-        # Generate the story (This is blocking, in the future use run_in_executor)
-        story_data = self.story_gen.generate_story_opening(directive)
-        
-        # Determine the next sibling mechanic!
-        # For the first beat, we just assign a turn based on the directive roles
-        self.active_session.current_turn = self.active_session.child1.id if directive['child1']['role'] == 'leader' else self.active_session.child2.id
-        self.active_session.simultaneous_mode = False
-        
-        # Send everything directly to this new websocket
-        await websocket.send_json(jsonable_encoder({
-            "type": "STORY_UPDATE",
-            "data": story_data,
-            "mechanics": {
-                "active_turn": self.active_session.current_turn,
-                "simultaneous_mode": self.active_session.simultaneous_mode,
-                "prompt": story_data['beats'][0]['interaction_prompt'] if story_data.get('beats') else "What do you do?"
+        try:
+            payload = {
+                "type": "CREATIVE_ASSET",
+                "media_type": asset.media_type.value,
+                "content": asset.content,
+                "timestamp": asset.timestamp,
+                "metadata": asset.metadata or {}
             }
-        }))
-        
-        # Generate image asynchronously so it doesn't block the UI
-        if self.image_gen:
-             import threading
-             threading.Thread(target=self.image_gen.generate_scene, 
-                              args=("Magical Forest with glowing trees", [self.active_session.child1.name, self.active_session.child2.name]),
-                              daemon=True).start()
-
-    def _on_camera_event(self, event_data: dict):
-        """Callback from CameraProcessor when a physical zone gesture happens."""
-        if not self.active_session:
-            return
             
-        logger.info(f"📷 Hardware Camera triggered event: {event_data['action']} by {event_data['user_id']}")
-        
-        if manager.loop and manager.loop.is_running():
-            import asyncio
-            try:
-                asyncio.run_coroutine_threadsafe(
-                    self.process_client_event(event_data),
-                    manager.loop
-                )
-            except Exception as e:
-                logger.error(f"Error submitting camera event to main loop: {e}")
-        else:
-            logger.error("Could not find main event loop for camera callback")
-
-    def _on_audio_command(self, data: dict):
-        """Callback from AudioProcessor's background thread when a command is heard."""
-        command = data.get("command")
-        if not command or not self.active_session:
-            return
+            # Add child identifier to metadata for perspective texts
+            if asset.media_type == MediaType.TEXT and asset.metadata:
+                if 'child' not in asset.metadata:
+                    # Try to infer from content
+                    if self.child1 and self.child1.name in asset.content:
+                        payload["metadata"]["child"] = "c1"
+                    elif self.child2 and self.child2.name in asset.content:
+                        payload["metadata"]["child"] = "c2"
             
-        logger.info(f"🎙️ Hardware Audio triggered command: {command}")
-        
-        # AudioProcessor doesn't know WHO spoke yet (no diarization in this MVP)
-        # So we assume the person whose turn it is spoke it. 
-        # If it's simultaneous mode, we assign it to child1 just to advance the beat.
-        assumed_user_id = self.active_session.current_turn if self.active_session.current_turn else self.active_session.child1.id
-        
-        # We must trigger the async event processor from this sync background thread
-        # FastAPI's asyncio loop is running in the main thread
-        if manager.loop and manager.loop.is_running():
-            import asyncio
-            try:
-                asyncio.run_coroutine_threadsafe(
-                    self.process_client_event({"action": command, "user_id": assumed_user_id}),
-                    manager.loop
-                )
-            except Exception as e:
-                logger.error(f"Error submitting audio event to main loop: {e}")
-        else:
-            logger.error("Could not find main event loop for audio callback")
-
-    async def process_client_event(self, event_data: dict):
-        """Processes interaction events sent from the React UI."""
-        if not self.active_session:
-            return
+            logger.info(f"      → Sending: {payload['media_type']}, metadata={payload['metadata']}")
             
-        action = event_data.get("action")
-        user_id = event_data.get("user_id")
-        
-        # 1. Enforce Turn-Taking Logic!
-        if not self.active_session.simultaneous_mode and user_id != self.active_session.current_turn:
-            await manager.broadcast(jsonable_encoder({
-                "type": "MECHANIC_WARNING",
-                "message": f"Oops! It's not your turn right now. Let your sibling decide!"
-            }))
-            return
-
-        # 2. Process the valid action
-        logger.info(f"Processing action '{action}' from {user_id}")
-        
-        # Build fresh directive to generate the next beat
-        directive = self.engine.generate_story_directive(
-            self.active_session.child1.id, 
-            self.active_session.child2.id,
-            "Magical Forest"
-        )
-        
-        # Inform the story generator of the choice
-        beat_data = self.story_gen.generate_next_beat(
-            directive, 
-            [], # We skip sending full history for this MVP prototype 
-            {"beat_0": action} 
-        )
-        
-        # 3. Apply the AI's dictated mechanic!
-        self.active_session.simultaneous_mode = directive['relationship'].get('simultaneous_mode', False)
-        
-        if self.active_session.simultaneous_mode:
-            self.active_session.current_turn = None
-            prompt_override = "HIGH FIVE! Both of you show a high five to the camera at the same time!"
-        else:
-            self.active_session.current_turn = self.active_session.child2.id if user_id == self.active_session.child1.id else self.active_session.child1.id
-            prompt_override = beat_data['interaction_prompt']
+            # Special handling for images
+            if asset.media_type == MediaType.IMAGE and self.image_gen:
+                logger.info(f"      → Image detected, generating...")
+                try:
+                    await websocket.send_json({
+                        "type": "STATUS",
+                        "message": "Generating scene artwork..."
+                    })
+                    
+                    image_url = await asyncio.to_thread(
+                        self.image_gen.generate_scene,
+                        asset.content
+                    )
+                    
+                    if image_url:
+                        payload["content"] = image_url
+                        payload["metadata"]["generated"] = True
+                        logger.info(f"      ✅ Image generated: {image_url}")
+                    else:
+                        logger.warning("      ⚠️ Image generation returned None")
+                        payload["metadata"]["generated"] = False
+                except Exception as e:
+                    logger.error(f"      ❌ Image generation failed: {e}")
+                    payload["metadata"]["generated"] = False
             
-        await manager.broadcast(jsonable_encoder({
-            "type": "STORY_UPDATE",
-            "data": {"beats": [beat_data]},
-            "mechanics": {
-                "active_turn": self.active_session.current_turn,
-                "simultaneous_mode": self.active_session.simultaneous_mode,
-                "prompt": prompt_override
+            logger.info(f"      → Sending payload to WebSocket...")
+            await websocket.send_json(payload)
+            logger.info(f"      ✅ Payload sent successfully!")
+            
+        except Exception as e:
+            logger.error(f"      ❌❌❌ EXCEPTION in _deliver_creative_asset(): {e}", exc_info=True)
+
+    async def create_profile(self, profile_data: dict):
+        """Create a child profile from frontend data"""
+        try:
+            logger.info(f"Creating profile with data: {profile_data}")
+            
+            # Extract personality - accept any string and map to valid enum
+            personality_raw = profile_data.get('personality_traits', ['brave'])
+            if isinstance(personality_raw, str):
+                personality_raw = [personality_raw]
+            
+            # Mapping de strings comunes a PersonalityTrait válidos
+            personality_map = {
+                # Spirit animals to personality
+                'dragon': PersonalityTrait.BRAVE,
+                'unicorn': PersonalityTrait.CREATIVE,
+                'owl': PersonalityTrait.WISE,
+                'dolphin': PersonalityTrait.PLAYFUL,      # ← CORREGIDO
+                'phoenix': PersonalityTrait.ENERGETIC,    # ← CORREGIDO
+                'tiger': PersonalityTrait.ADVENTUROUS,    # ← CORREGIDO
+                
+                # Direct personality traits
+                'brave': PersonalityTrait.BRAVE,
+                'curious': PersonalityTrait.CURIOUS,
+                'kind': PersonalityTrait.KIND,
+                'creative': PersonalityTrait.CREATIVE,
+                'logical': PersonalityTrait.LOGICAL,
+                'playful': PersonalityTrait.PLAYFUL,
+                'wise': PersonalityTrait.WISE,
+                'adventurous': PersonalityTrait.ADVENTUROUS,
+                'thoughtful': PersonalityTrait.THOUGHTFUL,
+                'energetic': PersonalityTrait.ENERGETIC,
+                'calm': PersonalityTrait.CALM,
+                'helpful': PersonalityTrait.HELPFUL,
+                'funny': PersonalityTrait.FUNNY,
+                'serious': PersonalityTrait.SERIOUS
             }
-        }))
+            
+            valid_traits = []
+            for trait in personality_raw:
+                trait_lower = trait.lower()
+                if trait_lower in personality_map:
+                    valid_traits.append(personality_map[trait_lower])
+                else:
+                    logger.warning(f"⚠️ Unknown personality '{trait}', using BRAVE")
+                    valid_traits.append(PersonalityTrait.BRAVE)
+            
+            if not valid_traits:
+                valid_traits = [PersonalityTrait.BRAVE]
+            
+            # Extract and validate spirit animal
+            spirit_animal = profile_data.get('spirit_animal', 'dragon')
+            try:
+                spirit_animal_enum = SpiritAnimal(spirit_animal.lower())
+            except ValueError:
+                logger.warning(f"⚠️ Invalid spirit animal '{spirit_animal}', using DRAGON as default")
+                spirit_animal_enum = SpiritAnimal.DRAGON
+            
+            # Create profile
+            profile = ChildProfile(
+                id=f"c{len(self.profiles) + 1}",
+                name=profile_data['name'],
+                gender=profile_data['gender'],
+                age=6,
+                personality_traits=valid_traits,
+                spirit_animal=spirit_animal_enum,
+                favorite_toy_name=profile_data.get('favorite_toy_name', 'Teddy Bear'),
+                avatar_url=profile_data.get('avatar_url')
+            )
+            
+            logger.info(f"✅ Profile created: {profile.name}, traits={profile.personality_traits}, spirit={profile.spirit_animal}")
+            return profile
+            
+        except Exception as e:
+            logger.error(f"❌ Error creating profile: {e}", exc_info=True)
+            raise
 
 
-# Global singleton
+# Create global session manager instance
 session_manager = ActiveSessionManager()
 
+
+# WebSocket endpoint with query parameters for direct session start
 @app.websocket("/ws/session")
-async def websocket_endpoint(
-    websocket: WebSocket, 
-    lang: str = "en",
-    c1_name: str = "Ale", c1_gender: str = "girl", c1_personality: str = "playful",
-    c2_name: str = "Sofi", c2_gender: str = "girl", c2_personality: str = "thoughtful"
+async def websocket_session_endpoint(
+    websocket: WebSocket,
+    lang: str = Query("en"),
+    c1_name: str = Query(...),
+    c1_gender: str = Query(...),
+    c1_personality: str = Query("brave"),
+    c1_spirit: str = Query("dragon"),
+    c1_toy: str = Query("Teddy"),
+    c2_name: str = Query(...),
+    c2_gender: str = Query(...),
+    c2_personality: str = Query("wise"),
+    c2_spirit: str = Query("owl"),
+    c2_toy: str = Query("Book")
 ):
-    await manager.connect(websocket)
+    """WebSocket endpoint with query parameters for direct session start"""
+    await websocket.accept()
+    logger.info("🔌 WebSocket /ws/session connection accepted")
+    logger.info(f"   Language: {lang}")
+    logger.info(f"   Child 1: {c1_name} ({c1_gender}, {c1_personality}, {c1_spirit})")
+    logger.info(f"   Child 2: {c2_name} ({c2_gender}, {c2_personality}, {c2_spirit})")
+    
     try:
-        try:
-            # Dynamically register the players for this session
-            child1 = ChildProfile(
-                id="c1", name=c1_name, gender=c1_gender, age=6, 
-                personality_traits=[PersonalityTrait(c1_personality.lower())]
-            )
-            child2 = ChildProfile(
-                id="c2", name=c2_name, gender=c2_gender, age=6, 
-                personality_traits=[PersonalityTrait(c2_personality.lower())]
-            )
-            session_manager.start_session(child1, child2)
-
-            # Set the AI Story Language preference
-            if session_manager.active_session:
-                session_manager.active_session.language = lang
-            # We need a background task to keep the camera frames processing
-            import threading
-            import time
-            def _camera_loop():
-                # Graceful polling loop so the thread persists even if the camera connects slowly
-                while True:
-                    if session_manager.camera and session_manager.camera.cap and session_manager.camera.cap.isOpened():
-                        session_manager.camera.process_frame()
-                        time.sleep(0.03) # roughly 30fps
-                    else:
-                        time.sleep(1.0) # Wait gently for camera to spin up
-                    
-            # Start hardware sensor loops
-            session_manager.audio.start_listening(callback=session_manager._on_audio_command)
-            if session_manager.camera:
-                session_manager.camera.start()
-                # Ensure we only start exactly one thread
-                if not hasattr(session_manager, "_camera_thread_started"):
-                    threading.Thread(target=_camera_loop, daemon=True).start()
-                    session_manager._camera_thread_started = True
+        # Create profiles from query parameters
+        profile1_data = {
+            'name': c1_name,
+            'gender': c1_gender,
+            'age': 6,
+            'personality_traits': [c1_personality],
+            'spirit_animal': c1_spirit,
+            'favorite_toy_name': c1_toy
+        }
+        
+        profile2_data = {
+            'name': c2_name,
+            'gender': c2_gender,
+            'age': 6,
+            'personality_traits': [c2_personality],
+            'spirit_animal': c2_spirit,
+            'favorite_toy_name': c2_toy
+        }
+        
+        # Create profiles
+        profile1 = await session_manager.create_profile(profile1_data)
+        profile2 = await session_manager.create_profile(profile2_data)
+        
+        # Start session
+        session_manager.child1 = profile1
+        session_manager.child2 = profile2
+        
+        logger.info(f"✅ Session started for {profile1.name} and {profile2.name}")
+        
+        # Generate initial story
+        await session_manager.generate_initial_story(websocket)
+        
+        # Keep connection alive and handle messages
+        while True:
+            data = await websocket.receive_json()
+            message_type = data.get("type")
             
-            # Upon connection, optionally send the initial story right away
-            await session_manager.generate_initial_story(websocket)
+            logger.info(f"📨 Received message: {message_type}")
             
-            while True:
-                # Wait for any messages from the React app (like button clicks or transcribed voice)
-                data = await websocket.receive_text()
-                event = json.loads(data)
-                await session_manager.process_client_event(event)
-        except Exception as e:
-            logger.error(f"❌ Unhandled WebSocket Error: {e}", exc_info=True)
-            raise
-            
+            if message_type == "MAKE_CHOICE":
+                choice_text = data.get("choice")
+                await session_manager.handle_choice(websocket, choice_text)
+                
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        logger.info("🔌 WebSocket /ws/session disconnected")
+    except Exception as e:
+        logger.error(f"❌ WebSocket /ws/session error: {e}", exc_info=True)
+        try:
+            await websocket.send_json({
+                "type": "ERROR",
+                "message": str(e)
+            })
+        except:
+            pass
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("api.session_manager:app", host="0.0.0.0", port=8000, reload=True)
+
+# Existing /ws endpoint
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """Main WebSocket endpoint for real-time story interaction"""
+    await websocket.accept()
+    logger.info("🔌 WebSocket connection accepted")
+    
+    try:
+        while True:
+            data = await websocket.receive_json()
+            message_type = data.get("type")
+            
+            logger.info(f"📨 Received message type: {message_type}")
+            
+            if message_type == "CREATE_PROFILE":
+                profile = await session_manager.create_profile(data["profile"])
+                session_manager.profiles.append(profile)
+                
+                await websocket.send_json({
+                    "type": "PROFILE_CREATED",
+                    "profile": {
+                        "id": profile.id,
+                        "name": profile.name,
+                        "avatar_url": profile.avatar_url
+                    }
+                })
+                
+            elif message_type == "START_STORY":
+                if len(session_manager.profiles) == 2:
+                    session_manager.child1 = session_manager.profiles[0]
+                    session_manager.child2 = session_manager.profiles[1]
+                    
+                    await session_manager.generate_initial_story(websocket)
+                else:
+                    await websocket.send_json({
+                        "type": "ERROR",
+                        "message": "Need 2 profiles to start story"
+                    })
+                    
+            elif message_type == "MAKE_CHOICE":
+                choice_text = data.get("choice")
+                await session_manager.handle_choice(websocket, choice_text)
+                
+    except WebSocketDisconnect:
+        logger.info("🔌 WebSocket disconnected")
+    except Exception as e:
+        logger.error(f"❌ WebSocket error: {e}", exc_info=True)
+        try:
+            await websocket.send_json({
+                "type": "ERROR",
+                "message": str(e)
+            })
+        except:
+            pass

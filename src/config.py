@@ -7,72 +7,59 @@ Supports both local development and GCP Cloud SQL production deployment.
 
 import os
 from pydantic_settings import BaseSettings
-from pydantic import Field
-from typing import Literal, Optional
-
+from typing import Optional
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables."""
+    """Application settings loaded from environment variables"""
     
-    # Google AI API
-    google_api_key: str = Field(default="", alias="GOOGLE_API_KEY")
-    google_project_id: str = Field(default="", alias="GOOGLE_PROJECT_ID")
+    # API Keys - UPPERCASE
+    GOOGLE_API_KEY: str = ""
+    HUGGINGFACE_API_KEY: str = ""
+    REPLICATE_API_KEY: str = "" 
+    FAL_API_KEY: str = ""
+    LEONARDO_API_KEY: str = ""
     
-    # Hugging Face API
-    huggingface_api_key: str = Field(default="", alias="HUGGINGFACE_API_KEY")
+    # Google Cloud
+    GOOGLE_PROJECT_ID: Optional[str] = None
     
-    # Application
-    app_env: Literal["development", "production"] = Field(default="development", alias="APP_ENV")
-    debug: bool = Field(default=True, alias="DEBUG")
-    log_level: str = Field(default="INFO", alias="LOG_LEVEL")
+    # Application Settings - UPPERCASE
+    APP_ENV: str = "development"
+    DEBUG: bool = True
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
+    LOG_LEVEL: str = "INFO"  # UPPERCASE
     
-    # Server
-    host: str = Field(default="0.0.0.0", alias="HOST")
-    port: int = Field(default=8000, alias="PORT")
+    # Database & Cache
+    DATABASE_URL: Optional[str] = "sqlite:///./twinpark.db"
+    REDIS_URL: Optional[str] = "redis://localhost:6379"
+    SECRET_KEY: str = "your-secret-key-change-this-in-production"
     
-    # Database - supports SQLite (dev) and PostgreSQL (prod)
-    database_url: str = Field(default="sqlite:///./data/twinspark.db", alias="DATABASE_URL")
-    db_pool_size: int = Field(default=5, alias="DB_POOL_SIZE")
-    db_max_overflow: int = Field(default=10, alias="DB_MAX_OVERFLOW")
-    db_pool_timeout: int = Field(default=30, alias="DB_POOL_TIMEOUT")
+    # Story Generation
+    MAX_STORY_LENGTH: int = 500
+    ENABLE_IMAGE_GENERATION: bool = True
+    ENABLE_VIDEO_GENERATION: bool = True
+    ENABLE_AUDIO: bool = False
+    ENABLE_EMOTION_DETECTION: bool = True
+    ENABLE_DUAL_PERSPECTIVE: bool = True
     
-    # Cloud SQL specific (GCP)
-    use_cloud_sql_proxy: bool = Field(default=False, alias="USE_CLOUD_SQL_PROXY")
-    db_connection_name: str = Field(default="", alias="DB_CONNECTION_NAME")  # project:region:instance
-    db_name: str = Field(default="twinspark", alias="DB_NAME")
-    db_user: str = Field(default="twinspark_app", alias="DB_USER")
-    db_password: str = Field(default="", alias="DB_PASSWORD")
+    # Session Settings
+    DEFAULT_AGE_GROUP: int = 6
+    SESSION_TIMEOUT_MINUTES: int = 30
     
-    # Cloud Storage (GCP)
-    gcs_bucket: str = Field(default="", alias="GCS_BUCKET")  # For family photos, voice recordings
-    gcs_project_id: str = Field(default="", alias="GCS_PROJECT_ID")
-    use_cloud_storage: bool = Field(default=False, alias="USE_CLOUD_STORAGE")
+    # Content & Safety
+    ENABLE_CONTENT_FILTER: bool = True
     
-    # Redis
-    redis_url: str = Field(default="redis://localhost:6379", alias="REDIS_URL")
+    # Storage
+    STORE_VIDEO_LOCALLY: bool = True
     
-    # Security
-    secret_key: str = Field(default="dev-secret-key-change-in-production", alias="SECRET_KEY")
-    
-    # Feature Flags
-    enable_video_generation: bool = Field(default=True, alias="ENABLE_VIDEO_GENERATION")
-    enable_emotion_detection: bool = Field(default=True, alias="ENABLE_EMOTION_DETECTION")
-    enable_dual_perspective: bool = Field(default=True, alias="ENABLE_DUAL_PERSPECTIVE")
-    
-    # Story Settings
-    max_story_length: int = Field(default=20, alias="MAX_STORY_LENGTH")
-    default_age_group: int = Field(default=6, alias="DEFAULT_AGE_GROUP")
-    session_timeout_minutes: int = Field(default=30, alias="SESSION_TIMEOUT_MINUTES")
-    
-    # Safety
-    enable_content_filter: bool = Field(default=True, alias="ENABLE_CONTENT_FILTER")
-    store_video_locally: bool = Field(default=True, alias="STORE_VIDEO_LOCALLY")
-    enable_analytics: bool = Field(default=False, alias="ENABLE_ANALYTICS")
+    # Analytics & Testing
+    ENABLE_ANALYTICS: bool = False
+    USE_MOCK_STORIES: bool = True
     
     class Config:
         env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+        case_sensitive = False  # Allow both upper and lowercase
+        extra = "allow"
 
 
 # Global settings instance

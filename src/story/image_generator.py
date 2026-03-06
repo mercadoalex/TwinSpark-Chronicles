@@ -1,108 +1,159 @@
 import os
 import requests
-from PIL import Image
-import io
+import logging
+from typing import Optional
 import time
 
-class ImageGenerator:
-    def __init__(self):
-        # Load API key directly from environment (must be set before running)
-        api_key = os.getenv("HUGGINGFACE_API_KEY")
-        if not api_key:
-            raise ValueError("HUGGINGFACE_API_KEY environment variable not set. Please add it to your .env file or export it.")
-            
-        self.headers = {"Authorization": f"Bearer {api_key}"}
-        
-        # We will use a high-quality free Hugging Face model for generating images
-        # FLUX.1-schnell is currently one of the best models available on the free Inference API
-        self.api_url = "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell"
-        
-        # Ensure the assets directory exists for saving images
-        self.assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "assets")
-        os.makedirs(self.assets_dir, exist_ok=True)
-        
-    def generate_character(self, child_name, gender, personality_traits, outfit_directive="heroic outfit"):
-        """Generates a character avatar based on their personality traits and gender."""
-        prompt = (
-            f"A high-quality 3D animated Pixar style character portrait of a {gender} child named {child_name}. "
-            f"Their personality is: {', '.join(personality_traits)}. "
-            f"They are wearing a {outfit_directive}. "
-            "The background should be clean and colorful. Cinematic lighting, highly detailed, expressive face."
-        )
-        
-        print(f"🎨 Generating avatar for {child_name}...")
-        return self._generate_and_save(prompt, f"{child_name.lower()}_avatar_{int(time.time())}.png")
+logger = logging.getLogger(__name__)
 
-    def generate_scene(self, scene_description, characters_involved):
-        """Generates a story scene vector/illustration."""
-        prompt = (
-            f"A beautiful storybook illustration for children. Style: vibrant, magical 2D vector art. "
-            f"Scene: {scene_description} "
-            f"Featuring: {', '.join(characters_involved)}. "
-            "Whimsical, inviting, and age-appropriate for a 6-year-old."
-        )
-        
-        print(f"🖼️ Generating scene: {scene_description[:30]}...")
-        return self._generate_and_save(prompt, f"scene_{int(time.time())}.png")
-        
-    def _generate_and_save(self, prompt, filename):
-        """Helper to call Hugging Face Inference API and save the result locally."""
+
+class ImageGenerator:
+    """Generate child-friendly images using Leonardo.ai (150 FREE credits/month)"""
+    
+    def __init__(self):
         try:
-            # Call the Hugging Face API
-            payload = {"inputs": prompt}
-            response = requests.post(self.api_url, headers=self.headers, json=payload)
+            from config import settings
+            self.api_key = getattr(settings, 'LEONARDO_API_KEY', None) or os.getenv('LEONARDO_API_KEY')
+        except:
+            self.api_key = os.getenv('LEONARDO_API_KEY')
+        
+        if self.api_key:
+            self.api_url = "https://cloud.leonardo.ai/api/rest/v1/generations"
+            self.headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            logger.info("✅ ImageGenerator initialized with Leonardo.ai (FREE)")
+        else:
+            logger.error("❌ NO LEONARDO API KEY - IMAGES REQUIRED FOR CHILDREN!")
+            self.api_url = None
+            self.headers = None
+    
+    def generate_scene(self, prompt: str) -> Optional[str]:
+        """Generate child-friendly image with Leonardo.ai"""
+        if not self.api_key:
+            logger.error("❌ Cannot generate image - NO API KEY!")
+            return None
+        
+        try:
+            logger.info(f"🎨 [LEONARDO.AI] Generating: {prompt[:60]}...")
+            
+            # Optimized prompt for children
+            child_friendly_prompt = (
+                f"children's book illustration, cute cartoon, "
+                f"bright vibrant colors, simple friendly characters, "
+                f"pixar disney style, magical whimsical, safe for kids 4-8 years, "
+                f"{prompt}"
+            )
+            
+            payload = {
+                "prompt": child_friendly_prompt,
+                "negative_prompt": "scary, dark, violent, realistic, horror, adult, complex, detailed",
+                "modelId": "6bef9f1b-29cb-40c7-b9df-32b51c1f67d3",  # Leonardo Anime XL (perfecto para niños)
+                "width": 512,
+                "height": 512,
+                "num_images": 1,
+                "guidance_scale": 7,
+                "num_inference_steps": 30,
+                "public": False,
+                "nsfw": False
+            }
+            
+            # Create generation
+            response = requests.post(
+                self.api_url,
+                headers=self.headers,
+                json=payload,
+                timeout=10
+            )
             
             if response.status_code != 200:
-                print(f"❌ Failed to generate image: {response.status_code} - {response.text}")
+                logger.error(f"❌ Failed to create generation: {response.status_code} - {response.text[:200]}")
                 return None
+            
+            result = response.json()
+            generation_id = result["sdGenerationJob"]["generationId"]
+            
+            logger.info(f"   ⏳ Generation ID: {generation_id}, waiting...")
+            
+            # Poll for result (Leonardo es rápido - 10-20s)
+            get_url = f"https://cloud.leonardo.ai/api/rest/v1/generations/{generation_id}"
+            
+            for attempt in range(40):  # 40 segundos max
+                time.sleep(1)
                 
-            # The result is raw bytes of the image
-            image = Image.open(io.BytesIO(response.content))
+                poll_response = requests.get(get_url, headers=self.headers)
+                
+                if poll_response.status_code != 200:
+                    logger.warning(f"⚠️ Poll failed: {poll_response.status_code}")
+                    continue
+                
+                poll_data = poll_response.json()
+                status = poll_data["generations_by_pk"]["status"]
+                
+                if status == "COMPLETE":
+                    images = poll_data["generations_by_pk"]["generated_images"]
+                    if images:
+                        image_url = images[0]["url"]
+                        
+                        # Download and save
+                        logger.info(f"   📥 Downloading from Leonardo...")
+                        img_response = requests.get(image_url, timeout=20)
+                        
+                        assets_dir = os.path.join(
+                            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+                            "assets", "generated_images"
+                        )
+                        os.makedirs(assets_dir, exist_ok=True)
+                        
+                        filename = f"scene_{int(time.time())}.png"
+                        filepath = os.path.join(assets_dir, filename)
+                        
+                        with open(filepath, "wb") as f:
+                            f.write(img_response.content)
+                        
+                        local_url = f"/assets/generated_images/{filename}"
+                        logger.info(f"✅ [CHILDREN IMAGE] Generated: {local_url}")
+                        return local_url
+                    
+                elif status == "FAILED":
+                    logger.error(f"❌ Generation failed")
+                    return None
+                
+                if attempt % 5 == 0:
+                    logger.info(f"   ⏳ Still generating... ({attempt}s, status: {status})")
             
-            filepath = os.path.join(self.assets_dir, filename)
-            image.save(filepath)
-            
-            print(f"✅ Successfully saved image to: {filepath}")
-            return filepath
+            logger.warning("⚠️ Timeout after 40s")
+            return None
                 
         except Exception as e:
-            print(f"❌ Failed to generate image: {e}")
+            logger.error(f"❌ Error: {e}")
             return None
+    
+    def generate_character(self, name: str, gender: str, personality: list) -> Optional[str]:
+        personality_str = ", ".join(personality) if isinstance(personality, list) else personality
+        prompt = f"{name}, cute {gender} child character, {personality_str}, big eyes, smiling"
+        return self.generate_scene(prompt)
+    
+    def generate_avatar(self, gender: str, personality: str) -> Optional[str]:
+        prompt = f"simple avatar, {gender} child, {personality} personality, friendly face"
+        return self.generate_scene(prompt)
 
 
 if __name__ == "__main__":
-    print("Initializing ImageGenerator Test...")
+    logging.basicConfig(level=logging.INFO)
+    logger.info("Initializing ImageGenerator Test...")
     
-    # Try loading the .env file locally if it exists
-    # (assuming we are running from the project root)
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()
-    except ImportError:
-        pass
-        
     try:
         generator = ImageGenerator()
         
-        print("\n--- Testing Avatar Generation ---")
-        ale_traits = ["bold", "creative", "playful"]
-        filepath = generator.generate_character("Ale", "girl", ale_traits, "superhero cape and mask")
+        logger.info("\n--- Testing Avatar Generation ---")
+        filepath = generator.generate_avatar("girl", "playful and creative")
         
         if filepath:
-            print(f"Test Successful! Check your assets folder for the new image.")
-            
-            # Try to open the image using the default system viewer
-            import platform
-            try:
-                if platform.system() == 'Darwin':       # macOS
-                    os.system(f"open {filepath}")
-                elif platform.system() == 'Windows':    # Windows
-                    os.system(f"start {filepath}")
-                else:                                   # linux variants
-                    os.system(f"xdg-open {filepath}")
-            except Exception:
-                pass 
+            logger.info(f"Test Successful! Image URL: {filepath}")
+        else:
+            logger.error("Test Failed: No image generated.")
                 
-    except ValueError as e:
-        print(f"\n⚠️ Setup Required: {e}")
-        print("Please ensure your HUGGINGFACE_API_KEY is available in your shell or .env file.")
+    except Exception as e:
+        logger.error(f"⚠️ Error during initialization or testing: {e}")

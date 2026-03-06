@@ -11,29 +11,43 @@ from enum import Enum
 
 
 class PersonalityTrait(str, Enum):
-    """Personality traits detected by the Twin Intelligence Engine."""
-    BOLD = "bold"
-    CAUTIOUS = "cautious"
+    """Valid personality traits for children"""
+    BRAVE = "brave"
+    CURIOUS = "curious"
+    KIND = "kind"
     CREATIVE = "creative"
-    ANALYTICAL = "analytical"
-    EMPATHETIC = "empathetic"
-    INDEPENDENT = "independent"
-    LEADER = "leader"
-    SUPPORTER = "supporter"
+    LOGICAL = "logical"
     PLAYFUL = "playful"
+    WISE = "wise"
+    ADVENTUROUS = "adventurous"
     THOUGHTFUL = "thoughtful"
+    ENERGETIC = "energetic"
+    CALM = "calm"
+    HELPFUL = "helpful"
+    FUNNY = "funny"
+    SERIOUS = "serious"
+    SHY = "shy"
+    OUTGOING = "outgoing"
+    PATIENT = "patient"
+    LEADER = "leader"
+    FOLLOWER = "follower"
+    IMAGINATIVE = "imaginative"
 
 
 class SpiritAnimal(str, Enum):
-    """Spirit animals that represent personality archetypes."""
-    DRAGON = "dragon"      # Bold, brave, protective
-    UNICORN = "unicorn"    # Creative, magical, dreamer
-    OWL = "owl"            # Wise, analytical, curious
-    DOLPHIN = "dolphin"    # Playful, social, friendly
-    FOX = "fox"            # Clever, quick, adventurous
-    BEAR = "bear"          # Strong, loyal, caring
-    EAGLE = "eagle"        # Free, confident, visionary
-    CAT = "cat"            # Independent, mysterious, agile
+    """Valid spirit animals"""
+    DRAGON = "dragon"
+    UNICORN = "unicorn"
+    OWL = "owl"
+    DOLPHIN = "dolphin"
+    FOX = "fox"
+    BEAR = "bear"
+    EAGLE = "eagle"
+    CAT = "cat"
+    WOLF = "wolf"
+    PHOENIX = "phoenix"
+    TIGER = "tiger"
+    RABBIT = "rabbit"
 
 
 class FavoriteTool(str, Enum):
@@ -108,44 +122,18 @@ class StoryTheme(str, Enum):
 
 
 class ChildProfile(BaseModel):
-    """Profile for a single child in the twin system."""
+    """Profile for a child participant"""
+    id: str
+    name: str
+    gender: str
+    age: int
+    personality_traits: List[PersonalityTrait] = []
+    spirit_animal: SpiritAnimal = SpiritAnimal.DRAGON
+    favorite_toy_name: str = "Teddy Bear"
+    avatar_url: Optional[str] = None
     
-    id: str = Field(description="Unique identifier for the child")
-    name: str = Field(description="Child's name")
-    gender: str = Field(description="Child's gender", default="unspecified")
-    age: int = Field(description="Child's age in years")
-    
-    # Rich character identity (NEW!)
-    spirit_animal: Optional[SpiritAnimal] = Field(default=None, description="Character's spirit guide")
-    favorite_tool: Optional[FavoriteTool] = Field(default=None, description="Signature item")
-    favorite_outfit: Optional[FavoriteOutfit] = Field(default=None, description="Adventure style")
-    favorite_toy: Optional[FavoriteToy] = Field(default=None, description="Special treasure")
-    toy_name: Optional[str] = Field(default=None, description="Custom name for favorite toy")
-    favorite_place: Optional[FavoritePlace] = Field(default=None, description="Dream location")
-    
-    # Personality modeling
-    personality_traits: List[PersonalityTrait] = Field(default_factory=list)
-    strengths: List[str] = Field(default_factory=list)
-    interests: List[str] = Field(default_factory=list)
-    
-    # Current state
-    current_emotion: EmotionalState = Field(default=EmotionalState.CALM)
-    energy_level: float = Field(default=0.5, ge=0.0, le=1.0)
-    
-    # Character evolution
-    character_name: Optional[str] = None
-    character_level: int = Field(default=1)
-    unlocked_powers: List[str] = Field(default_factory=list)
-    
-    # Avatar
-    avatar_url: Optional[str] = Field(default=None, description="URL to character avatar")
-    avatar_type: str = Field(default="ai_generated", description="photo_filtered or ai_generated")
-    
-    # Analytics
-    total_sessions: int = Field(default=0)
-    total_stories: int = Field(default=0)
-    created_at: datetime = Field(default_factory=datetime.now)
-    last_active: datetime = Field(default_factory=datetime.now)
+    class Config:
+        use_enum_values = True
 
 
 class RelationshipDynamics(BaseModel):
@@ -260,3 +248,36 @@ class GeneratedContent(BaseModel):
     perspective: Optional[Literal["child1", "child2", "shared"]] = None
     
     created_at: datetime = Field(default_factory=datetime.now)
+
+
+class Choice(BaseModel):
+    """A choice in the story"""
+    id: str
+    text: str
+    child_id: Optional[str] = None
+    requires_cooperation: bool = False
+
+
+class StoryBeat(BaseModel):
+    """A single beat/moment in the story"""
+    id: str
+    narration: str
+    child1_perspective: Optional[str] = None
+    child2_perspective: Optional[str] = None
+    image_prompt: Optional[str] = None
+    audio_cues: List[str] = []
+    choices: List[Choice] = []
+    requires_cooperation: bool = False
+    timestamp: datetime = Field(default_factory=datetime.now)
+
+
+class SessionState(BaseModel):
+    """Current state of a story session"""
+    session_id: str
+    child1_id: str
+    child2_id: str
+    current_beat_id: Optional[str] = None
+    story_history: List[str] = []
+    bond_strength: float = 0.5
+    started_at: datetime = Field(default_factory=datetime.now)
+    is_active: bool = True
