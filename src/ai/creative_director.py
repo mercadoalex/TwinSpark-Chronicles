@@ -559,3 +559,70 @@ You realize: you BOTH must place your hands on it AT THE SAME TIME!""",
         """Update the creative director's understanding of children's emotional state"""
         logger.info(f"📊 Emotional update: {child_id} feeling {emotion} (intensity: {intensity})")
         # This helps the AI adapt the story tone in real-time
+
+    def generate_story_beat(self, scene_description: str, child1_state: dict, child2_state: dict) -> List[CreativeAsset]:
+        """Generate a complete story beat with dual perspectives"""
+        # ...existing code...
+        
+        # Generate interactive choices (ASEGÚRATE QUE SEA ARRAY)
+        choices_prompt = f"""Based on this scene, provide 3 exciting choices for what the children could do next.
+        
+Scene: {scene_description}
+
+Return ONLY 3 choices, one per line, WITHOUT numbers or bullets.
+Each choice should be:
+- Age-appropriate (4-8 years)
+- Exciting and magical
+- Something both children can do together
+- About 6-10 words long
+
+Example format:
+Explore the mysterious glowing cave together
+Climb the ancient tree to see farther
+Follow the sparkling river downstream
+"""
+        
+        try:
+            if self.genai_available:
+                response = self.model.generate_content(choices_prompt)
+                choices_text = response.text.strip()
+                
+                # Parse into array (split by newlines, filter empty)
+                choices = [
+                    line.strip() 
+                    for line in choices_text.split('\n') 
+                    if line.strip() and not line.strip().startswith(('1.', '2.', '3.', '-', '*'))
+                ]
+                
+                # Ensure we have exactly 3 choices
+                if len(choices) < 3:
+                    choices = [
+                        "Explore the magical place together",
+                        "Ask their spirit animals for help",
+                        "Use their special toys creatively"
+                    ]
+                choices = choices[:3]  # Take only first 3
+                
+                logger.info(f"✅ Generated {len(choices)} choices: {choices}")
+                
+            else:
+                choices = [
+                    "Explore the magical place together",
+                    "Ask their spirit animals for help", 
+                    "Use their special toys creatively"
+                ]
+        except Exception as e:
+            logger.error(f"❌ Error generating choices: {e}")
+            choices = [
+                "Continue the adventure bravely",
+                "Look for clues around them",
+                "Work together to solve the mystery"
+            ]
+        
+        assets.append(CreativeAsset(
+            media_type=MediaType.INTERACTIVE,
+            content=choices,  # ← ARRAY, no string
+            metadata={"type": "choices", "count": len(choices)}
+        ))
+        
+        return assets

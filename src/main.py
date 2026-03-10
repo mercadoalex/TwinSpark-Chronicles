@@ -24,6 +24,10 @@ logger = logging.getLogger(__name__)
 # Import the FastAPI app
 from api.session_manager import app
 from fastapi.staticfiles import StaticFiles
+from api.dashboard_routes import router as dashboard_router
+
+# Include the dashboard router
+app.include_router(dashboard_router)
 
 # Mount static files for generated images
 assets_path = os.path.join(os.path.dirname(__file__), "..", "assets")

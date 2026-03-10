@@ -1,5 +1,11 @@
 # TwinSpark Chronicles - Git Ignore
-
+# Environment variables
+.env.development
+.env.production
+.env.local
+.env*.local
+# Keep example
+!.env.example
 # Python
 __pycache__/
 *.py[cod]

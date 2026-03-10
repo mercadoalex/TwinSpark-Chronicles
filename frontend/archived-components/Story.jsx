@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { useWebSocket } from '../features/session/hooks/useWebSocket';
 import { Volume2, Image as ImageIcon, Sparkles, AlertCircle } from 'lucide-react';
 
 const Story = ({ profiles, language }) => {

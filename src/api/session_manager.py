@@ -55,10 +55,17 @@ assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file
 os.makedirs(assets_dir, exist_ok=True)
 app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
+from typing import Optional
+
 class AvatarRequest(BaseModel):
     name: str
     gender: str
     personality: str
+    outfit: Optional[str] = None
+    base64_photo: Optional[str] = None
+    
+    class Config:
+        extra = "ignore"
 
 @app.post("/api/profile/generate_avatar")
 async def generate_avatar(request: AvatarRequest):
@@ -73,7 +80,8 @@ async def generate_avatar(request: AvatarRequest):
             generator.generate_character,
             request.name, 
             request.gender, 
-            [request.personality]
+            [request.personality],
+            request.base64_photo
         )
         
         if not filepath:
@@ -414,6 +422,70 @@ class ActiveSessionManager:
             logger.error(f"❌ Error creating profile: {e}", exc_info=True)
             raise
 
+    async def handle_choice(self, websocket: WebSocket, choice: str):
+        """Handle a choice made by the children and generate next story beat"""
+        try:
+            logger.info(f"🎯🎯🎯 ENTERING handle_choice()")
+            logger.info(f"   Choice: {choice}")
+            
+            await websocket.send_json({
+                "type": "STATUS",
+                "message": "✨ The magic swirls as your choice takes effect..."
+            })
+            
+            # Build context for continuation
+            scene_prompt = f"""Continue the story based on this choice: "{choice}"
+            
+    The children {self.child1.name} and {self.child2.name} have decided to {choice}.
+    Show what happens next from both of their perspectives.
+    Keep it magical, age-appropriate (4-8 years), and exciting!
+    
+    Remember:
+    - {self.child1.name}'s spirit animal is {self.child1.spirit_animal}
+    - {self.child2.name}'s spirit animal is {self.child2.spirit_animal}
+    - Their toys {self.child1.favorite_toy_name} and {self.child2.favorite_toy_name} might help them
+    """
+            
+            logger.info(f"   → Generating new story beat...")
+            
+            # Generate new story beat
+            assets = self.creative_director.generate_story_beat(
+                scene_description=scene_prompt,
+                child1_state={"emotion": "excited", "energy": 0.8},
+                child2_state={"emotion": "curious", "energy": 0.8}
+            )
+            
+            if not assets:
+                logger.error("   ❌ No assets generated for continuation")
+                await websocket.send_json({
+                    "type": "ERROR",
+                    "message": "Failed to generate story continuation"
+                })
+                return
+            
+            logger.info(f"   → Generated {len(assets)} assets, delivering...")
+            
+            # Deliver assets one by one
+            for i, asset in enumerate(assets):
+                logger.info(f"   → Delivering asset {i+1}/{len(assets)}: {asset.media_type.value}")
+                await self._deliver_creative_asset(websocket, asset)
+                await asyncio.sleep(0.3)
+            
+            logger.info("   → Sending STORY_COMPLETE...")
+            await websocket.send_json({
+                "type": "STORY_COMPLETE",
+                "message": "The adventure continues!"
+            })
+            
+            logger.info("🎯🎯🎯 EXITING handle_choice() - SUCCESS!")
+            
+        except Exception as e:
+            logger.error(f"❌ Error handling choice: {e}", exc_info=True)
+            await websocket.send_json({
+                "type": "ERROR",
+                "message": "Something magical went wrong. Try another choice!"
+            })
+
 
 # Create global session manager instance
 session_manager = ActiveSessionManager()
@@ -481,10 +553,17 @@ async def websocket_session_endpoint(
             message_type = data.get("type")
             
             logger.info(f"📨 Received message: {message_type}")
+            logger.info(f"   Full data: {data}")
             
             if message_type == "MAKE_CHOICE":
                 choice_text = data.get("choice")
+                logger.info(f"🎯 Processing choice: {choice_text}")
+                
+                # Generate continuation based on choice
                 await session_manager.handle_choice(websocket, choice_text)
+                
+            else:
+                logger.warning(f"⚠️ Unknown message type: {message_type}")
                 
     except WebSocketDisconnect:
         logger.info("🔌 WebSocket /ws/session disconnected")
@@ -553,3 +632,29 @@ async def websocket_endpoint(websocket: WebSocket):
             })
         except:
             pass
+
+# Dashboard Mock Endpoints
+@app.get("/api/dashboard/stats")
+async def get_dashboard_stats():
+    return {
+        "total_sessions": 12,
+        "total_duration_minutes": 145,
+        "average_bond_score": "0.8"
+    }
+
+@app.get("/api/dashboard/duration-chart")
+async def get_dashboard_duration():
+    return {"data": []}
+
+@app.get("/api/dashboard/leadership-chart")
+async def get_dashboard_leadership():
+    return {"data": []}
+
+@app.get("/api/dashboard/sessions")
+async def get_dashboard_sessions():
+    return {"sessions": []}
+
+if __name__ == "__main__":
+    import uvicorn
+    logger.info("Starting TwinSpark API Server on port 8000...")
+    uvicorn.run("api.session_manager:app", host="0.0.0.0", port=8000, reload=True)

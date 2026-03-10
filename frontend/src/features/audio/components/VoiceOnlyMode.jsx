@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, Volume2, Sparkles } from 'lucide-react';
+import { ChildFriendlyButton } from '../../../shared/components';
 
 /**
  * Voice-Only Mode Component
  * Simplified interface for younger children - just push and talk!
  */
-export default function VoiceOnlyMode({ 
-  onVoiceInput, 
-  isListening, 
+export default function VoiceOnlyMode({
+  onVoiceInput,
+  isListening,
   currentStory,
   childName,
-  t 
+  t
 }) {
   const [visualFeedback, setVisualFeedback] = useState('idle'); // idle, listening, processing, speaking
   const [encouragementText, setEncouragementText] = useState('');
@@ -46,7 +47,7 @@ export default function VoiceOnlyMode({
 
   return (
     <div className="voice-mode-container">
-      
+
       {/* Main Title */}
       <div className="voice-mode-title">
         <span className="glow-text">
@@ -85,17 +86,16 @@ export default function VoiceOnlyMode({
       )}
 
       {/* Giant Push-to-Talk Button */}
-      <button
-        className={`btn-voice-giant ${isListening ? 'listening' : ''}`}
-        onClick={handlePushToTalk}
-        onTouchStart={handlePushToTalk}
-        aria-label={isListening ? "Stop recording" : "Start recording"}
-      >
-        <Mic size={80} color="white" strokeWidth={3} />
-        <span style={{ fontSize: '1.8rem', fontWeight: 900 }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '30px', marginBottom: '30px' }}>
+        <ChildFriendlyButton
+          onClick={handlePushToTalk}
+          variant={isListening ? 'danger' : 'success'}
+          icon={<Mic size={48} color="white" strokeWidth={3} />}
+          style={{ minHeight: '120px', borderRadius: '60px', padding: '20px 50px', fontSize: '2rem' }}
+        >
           {isListening ? (t?.releaseToStop || "Recording...") : (t?.pushToTalk || "Push to Talk")}
-        </span>
-      </button>
+        </ChildFriendlyButton>
+      </div>
 
       {/* Visual Feedback */}
       {visualFeedback === 'listening' && (
@@ -105,7 +105,7 @@ export default function VoiceOnlyMode({
           color: 'var(--color-accent-green)',
           fontWeight: 700
         }}>
-          🎤 {t?.listening || "Listening..."} 
+          🎤 {t?.listening || "Listening..."}
         </div>
       )}
 

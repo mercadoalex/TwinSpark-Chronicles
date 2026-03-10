@@ -1,0 +1,112 @@
+.child-friendly-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    min-height: 70px;
+    /* Large touch target */
+    padding: 15px 30px;
+    border-radius: 35px;
+    /* Pill shape */
+    font-family: var(--font-heading), 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+    /* Fun fallback font */
+    font-size: 1.5rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* Bouncy transition */
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    color: white;
+    user-select: none;
+    touch-action: manipulation;
+    /* Optimizes for touch */
+}
+
+.child-friendly-btn.full-width {
+    width: 100%;
+}
+
+.child-friendly-btn:hover:not(.disabled) {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.3);
+}
+
+.child-friendly-btn:active:not(.disabled) {
+    transform: translateY(2px) scale(0.95);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.child-friendly-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    filter: grayscale(0.5);
+}
+
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+.btn-text {
+    letter-spacing: 1px;
+}
+
+/* Variants */
+.variant-primary {
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    /* Purple to Pink */
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.variant-primary:hover:not(.disabled) {
+    background: linear-gradient(135deg, #b86bf8 0%, #f061a7 100%);
+}
+
+.variant-secondary {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    /* Blue to Purple */
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.variant-secondary:hover:not(.disabled) {
+    background: linear-gradient(135deg, #4f91f7 0%, #9e75f7 100%);
+}
+
+.variant-success {
+    background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+    /* Green */
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.variant-success:hover:not(.disabled) {
+    background: linear-gradient(135deg, #2cd66a 0%, #17cc90 100%);
+}
+
+.variant-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+    /* Red to Orange */
+    border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.variant-danger:hover:not(.disabled) {
+    background: linear-gradient(135deg, #f15c5c 0%, #fb8533 100%);
+}
+
+.variant-outline {
+    background: rgba(255, 255, 255, 0.1);
+    border: 3px solid rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+}
+
+.variant-outline:hover:not(.disabled) {
+    background: rgba(255, 255, 255, 0.2);
+}
