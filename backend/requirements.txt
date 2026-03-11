@@ -1,0 +1,28 @@
+# Core
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-dotenv==1.0.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Google AI
+google-generativeai==0.3.2
+google-cloud-aiplatform==1.38.0
+
+# WebSocket & Async
+websockets==12.0
+aiohttp==3.9.1
+
+# Image Processing
+Pillow==10.1.0
+
+# Audio (for future)
+google-cloud-speech==2.21.0
+google-cloud-texttospeech==2.14.1
+
+# Phase 1: Advanced Agents
+google-cloud-aiplatform==1.38.0
+google-cloud-texttospeech==2.14.1
+google-cloud-storage==2.10.0
+numpy==1.24.3
+chromadb==0.4.18

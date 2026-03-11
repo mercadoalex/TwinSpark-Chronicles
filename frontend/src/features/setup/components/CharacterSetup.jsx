@@ -1,11 +1,6 @@
 import React, { useState } from 'react';
-
-// ✅ CORRECTO: Importar desde shared components (barrel exports)
-import { LoadingAnimation } from '../../../shared/components';
-import { ChildFriendlyButton } from '../../../shared/components';
-
-// O mejor aún, en una sola línea:
-// import { LoadingAnimation, ChildFriendlyButton } from '../../../shared/components';
+import { LoadingAnimation, ChildFriendlyButton } from '../../../shared/components';
+import { AvatarCreator } from '../../avatar';
 
 export default function CharacterSetup({ t, onComplete }) {
   const [formData, setFormData] = useState({
@@ -19,23 +14,9 @@ export default function CharacterSetup({ t, onComplete }) {
     c2_toy_name: ''
   });
 
+  const [step, setStep] = useState('form'); // 'form' | 'avatar1' | 'avatar2' | 'complete'
+  const [avatars, setAvatars] = useState({ child1: null, child2: null });
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (!formData.c1_name || !formData.c2_name) {
-      alert(t?.enterNames || 'Please enter both names!');
-      return;
-    }
-
-    setIsLoading(true);
-
-    setTimeout(() => {
-      onComplete(formData);
-      setIsLoading(false);
-    }, 1000);
-  };
 
   const handleChange = (field, value) => {
     setFormData(prev => ({
@@ -44,6 +25,89 @@ export default function CharacterSetup({ t, onComplete }) {
     }));
   };
 
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!formData.c1_name || !formData.c2_name) {
+      alert(t?.enterNames || 'Please enter both names!');
+      return;
+    }
+
+    // Preguntar si quieren crear avatares
+    const wantAvatars = window.confirm(
+      t?.wantAvatars || '¿Quieres crear avatares con fotos? (Opcional)'
+    );
+
+    if (wantAvatars) {
+      setStep('avatar1');
+    } else {
+      // Continuar sin avatares
+      onComplete(formData);
+    }
+  };
+
+  const handleAvatar1Complete = (avatarData) => {
+    setAvatars(prev => ({ ...prev, child1: avatarData }));
+    setStep('avatar2');
+  };
+
+  const handleAvatar2Complete = (avatarData) => {
+    setAvatars(prev => ({ ...prev, child2: avatarData }));
+    
+    // Completar setup con ambos avatares
+    onComplete({
+      ...formData,
+      c1_avatar: avatars.child1,
+      c2_avatar: avatarData
+    });
+  };
+
+  const handleSkipAvatar1 = () => {
+    setAvatars(prev => ({ ...prev, child1: null }));
+    setStep('avatar2');
+  };
+
+  const handleSkipAvatar2 = () => {
+    // Completar sin avatar del niño 2
+    onComplete({
+      ...formData,
+      c1_avatar: avatars.child1,
+      c2_avatar: null
+    });
+  };
+
+  // RENDER: Avatar Capture Steps
+  if (step === 'avatar1') {
+    return (
+      <AvatarCreator
+        childMetadata={{
+          name: formData.c1_name,
+          gender: formData.c1_gender,
+          spiritAnimal: formData.c1_spirit_animal,
+          toyName: formData.c1_toy_name
+        }}
+        onComplete={handleAvatar1Complete}
+        onSkip={handleSkipAvatar1}
+      />
+    );
+  }
+
+  if (step === 'avatar2') {
+    return (
+      <AvatarCreator
+        childMetadata={{
+          name: formData.c2_name,
+          gender: formData.c2_gender,
+          spiritAnimal: formData.c2_spirit_animal,
+          toyName: formData.c2_toy_name
+        }}
+        onComplete={handleAvatar2Complete}
+        onSkip={handleSkipAvatar2}
+      />
+    );
+  }
+
+  // RENDER: Loading State
   if (isLoading) {
     return (
       <div className="glass-panel" style={{ padding: '60px', textAlign: 'center' }}>
@@ -55,6 +119,7 @@ export default function CharacterSetup({ t, onComplete }) {
     );
   }
 
+  // RENDER: Main Form
   return (
     <div className="glass-panel" style={{ padding: '40px', maxWidth: '800px' }}>
       <h2 style={{ 
@@ -66,7 +131,7 @@ export default function CharacterSetup({ t, onComplete }) {
         {t?.createCharacters || 'Create Your Characters'}
       </h2>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
         {/* Child 1 */}
         <div className="character-section" style={{
           padding: '25px',

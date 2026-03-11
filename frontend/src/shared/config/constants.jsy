@@ -4,7 +4,7 @@
 
 export const ENV = {
   API_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
-  WS_URL: import.meta.env.VITE_WS_URL || 'ws://localhost:8000',
+  WS_URL: import.meta.env.VITE_WS_URL || 'ws://localhost:8000/ws',
   MODE: import.meta.env.MODE || 'development',
   IS_DEV: import.meta.env.DEV,
   IS_PROD: import.meta.env.PROD
@@ -17,8 +17,7 @@ export const API_ENDPOINTS = {
   ANALYTICS: '/api/analytics',
   HEALTH: '/api/health',
   AVATAR_GENERATE: '/api/avatar/generate',
-  AVATAR_GET: '/api/avatar',
-  STORY_GENERATE: '/api/story/generate'
+  AVATAR_GET: '/api/avatar'
 };
 
 export const TIMEOUTS = {
@@ -42,8 +41,7 @@ export const LANGUAGE_VOICES = {
   fr: { name: 'Google français', lang: 'fr-FR', fallback: 'fr-CA' },
   de: { name: 'Google Deutsch', lang: 'de-DE', fallback: 'de-AT' },
   it: { name: 'Google italiano', lang: 'it-IT', fallback: 'it-CH' },
-  pt: { name: 'Google português do Brasil', lang: 'pt-BR', fallback: 'pt-PT' },
-  hi: { name: 'Google हिन्दी', lang: 'hi-IN', fallback: 'hi-IN' }
+  pt: { name: 'Google português do Brasil', lang: 'pt-BR', fallback: 'pt-PT' }
 };
 
 export const BEEP_FREQUENCIES = {
