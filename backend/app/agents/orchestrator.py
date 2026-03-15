@@ -6,6 +6,8 @@ Coordinates all AI agents to create rich multimodal story experiences
 from typing import Dict, Optional, List
 from datetime import datetime
 
+from app.models.multimodal import MultimodalInputEvent, EmotionCategory, EmotionResult
+
 class AgentOrchestrator:
     """
     Master coordinator for all AI agents
@@ -25,47 +27,29 @@ class AgentOrchestrator:
         
         print("🎭 Agent orchestrator initialized")
     
-    async def generate_rich_story_moment(
-        self,
-        session_id: str,
-        characters: Dict,
-        user_input: Optional[str] = None,
-        language: str = "en"
-    ) -> Dict:
-        """
-        Orchestrate all agents to create a complete story moment
-        
-        Args:
-            session_id: Unique session identifier
-            characters: Dict with child1 and child2 data
-            user_input: User's choice or input (optional)
-            language: Story language (en/es/hi)
-            
-        Returns:
-            Complete multimodal story moment with text, image, audio
-        """
-        
+    async def generate_rich_story_moment(self, session_id: str, characters: Dict, user_input: Optional[str] = None, language: str = "en", **kwargs) -> Dict:
+        """Generate a complete multimodal story moment with all agents."""
         print(f"\n🎬 Generating rich story moment for session {session_id}")
         
-        # STEP 1: Recall relevant memories
+        # STEP 1: Get relevant memories
         memories = []
-        if user_input and self.memory.enabled:
+        if self.memory.enabled:
             try:
-                memories = await self.memory.recall_relevant_memories(
+                memories = await self.memory.recall_relevant_moments(
                     session_id=session_id,
-                    current_context=user_input,
-                    top_k=3
+                    query=user_input or "story beginning"
                 )
-                print(f"🧠 Using {len(memories)} memories for context")
+                print(f"🧠 Retrieved {len(memories)} relevant memories")
             except Exception as e:
                 print(f"⚠️  Memory recall skipped: {e}")
         
-        # STEP 2: Generate story text with context
+        # STEP 2: Generate story with context
         story_context = {
             "characters": characters,
             "session_id": session_id,
             "language": language,
-            "memories": memories
+            "memories": memories,
+            **kwargs
         }
         
         story_segment = await self.storyteller.generate_story_segment(
@@ -164,6 +148,117 @@ class AgentOrchestrator:
                 "memory": len(memories) > 0
             }
         }
+
+    async def process_multimodal_event(
+        self,
+        event: MultimodalInputEvent,
+        characters: Dict,
+        language: str = "en",
+    ) -> Dict:
+        """
+        Process a multimodal input event and generate an adapted story moment.
+
+        Extracts transcript and emotion from the event, adapts story context
+        based on the child's emotional state, and stores the emotion in memory.
+
+        Args:
+            event: Fused multimodal input containing transcript, emotions, face data
+            characters: Dict with child1 and child2 data
+            language: Story language (en/es/hi)
+
+        Returns:
+            Complete multimodal story moment dict
+        """
+        context = event.to_orchestrator_context()
+        user_input = context["user_input"]
+        detected_emotion = context["emotion"]
+
+        # Req 9.5: Two-face perspective matching — when multiple emotions are
+        # detected, pick the emotion belonging to the child whose name matches
+        # the current story perspective character.
+        if len(event.emotions) >= 2:
+            detected_emotion = self._resolve_perspective_emotion(
+                event.emotions, characters
+            )
+
+        # Build extra story context for the storyteller
+        story_context_extra: Dict = {}
+
+        # Req 9.2: Include emotion in story context when not neutral
+        if detected_emotion != EmotionCategory.NEUTRAL.value:
+            story_context_extra["child_emotion"] = detected_emotion
+
+        # Req 9.3: When scared, instruct storyteller to reduce intensity
+        if detected_emotion == EmotionCategory.SCARED.value:
+            story_context_extra["emotion_instruction"] = (
+                "The child seems scared. Please reduce the story intensity, "
+                "avoid any frightening elements, and introduce comforting, "
+                "reassuring story elements."
+            )
+
+        # Req 9.1: Pass transcript as user_input via generate_rich_story_moment
+        result = await self.generate_rich_story_moment(
+            session_id=event.session_id,
+            characters=characters,
+            user_input=user_input,
+            language=language,
+            **story_context_extra,
+        )
+
+        # Req 9.4: Store detected emotion in memory agent
+        if self.memory.enabled:
+            try:
+                await self.memory.store_story_moment(
+                    session_id=event.session_id,
+                    moment_data={
+                        "scene": result.get("text", "")[:100],
+                        "choice_made": user_input or "multimodal_input",
+                        "outcome": result.get("interactive", {}).get("text", ""),
+                        "emotion": detected_emotion,
+                        "lesson": self._extract_lesson(result.get("text", "")),
+                    },
+                )
+            except Exception as e:
+                print(f"⚠️  Multimodal memory storage skipped: {e}")
+
+        return result
+
+    def _resolve_perspective_emotion(
+        self,
+        emotions: list[EmotionResult],
+        characters: Dict,
+    ) -> str:
+        """
+        When two faces are detected with different emotions, return the emotion
+        of the child whose name matches the current story perspective.
+
+        Falls back to the highest-confidence emotion if no name match is found.
+        """
+        # Build a mapping of face_id -> character name from the characters dict.
+        # Convention: face_id 0 → child1, face_id 1 → child2
+        child_names: Dict[int, str] = {}
+        for idx, key in enumerate(("child1", "child2")):
+            child = characters.get(key, {})
+            name = child.get("name", "")
+            if name:
+                child_names[idx] = name.lower()
+
+        # Determine the current perspective character (defaults to child1)
+        perspective_name = (
+            characters.get("current_perspective", "")
+            or characters.get("child1", {}).get("name", "")
+        ).lower()
+
+        # Find the emotion for the perspective child
+        for emotion_result in emotions:
+            face_name = child_names.get(emotion_result.face_id, "")
+            if face_name == perspective_name:
+                return emotion_result.emotion.value
+
+        # Fallback: highest confidence
+        best = max(emotions, key=lambda e: e.confidence)
+        return best.emotion.value
+
     
     def _extract_setting(self, text: str) -> str:
         """Extract setting from story text"""

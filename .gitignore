@@ -1,11 +1,15 @@
-# TwinSpark Chronicles - Git Ignore
-# Environment variables
+# TwinSpark Chronicles
+
+# Environment
+.env
+.env.local
 .env.development
 .env.production
-.env.local
 .env*.local
-# Keep example
 !.env.example
+!.env.development.example
+!.env.production.example
+
 # Python
 __pycache__/
 *.py[cod]
@@ -27,15 +31,12 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
-# Virtual Environment
 venv/
 env/
 ENV/
 
-# Environment variables
-.env
-.env.local
+# Node
+node_modules/
 
 # IDE
 .vscode/
@@ -59,21 +60,24 @@ logs/
 *.db
 *.sqlite
 *.sqlite3
+backend/chroma_data/
 
-# Media files (potentially large)
+# Generated assets (large files)
 assets/generated_videos/
 assets/generated_images/
 assets/user_uploads/
+assets/*.png
 
-# Models and weights (if cached)
+# Models and weights
 models/cached/
 *.pth
 *.pt
 
-# Temporary files
+# Temporary
 tmp/
 temp/
 *.tmp
 
-# Documentation builds
+# Build output
+frontend/dist/
 docs/_build/

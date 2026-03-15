@@ -7,3 +7,4 @@ export { useSessionStore } from './sessionStore';
 export { useStoryStore } from './storyStore';
 export { useAudioStore } from './audioStore';
 export { useSetupStore } from './setupStore';
+export { useMultimodalStore } from './multimodalStore';

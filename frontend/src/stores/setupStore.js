@@ -67,20 +67,8 @@ export const useSetupStore = create(
             currentStep: 'privacy',
             privacyAccepted: false,
             language: 'en',
-            child1: {
-              name: '',
-              gender: '',
-              personality: '',
-              spirit: '',
-              toy: ''
-            },
-            child2: {
-              name: '',
-              gender: '',
-              personality: '',
-              spirit: '',
-              toy: ''
-            },
+            child1: { name: '', gender: '', personality: '', spirit: '', toy: '' },
+            child2: { name: '', gender: '', personality: '', spirit: '', toy: '' },
             isComplete: false
           }, false, 'setup/reset'),
 
@@ -104,42 +92,26 @@ export const useSetupStore = create(
 
         isChild1Complete: () => {
           const { child1 } = get();
-          return !!(
-            child1.name &&
-            child1.gender &&
-            child1.personality &&
-            child1.spirit &&
-            child1.toy
-          );
+          return !!(child1.name && child1.gender && child1.personality && child1.spirit && child1.toy);
         },
 
         isChild2Complete: () => {
           const { child2 } = get();
-          return !!(
-            child2.name &&
-            child2.gender &&
-            child2.personality &&
-            child2.spirit &&
-            child2.toy
-          );
+          return !!(child2.name && child2.gender && child2.personality && child2.spirit && child2.toy);
         },
 
         canProceed: () => {
           const state = get();
-          return (
-            state.privacyAccepted &&
-            state.isChild1Complete() &&
-            state.isChild2Complete()
-          );
+          return (state.privacyAccepted && state.isChild1Complete() && state.isChild2Complete());
         }
       }),
       {
         name: 'setup-storage',
         partialize: (state) => ({
-          privacyAccepted: state.privacyAccepted,
+          // ✅ NEVER persist privacyAccepted - must accept every session
           language: state.language,
           child1: state.child1,
-          child2: state.child2
+          child2: state.child2,
         })
       }
     ),

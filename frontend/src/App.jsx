@@ -20,6 +20,10 @@ import { DualStoryDisplay } from './features/story';
 // Audio Feature
 import { VoiceOnlyMode, MultimodalControls } from './features/audio';
 
+// Camera / Multimodal Feature
+import CameraPreview from './features/camera/components/CameraPreview.jsx';
+import MultimodalFeedback from './features/camera/components/MultimodalFeedback.jsx';
+
 // Session Feature
 import { SessionStatus, MagicMirror } from './features/session';
 
@@ -57,6 +61,7 @@ import { useSetupStore } from './stores/setupStore';
 
 import { useAudio } from './features/audio/hooks/useAudio';
 import { useAudioFeedback } from './features/audio/hooks/useAudioFeedback';
+import { useMultimodalInput } from './features/camera/hooks/useMultimodalInput.js';
 
 // ==========================================
 // STYLES
@@ -85,6 +90,7 @@ function App() {
   const { playSuccess, playError, playChoice } = useAudioFeedback();
   const { speak, stop: stopSpeech } = useAudio(setup.language);
   const { showFeedback, FeedbackComponent } = useFeedback();
+  const { startCapture, stopCapture } = useMultimodalInput();
 
   // ===========================================
   // LOCAL STATE (UI only)
@@ -333,6 +339,7 @@ function App() {
     } finally {
       setIsSaving(false);
       websocketService.disconnect();
+      stopCapture();
       setShowExitModal(false);
       setup.reset();
       story.reset();
@@ -342,6 +349,7 @@ function App() {
 
   const handleExitWithoutSaving = () => {
     websocketService.disconnect();
+    stopCapture();
     setShowExitModal(false);
     setup.reset();
     story.reset();
@@ -357,14 +365,22 @@ function App() {
   // LIFECYCLE
   // ===========================================
 
+  // Start multimodal capture after privacy consent + session connected
+  useEffect(() => {
+    if (setup.isComplete && session.connected) {
+      startCapture(true);
+    }
+  }, [setup.isComplete, session.connected, startCapture]);
+
   useEffect(() => {
     return () => {
       unsubscribers.current.forEach(unsubscribe => unsubscribe());
       unsubscribers.current = [];
       websocketService.disconnect();
+      stopCapture();
       stopSpeech();
     };
-  }, [stopSpeech]);
+  }, [stopSpeech, stopCapture]);
 
   // ===========================================
   // RENDER
@@ -392,153 +408,161 @@ function App() {
         </button>
       )}
 
+      {/* Parent Dashboard */}
       {showDashboard && (
         <ParentDashboard onBack={() => setShowDashboard(false)} />
       )}
 
-      {/* Main Title */}
-      {setup.privacyAccepted && (
-        <h1 className="glow-text logo-animation" style={{
-          fontFamily: 'var(--font-heading)',
-          fontSize: '4rem',
-          fontWeight: 900,
-          marginBottom: '40px',
-          textAlign: 'center',
-          letterSpacing: '2px',
-          color: '#ffffff',
-          display: 'inline-block'
-        }}>
-          TwinSpark Chronicles
-        </h1>
-      )}
-
-      {/* Privacy Modal */}
+      {/* ─── STEP 1: Privacy Modal ─────────────────── */}
       {!setup.privacyAccepted && (
         <PrivacyModal onAccept={handlePrivacyAccept} t={t} />
       )}
 
-      {/* Language Selection */}
-      {setup.currentStep === 'language' && (
-        <LanguageSelector onSelect={handleLanguageSelect} />
-      )}
-
-      {/* Character Setup */}
-      {setup.currentStep === 'characters' && (
-        <CharacterSetup
-          onComplete={handleSetupComplete}
-          language={setup.language}
-          t={t}
-        />
-      )}
-
-      {/* Story Experience */}
-      {setup.isComplete && (
-        <React.Fragment>
-          {/* View Mode Toggle */}
-          <div style={{
-            display: 'flex',
-            gap: '15px',
-            marginBottom: '30px',
-            justifyContent: 'center'
+      {/* ─── STEP 2+ : After Privacy Accepted ─────── */}
+      {setup.privacyAccepted && (
+        <>
+          {/* Main Title */}
+          <h1 className="glow-text logo-animation" style={{
+            fontFamily: 'var(--font-heading)',
+            fontSize: '4rem',
+            fontWeight: 900,
+            marginBottom: '40px',
+            textAlign: 'center',
+            letterSpacing: '2px',
+            color: '#ffffff',
+            display: 'inline-block'
           }}>
-            <ChildFriendlyButton
-              onClick={() => setVoiceOnlyMode(false)}
-              variant={!voiceOnlyMode ? 'primary' : 'outline'}
-              icon={<Eye size={24} />}
-            >
-              Full Story
-            </ChildFriendlyButton>
+            TwinSpark Chronicles
+          </h1>
 
-            <ChildFriendlyButton
-              onClick={() => setVoiceOnlyMode(true)}
-              variant={voiceOnlyMode ? 'primary' : 'outline'}
-              icon={<Mic size={24} />}
-            >
-              Voice Only
-            </ChildFriendlyButton>
-          </div>
+          {/* ─── STEP 2: Language Selection ──────────── */}
+          {setup.currentStep === 'language' && (
+            <LanguageSelector onSelect={handleLanguageSelect} />
+          )}
 
-          {/* Connection Status */}
-          <SessionStatus t={t} />
-
-          {/* Voice Only or Full Story Mode */}
-          {voiceOnlyMode ? (
-            <VoiceOnlyMode
-              onVoiceInput={() => setIsListening(!isListening)}
-              isListening={isListening}
-              currentStory={story.currentBeat?.child1_perspective}
-              childName={session.profiles?.c1_name}
+          {/* ─── STEP 3: Character Setup ─────────────── */}
+          {setup.currentStep === 'characters' && (
+            <CharacterSetup
+              onComplete={handleSetupComplete}
+              language={setup.language}
               t={t}
             />
-          ) : (
-            <>
-              {story.currentBeat ? (
-                <DualStoryDisplay
-                  storyBeat={story.currentBeat}
-                  t={t}
-                  profiles={session.profiles}
-                  onChoice={handleChoice}
-                />
-              ) : (
-                <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
-                  <LoadingAnimation
-                    type="story"
-                    message={story.isGenerating 
-                      ? "Creating your next adventure..." 
-                      : (t.waiting || "Waiting for the story to begin...")}
-                  />
-                </div>
-              )}
+          )}
 
-              {mechanics && story.currentBeat && (
-                <div className="glass-panel" style={{
-                  padding: '25px 50px',
-                  marginTop: '20px',
-                  textAlign: 'center'
-                }}>
-                  <h3 style={{ fontSize: '1.8rem', color: '#fff' }}>
-                    {mechanics.prompt}
-                  </h3>
-                </div>
-              )}
-
+          {/* ─── STEP 4: Story Experience ────────────── */}
+          {setup.isComplete && (
+            <React.Fragment>
+              {/* View Mode Toggle */}
               <div style={{
-                marginTop: 'auto',
-                paddingTop: '40px',
                 display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center'
+                gap: '15px',
+                marginBottom: '30px',
+                justifyContent: 'center'
               }}>
                 <ChildFriendlyButton
-                  onClick={() => setIsListening(!isListening)}
-                  variant={isListening ? 'danger' : 'success'}
-                  icon={<Mic size={32} color="white" strokeWidth={3} />}
-                  style={{
-                    borderRadius: '50px',
-                    padding: '15px 40px',
-                    fontSize: '1.5rem',
-                    marginBottom: '20px'
-                  }}
+                  onClick={() => setVoiceOnlyMode(false)}
+                  variant={!voiceOnlyMode ? 'primary' : 'outline'}
+                  icon={<Eye size={24} />}
                 >
-                  {isListening 
-                    ? (t.releaseToStop || "Recording...") 
-                    : (t.pushToTalk || "Push to Talk 🎤")}
+                  Full Story
                 </ChildFriendlyButton>
 
-                <MultimodalControls
-                  isListening={isListening}
-                  hasCamera={hasCamera}
-                  t={t}
-                />
+                <ChildFriendlyButton
+                  onClick={() => setVoiceOnlyMode(true)}
+                  variant={voiceOnlyMode ? 'primary' : 'outline'}
+                  icon={<Mic size={24} />}
+                >
+                  Voice Only
+                </ChildFriendlyButton>
               </div>
 
-              <MagicMirror />
-            </>
+              {/* Connection Status */}
+              <SessionStatus t={t} />
+
+              {/* Voice Only or Full Story Mode */}
+              {voiceOnlyMode ? (
+                <VoiceOnlyMode
+                  onVoiceInput={() => setIsListening(!isListening)}
+                  isListening={isListening}
+                  currentStory={story.currentBeat?.child1_perspective}
+                  childName={session.profiles?.c1_name}
+                  t={t}
+                />
+              ) : (
+                <>
+                  {story.currentBeat ? (
+                    <DualStoryDisplay
+                      storyBeat={story.currentBeat}
+                      t={t}
+                      profiles={session.profiles}
+                      onChoice={handleChoice}
+                    />
+                  ) : (
+                    <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
+                      <LoadingAnimation
+                        type="story"
+                        message={story.isGenerating 
+                          ? "Creating your next adventure..." 
+                          : (t.waiting || "Waiting for the story to begin...")}
+                      />
+                    </div>
+                  )}
+
+                  {mechanics && story.currentBeat && (
+                    <div className="glass-panel" style={{
+                      padding: '25px 50px',
+                      marginTop: '20px',
+                      textAlign: 'center'
+                    }}>
+                      <h3 style={{ fontSize: '1.8rem', color: '#fff' }}>
+                        {mechanics.prompt}
+                      </h3>
+                    </div>
+                  )}
+
+                  <div style={{
+                    marginTop: 'auto',
+                    paddingTop: '40px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                  }}>
+                    <ChildFriendlyButton
+                      onClick={() => setIsListening(!isListening)}
+                      variant={isListening ? 'danger' : 'success'}
+                      icon={<Mic size={32} color="white" strokeWidth={3} />}
+                      style={{
+                        borderRadius: '50px',
+                        padding: '15px 40px',
+                        fontSize: '1.5rem',
+                        marginBottom: '20px'
+                      }}
+                    >
+                      {isListening 
+                        ? (t.releaseToStop || "Recording...") 
+                        : (t.pushToTalk || "Push to Talk 🎤")}
+                    </ChildFriendlyButton>
+
+                    <MultimodalControls
+                      isListening={isListening}
+                      hasCamera={hasCamera}
+                      t={t}
+                    />
+                  </div>
+
+                  <MagicMirror />
+
+                  {/* Multimodal UI — camera preview + feedback overlay */}
+                  <CameraPreview />
+                  <MultimodalFeedback />
+                </>
+              )}
+            </React.Fragment>
           )}
-        </React.Fragment>
+        </>
       )}
 
-      {/* Modals */}
+      {/* ─── MODALS (always rendered) ────────────── */}
       <AlertModal
         message={alertMessage}
         onClose={() => setAlertMessage(null)}
