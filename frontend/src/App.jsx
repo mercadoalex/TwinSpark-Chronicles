@@ -47,6 +47,13 @@ import {
 import { websocketService } from './features/session/services/websocketService';
 
 // ==========================================
+// SIBLING DYNAMICS COMPONENTS
+// ==========================================
+
+import SiblingDashboard from './components/SiblingDashboard.jsx';
+import DualPrompt from './components/DualPrompt.jsx';
+
+// ==========================================
 // STORES
 // ==========================================
 
@@ -54,6 +61,7 @@ import { useSessionStore } from './stores/sessionStore';
 import { useStoryStore } from './stores/storyStore';
 import { useAudioStore } from './stores/audioStore';
 import { useSetupStore } from './stores/setupStore';
+import { useSiblingStore } from './stores/siblingStore';
 
 // ==========================================
 // HOOKS
@@ -82,6 +90,7 @@ function App() {
   const story = useStoryStore();
   const audio = useAudioStore();
   const setup = useSetupStore();
+  const sibling = useSiblingStore();
 
   // ===========================================
   // CUSTOM HOOKS
@@ -104,6 +113,8 @@ function App() {
   const [alertMessage, setAlertMessage] = React.useState(null);
   const [showDashboard, setShowDashboard] = React.useState(false);
   const [mechanics, setMechanics] = React.useState(null);
+  const [child1Responded, setChild1Responded] = React.useState(false);
+  const [child2Responded, setChild2Responded] = React.useState(false);
 
   const unsubscribers = useRef([]);
   const t = setup.language ? translations[setup.language] : translations.en;
@@ -217,6 +228,19 @@ function App() {
       playError();
     });
 
+    // Sibling dynamics: update store when story_segment includes sibling data
+    const unsubscribeSiblingData = websocketService.on('story_segment', (data) => {
+      if (data?.narrative_directives) {
+        const dirs = data.narrative_directives;
+        if (dirs.child_roles) {
+          sibling.setChildRoles(dirs.child_roles);
+        }
+        if (dirs.waiting_for_child) {
+          sibling.setWaitingForChild(dirs.waiting_for_child);
+        }
+      }
+    });
+
     unsubscribers.current = [
       unsubscribeConnected,
       unsubscribeDisconnected,
@@ -224,7 +248,8 @@ function App() {
       unsubscribeComplete,
       unsubscribeStatus,
       unsubscribeMechanic,
-      unsubscribeError
+      unsubscribeError,
+      unsubscribeSiblingData
     ];
   };
 
@@ -323,6 +348,30 @@ function App() {
   const handleSaveAndExit = async () => {
     setIsSaving(true);
     try {
+      // End sibling session to get dynamics score + summary
+      if (session.profiles?.c1_name && session.profiles?.c2_name) {
+        try {
+          const endResp = await fetch(`http://localhost:8000/api/sessions/${session.sessionId || 'current'}/end`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              characters: {
+                child1: { name: session.profiles.c1_name },
+                child2: { name: session.profiles.c2_name },
+              }
+            })
+          });
+          if (endResp.ok) {
+            const result = await endResp.json();
+            sibling.setSiblingScore(result.sibling_dynamics_score);
+            sibling.setSessionSummary(result.summary);
+            if (result.suggestion) sibling.setParentSuggestion(result.suggestion);
+          }
+        } catch (err) {
+          console.error("Failed to end sibling session:", err);
+        }
+      }
+
       await fetch('http://localhost:8000/api/session/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -344,6 +393,7 @@ function App() {
       setup.reset();
       story.reset();
       session.reset();
+      sibling.reset();
     }
   };
 
@@ -354,6 +404,7 @@ function App() {
     setup.reset();
     story.reset();
     session.reset();
+    sibling.reset();
   };
 
   const handlePrivacyAccept = () => {
@@ -371,6 +422,14 @@ function App() {
       startCapture(true);
     }
   }, [setup.isComplete, session.connected, startCapture]);
+
+  // Reset child response tracking when a new story beat arrives
+  useEffect(() => {
+    if (story.currentBeat) {
+      setChild1Responded(false);
+      setChild2Responded(false);
+    }
+  }, [story.currentBeat]);
 
   useEffect(() => {
     return () => {
@@ -411,6 +470,13 @@ function App() {
       {/* Parent Dashboard */}
       {showDashboard && (
         <ParentDashboard onBack={() => setShowDashboard(false)} />
+      )}
+
+      {/* Sibling Dynamics Dashboard (collapsible, always available during story) */}
+      {setup.isComplete && (
+        <div style={{ position: 'absolute', top: '60px', right: '20px', zIndex: 99, width: '320px' }}>
+          <SiblingDashboard />
+        </div>
       )}
 
       {/* ─── STEP 1: Privacy Modal ─────────────────── */}
@@ -490,6 +556,21 @@ function App() {
                 />
               ) : (
                 <>
+                  {/* Dual Prompt — sibling turn indicator with nudge timer */}
+                  {story.currentBeat && session.profiles?.c1_name && session.profiles?.c2_name && (
+                    <DualPrompt
+                      child1Name={session.profiles.c1_name}
+                      child2Name={session.profiles.c2_name}
+                      promptText={story.currentBeat?.narration}
+                      child1Responded={child1Responded}
+                      child2Responded={child2Responded}
+                      onRespond={(childId) => {
+                        if (childId === 'child1') setChild1Responded(true);
+                        if (childId === 'child2') setChild2Responded(true);
+                      }}
+                    />
+                  )}
+
                   {story.currentBeat ? (
                     <DualStoryDisplay
                       storyBeat={story.currentBeat}
