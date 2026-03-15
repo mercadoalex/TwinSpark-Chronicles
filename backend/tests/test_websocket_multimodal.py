@@ -205,6 +205,8 @@ class TestSessionTaskTracking:
         task = loop.create_task(hang())
         m.track_task("s1", task)
         m.disconnect("s1")
+        # Give the event loop a tick so the task transitions to cancelled
+        loop.run_until_complete(asyncio.sleep(0))
         assert task.cancelled()
 
     def test_disconnect_clears_session_tasks(self):
