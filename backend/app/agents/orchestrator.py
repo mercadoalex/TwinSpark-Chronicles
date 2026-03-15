@@ -1,16 +1,26 @@
 """
 Agent Orchestrator
-Coordinates all AI agents to create rich multimodal story experiences
+Coordinates all AI agents to create rich multimodal story experiences.
+
+Extended with sibling dynamics pipeline (Layers 1-4) that processes
+personality, relationship, skills, and narrative directives in sequence.
+
+Requirements: 8.1, 9.1, 9.2, 9.3, 9.4, 11.1, 11.4, 11.5
 """
 
+import logging
 from typing import Dict, Optional, List
 from datetime import datetime
 
 from app.models.multimodal import MultimodalInputEvent, EmotionCategory, EmotionResult
 
+logger = logging.getLogger(__name__)
+
+
 class AgentOrchestrator:
     """
-    Master coordinator for all AI agents
+    Master coordinator for all AI agents, including the 4-layer
+    Sibling Dynamics Engine pipeline.
     """
     
     def __init__(self):
@@ -24,7 +34,22 @@ class AgentOrchestrator:
         self.visual = visual_agent
         self.voice = voice_agent
         self.memory = memory_agent
-        
+
+        # Sibling dynamics services (Layer 1-3)
+        from app.services.sibling_db import SiblingDB
+        from app.services.personality_engine import PersonalityEngine
+        from app.services.relationship_mapper import RelationshipMapper
+        from app.services.skills_discoverer import ComplementarySkillsDiscoverer
+
+        self._sibling_db = SiblingDB()
+        self._db_initialized = False
+        self.personality_engine = PersonalityEngine(self._sibling_db)
+        self.relationship_mapper = RelationshipMapper(self._sibling_db)
+        self.skills_discoverer = ComplementarySkillsDiscoverer(self._sibling_db)
+
+        # Track protagonist history for narrative directive alternation
+        self._protagonist_history: list[str] = []
+
         print("🎭 Agent orchestrator initialized")
     
     async def generate_rich_story_moment(self, session_id: str, characters: Dict, user_input: Optional[str] = None, language: str = "en", **kwargs) -> Dict:
@@ -222,6 +247,250 @@ class AgentOrchestrator:
                 print(f"⚠️  Multimodal memory storage skipped: {e}")
 
         return result
+
+    # ── Sibling Dynamics Pipeline ─────────────────────────────────
+
+    async def _ensure_db_initialized(self) -> None:
+        """Lazily initialize the SiblingDB on first use."""
+        if not self._db_initialized:
+            await self._sibling_db.initialize()
+            self._db_initialized = True
+
+    async def process_sibling_event(
+        self,
+        event: MultimodalInputEvent,
+        child1_id: str,
+        child2_id: str,
+        characters: Dict,
+        language: str = "en",
+    ) -> Dict:
+        """Extended pipeline: personality → relationship → skills → narrative.
+
+        Calls Layer 1 through Layer 4 in sequence. Each layer is wrapped
+        in try/except for resilience — a failure in one layer does not
+        block subsequent layers (Req 11.1, 11.5).
+
+        Skips Layers 1-3 when the event has no usable data (empty
+        transcript and no emotions) per Requirement 11.4.
+        """
+        await self._ensure_db_initialized()
+
+        profile1 = None
+        profile2 = None
+        relationship = None
+        skill_map = None
+        narrative_dirs = None
+
+        # Determine if the event has usable data (Req 11.4)
+        has_usable_data = (
+            not event.transcript.is_empty or len(event.emotions) > 0
+        )
+
+        if has_usable_data:
+            # ── Layer 1: Personality Engine (Req 11.1, 11.2) ──────
+            try:
+                profile1 = await self.personality_engine.update_from_event(
+                    child1_id, event
+                )
+            except Exception as e:
+                logger.error("Layer 1 (personality child1) failed: %s", e)
+
+            try:
+                profile2 = await self.personality_engine.update_from_event(
+                    child2_id, event
+                )
+            except Exception as e:
+                logger.error("Layer 1 (personality child2) failed: %s", e)
+
+            # ── Layer 2: Relationship Mapper (Req 11.1) ───────────
+            try:
+                p1 = profile1 or await self.personality_engine.load_profile(child1_id)
+                p2 = profile2 or await self.personality_engine.load_profile(child2_id)
+                relationship = await self.relationship_mapper.update_from_event(
+                    event, (p1, p2)
+                )
+            except Exception as e:
+                logger.error("Layer 2 (relationship) failed: %s", e)
+
+            # ── Layer 3: Complementary Skills Discoverer ──────────
+            try:
+                p1 = profile1 or await self.personality_engine.load_profile(child1_id)
+                p2 = profile2 or await self.personality_engine.load_profile(child2_id)
+                interaction_count = p1.total_interactions + p2.total_interactions
+                skill_map = await self.skills_discoverer.evaluate(
+                    (p1, p2), interaction_count
+                )
+            except Exception as e:
+                logger.error("Layer 3 (skills) failed: %s", e)
+
+        # ── Layer 4: Narrative Directives + Story Generation ──────
+        personality_context = None
+        relationship_context = None
+        skill_map_context = None
+
+        try:
+            # Build personality context for storyteller
+            p1 = profile1 or await self.personality_engine.load_profile(child1_id)
+            p2 = profile2 or await self.personality_engine.load_profile(child2_id)
+
+            personality_context = {}
+            for p in (p1, p2):
+                traits = p.trait_dict()
+                dominant = [
+                    name for name, t in traits.items()
+                    if t.confidence > 0.5 and t.value > 0.6
+                ]
+                personality_context[p.child_id] = {
+                    "dominant_traits": dominant,
+                    "fears": p.fears,
+                    "preferred_themes": p.preferred_themes,
+                }
+        except Exception as e:
+            logger.error("Building personality context failed: %s", e)
+
+        try:
+            if relationship is None:
+                pair_id = ":".join(sorted([child1_id, child2_id]))
+                relationship = await self.relationship_mapper.load_model(pair_id)
+            relationship_context = {
+                "leadership_balance": relationship.leadership_balance,
+                "cooperation_score": relationship.cooperation_score,
+                "emotional_synchrony": relationship.emotional_synchrony,
+                "recent_conflicts": [
+                    ce.description for ce in relationship.conflict_events[-3:]
+                ],
+            }
+        except Exception as e:
+            logger.error("Building relationship context failed: %s", e)
+
+        try:
+            if skill_map is not None and skill_map.has_pairs():
+                skill_map_context = {
+                    "complementary_pairs": [
+                        {
+                            "strength_holder": cp.strength_holder_id,
+                            "growth_holder": cp.growth_area_holder_id,
+                            "trait": cp.trait_dimension,
+                            "scenario": cp.suggested_scenario,
+                        }
+                        for cp in skill_map.complementary_pairs
+                    ]
+                }
+        except Exception as e:
+            logger.error("Building skill map context failed: %s", e)
+
+        try:
+            from app.services.narrative_directives import build_narrative_directives
+
+            p1 = profile1 or await self.personality_engine.load_profile(child1_id)
+            p2 = profile2 or await self.personality_engine.load_profile(child2_id)
+            rel = relationship or await self.relationship_mapper.load_model(
+                ":".join(sorted([child1_id, child2_id]))
+            )
+
+            # Build current emotions map from event
+            current_emotions: Dict[str, str] = {}
+            if event.emotions:
+                for er in event.emotions:
+                    if er.face_id == 0:
+                        current_emotions[child1_id] = er.emotion.value
+                    elif er.face_id == 1:
+                        current_emotions[child2_id] = er.emotion.value
+
+            narrative_dirs = build_narrative_directives(
+                profiles=(p1, p2),
+                relationship=rel,
+                skill_map=skill_map,
+                current_emotions=current_emotions,
+                previous_protagonists=self._protagonist_history,
+            )
+
+            # Track protagonist for alternation
+            if narrative_dirs and narrative_dirs.get("protagonist_child_id"):
+                self._protagonist_history.append(
+                    narrative_dirs["protagonist_child_id"]
+                )
+        except Exception as e:
+            logger.error("Layer 4 (narrative directives) failed: %s", e)
+
+        # Generate the story moment via the storyteller
+        story_context = {
+            "characters": characters,
+            "session_id": event.session_id,
+            "language": language,
+        }
+
+        user_input = (
+            event.transcript.text
+            if not event.transcript.is_empty
+            else None
+        )
+
+        result = await self.storyteller.generate_story_segment(
+            context=story_context,
+            user_input=user_input,
+            personality_context=personality_context,
+            relationship_context=relationship_context,
+            skill_map_context=skill_map_context,
+            narrative_directives=narrative_dirs,
+        )
+
+        return result
+
+    async def end_session(
+        self, session_id: str, sibling_pair_id: str
+    ) -> dict:
+        """Persist profiles, compute Sibling_Dynamics_Score, generate summary.
+
+        Saves whatever data is available even if score computation fails
+        (Req 8.1, 9.1, 9.2, 9.3, 9.4).
+        """
+        await self._ensure_db_initialized()
+
+        score = 0.0
+        summary = ""
+        suggestion = None
+
+        # Compute session score (Req 9.1)
+        try:
+            score = await self.relationship_mapper.compute_session_score(
+                sibling_pair_id
+            )
+        except Exception as e:
+            logger.error("end_session: score computation failed: %s", e)
+
+        # Generate plain-language summary (Req 9.2, 9.3, 9.4)
+        try:
+            summary = await self.relationship_mapper.generate_summary(
+                sibling_pair_id
+            )
+            # Extract suggestion if present (Req 9.4)
+            if "Suggestion:" in summary:
+                parts = summary.split("Suggestion:", 1)
+                summary = parts[0].strip()
+                suggestion = "Suggestion:" + parts[1].strip()
+        except Exception as e:
+            logger.error("end_session: summary generation failed: %s", e)
+
+        # Persist session summary to DB (Req 8.1)
+        try:
+            await self._sibling_db.save_session_summary(
+                session_id=session_id,
+                pair_id=sibling_pair_id,
+                score=score,
+                summary=summary,
+                suggestion=suggestion,
+            )
+        except Exception as e:
+            logger.error("end_session: saving summary failed: %s", e)
+
+        return {
+            "session_id": session_id,
+            "sibling_pair_id": sibling_pair_id,
+            "sibling_dynamics_score": score,
+            "summary": summary,
+            "suggestion": suggestion,
+        }
 
     def _resolve_perspective_emotion(
         self,

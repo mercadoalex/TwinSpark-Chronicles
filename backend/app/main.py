@@ -23,6 +23,9 @@ from app.services.stt_service import STTService
 from app.services.input_manager import InputManager
 from app.models.multimodal import TranscriptResult
 
+# Track ended sessions for idempotent POST /api/sessions/{id}/end
+_ended_sessions: Dict[str, dict] = {}
+
 # Load environment variables
 load_dotenv()
 
@@ -197,6 +200,67 @@ async def get_session_summary(session_id: str):
 
 
 # ============================================
+# SIBLING DYNAMICS ENDPOINTS (Req 9.2, 9.3, 9.4)
+# ============================================
+
+@app.get("/api/sessions/{session_id}/sibling-summary")
+async def get_sibling_summary(session_id: str):
+    """Return Sibling_Dynamics_Score and plain-language summary for a session.
+
+    Returns 404 if no sibling summary exists for the given session.
+    Requirements: 9.2, 9.3, 9.4
+    """
+    try:
+        await orchestrator._ensure_db_initialized()
+        row = await orchestrator._sibling_db.load_session_summary(session_id)
+    except Exception as e:
+        logger.error("Failed to load sibling summary for session=%s: %s", session_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="Sibling summary not found")
+
+    return {
+        "session_id": row["session_id"],
+        "sibling_dynamics_score": row["score"],
+        "summary": row["summary"],
+        "suggestion": row.get("suggestion"),
+    }
+
+
+@app.post("/api/sessions/{session_id}/end")
+async def end_session(session_id: str, body: dict | None = None):
+    """Trigger end_session flow for a sibling session. Idempotent.
+
+    Expects a JSON body with ``characters`` dict containing child1/child2
+    info so the sibling_pair_id can be derived. If the session was already
+    ended, the cached result is returned.
+
+    Requirements: 9.2, 9.3, 9.4
+    """
+    # Idempotent: return cached result if already ended
+    if session_id in _ended_sessions:
+        return _ended_sessions[session_id]
+
+    body = body or {}
+    characters = body.get("characters", {})
+
+    # Derive child IDs from characters dict
+    child1_id = characters.get("child1", {}).get("name", "child1")
+    child2_id = characters.get("child2", {}).get("name", "child2")
+    sibling_pair_id = ":".join(sorted([child1_id, child2_id]))
+
+    try:
+        result = await orchestrator.end_session(session_id, sibling_pair_id)
+    except Exception as e:
+        logger.error("end_session failed for session=%s: %s", session_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    _ended_sessions[session_id] = result
+    return result
+
+
+# ============================================
 # WEBSOCKET for Real-time Storytelling
 # ============================================
 
@@ -205,6 +269,7 @@ class ConnectionManager:
         self.active_connections: Dict[str, WebSocket] = {}
         self.input_managers: Dict[str, InputManager] = {}
         self._session_tasks: Dict[str, set[asyncio.Task]] = {}
+        self._session_contexts: Dict[str, Dict] = {}
     
     async def connect(self, websocket: WebSocket, session_id: str):
         await websocket.accept()
@@ -218,6 +283,7 @@ class ConnectionManager:
         if session_id in self.input_managers:
             self.input_managers[session_id].reset()
             del self.input_managers[session_id]
+        self._session_contexts.pop(session_id, None)
         # Cancel all pending processing tasks for this session
         tasks = self._session_tasks.pop(session_id, set())
         for task in tasks:
@@ -237,7 +303,38 @@ class ConnectionManager:
     def get_input_manager(self, session_id: str) -> Optional[InputManager]:
         return self.input_managers.get(session_id)
 
+    def set_session_context(self, session_id: str, context: Dict) -> None:
+        """Store session context (characters, language) for sibling mode detection."""
+        self._session_contexts[session_id] = context
+
+    def get_session_context(self, session_id: str) -> Optional[Dict]:
+        return self._session_contexts.get(session_id)
+
 manager = ConnectionManager()
+
+
+def _is_sibling_mode(session_id: str) -> bool:
+    """Detect sibling mode from session context.
+
+    Sibling mode is active when the session's characters dict contains
+    both child1 and child2 with non-empty names.
+    """
+    ctx = manager.get_session_context(session_id)
+    if ctx is None:
+        return False
+    characters = ctx.get("characters", {})
+    c1 = characters.get("child1", {})
+    c2 = characters.get("child2", {})
+    return bool(c1.get("name")) and bool(c2.get("name"))
+
+
+def _get_sibling_ids(session_id: str) -> tuple[str, str]:
+    """Extract child1_id and child2_id from session context."""
+    ctx = manager.get_session_context(session_id) or {}
+    characters = ctx.get("characters", {})
+    child1_id = characters.get("child1", {}).get("name", "child1")
+    child2_id = characters.get("child2", {}).get("name", "child2")
+    return child1_id, child2_id
 
 
 @app.websocket("/ws/{session_id}")
@@ -256,6 +353,10 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         while True:
             data = await websocket.receive_json()
             msg_type = data.get("type")
+
+            # Store session context when provided (for sibling mode detection)
+            if data.get("context") and data["context"].get("characters"):
+                manager.set_session_context(session_id, data["context"])
 
             if msg_type == "camera_frame":
                 task = asyncio.create_task(
@@ -340,16 +441,28 @@ async def _process_camera_frame(session_id: str, data: dict) -> None:
         )
 
         if event is not None:
-            ctx = event.to_orchestrator_context()
-            rich_moment = await orchestrator.generate_rich_story_moment(
-                session_id=session_id,
-                characters={},
-                user_input=ctx.get("user_input"),
-                language="en",
-            )
+            # Route to sibling pipeline when sibling mode is active (Req 11.1, 11.5)
+            if _is_sibling_mode(session_id):
+                child1_id, child2_id = _get_sibling_ids(session_id)
+                ctx = manager.get_session_context(session_id) or {}
+                result = await orchestrator.process_sibling_event(
+                    event=event,
+                    child1_id=child1_id,
+                    child2_id=child2_id,
+                    characters=ctx.get("characters", {}),
+                    language=ctx.get("language", "en"),
+                )
+            else:
+                ctx = event.to_orchestrator_context()
+                result = await orchestrator.generate_rich_story_moment(
+                    session_id=session_id,
+                    characters={},
+                    user_input=ctx.get("user_input"),
+                    language="en",
+                )
             await manager.send_story(session_id, {
                 "type": "story_segment",
-                "data": rich_moment,
+                "data": result,
             })
 
     except Exception as e:
@@ -389,16 +502,28 @@ async def _process_audio_segment(session_id: str, data: dict) -> None:
         )
 
         if event is not None:
-            ctx = event.to_orchestrator_context()
-            rich_moment = await orchestrator.generate_rich_story_moment(
-                session_id=session_id,
-                characters={},
-                user_input=ctx.get("user_input"),
-                language=language.split("-")[0],  # "en-US" → "en"
-            )
+            # Route to sibling pipeline when sibling mode is active (Req 11.1, 11.5)
+            if _is_sibling_mode(session_id):
+                child1_id, child2_id = _get_sibling_ids(session_id)
+                ctx = manager.get_session_context(session_id) or {}
+                result = await orchestrator.process_sibling_event(
+                    event=event,
+                    child1_id=child1_id,
+                    child2_id=child2_id,
+                    characters=ctx.get("characters", {}),
+                    language=ctx.get("language", language.split("-")[0]),
+                )
+            else:
+                ctx = event.to_orchestrator_context()
+                result = await orchestrator.generate_rich_story_moment(
+                    session_id=session_id,
+                    characters={},
+                    user_input=ctx.get("user_input"),
+                    language=language.split("-")[0],  # "en-US" → "en"
+                )
             await manager.send_story(session_id, {
                 "type": "story_segment",
-                "data": rich_moment,
+                "data": result,
             })
 
     except Exception as e:

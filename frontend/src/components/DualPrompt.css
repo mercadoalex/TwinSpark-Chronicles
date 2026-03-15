@@ -1,0 +1,164 @@
+/* ==================== DUAL PROMPT ==================== */
+
+.dual-prompt {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.dual-prompt__header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.dual-prompt__title {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(to right, var(--color-accent-pink), var(--color-accent-purple));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 8px;
+}
+
+.dual-prompt__subtitle {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Role cards for each child */
+.dual-prompt__roles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dual-prompt__role-card {
+  background: var(--color-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 2px solid var(--color-glass-border);
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dual-prompt__role-card:hover {
+  transform: translateY(-2px);
+}
+
+.dual-prompt__role-card--child1 {
+  border-color: rgba(236, 72, 153, 0.4);
+  box-shadow: 0 4px 20px rgba(236, 72, 153, 0.15);
+}
+
+.dual-prompt__role-card--child2 {
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+}
+
+.dual-prompt__role-card--waiting {
+  opacity: 0.7;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.dual-prompt__child-emoji {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.dual-prompt__child-name {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.dual-prompt__child-name--child1 {
+  color: var(--color-accent-pink);
+}
+
+.dual-prompt__child-name--child2 {
+  color: var(--color-accent-blue);
+}
+
+.dual-prompt__child-role {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.4;
+}
+
+/* Response status badges */
+.dual-prompt__status {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.dual-prompt__status--responded {
+  background: rgba(16, 185, 129, 0.25);
+  color: var(--color-accent-green);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.dual-prompt__status--waiting {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--color-accent-orange);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Gentle nudge banner */
+.dual-prompt__nudge {
+  text-align: center;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 16px;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.dual-prompt__nudge-text {
+  font-family: var(--font-heading);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--color-accent-orange);
+}
+
+/* Acknowledgment banner */
+.dual-prompt__ack {
+  text-align: center;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 16px;
+  animation: bounce-in 0.5s ease-out;
+}
+
+.dual-prompt__ack-text {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--color-accent-green);
+}
+
+/* Responsive */
+@media (max-width: 767px) {
+  .dual-prompt__roles {
+    grid-template-columns: 1fr;
+  }
+
+  .dual-prompt__title {
+    font-size: 1.4rem;
+  }
+
+  .dual-prompt__child-name {
+    font-size: 1.2rem;
+  }
+}

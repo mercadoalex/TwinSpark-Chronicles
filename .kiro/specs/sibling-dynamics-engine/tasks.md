@@ -6,14 +6,14 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
 
 ## Tasks
 
-- [ ] 1. Define Pydantic data models and shared test strategies
-  - [ ] 1.1 Create `backend/app/models/sibling.py` with all Pydantic models
+- [x] 1. Define Pydantic data models and shared test strategies
+  - [x] 1.1 Create `backend/app/models/sibling.py` with all Pydantic models
     - Define `TraitScore`, `PersonalityProfile`, `RelationshipModel`, `ConflictEvent`, `ComplementaryPair`, `SkillMap`, and extended `StoryMoment` models
     - Include all helper methods: `is_emerging()`, `trait_dict()`, `high_confidence_count()`, `is_leadership_imbalanced()`, `is_low_cooperation()`, `sibling_dynamics_score()`
     - All field constraints: `ge=0.0, le=1.0` for scores, `ge=0` for counts, default values per design
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.2, 3.4, 3.5, 3.6, 4.5, 9.1_
 
-  - [ ] 1.2 Create Hypothesis strategies in `backend/tests/conftest.py`
+  - [x] 1.2 Create Hypothesis strategies in `backend/tests/conftest.py`
     - Add `st_trait_score()`, `st_personality_profile()`, `st_relationship_model()`, `st_complementary_pair()`, `st_skill_map()`, `st_multimodal_event()` strategies
     - Ensure generated models satisfy all Pydantic constraints
     - _Requirements: 10.1, 10.2_
@@ -46,8 +46,8 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - **Property 15: Complementary pair structure completeness**
     - **Validates: Requirements 4.5**
 
-- [ ] 2. Implement SQLite persistence layer
-  - [ ] 2.1 Create `backend/app/services/sibling_db.py`
+- [x] 2. Implement SQLite persistence layer
+  - [x] 2.1 Create `backend/app/services/sibling_db.py`
     - Implement `SiblingDB` class with `aiosqlite`
     - Methods: `initialize()`, `save_profile()`, `load_profile()`, `save_relationship()`, `load_relationship()`, `save_skill_map()`, `load_skill_map()`, `save_session_summary()`, `load_session_summaries()`
     - Create all tables per design: `personality_profiles`, `relationship_models`, `skill_maps`, `session_summaries`, `initial_profiles`
@@ -59,11 +59,11 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Test `initialize()` creates tables idempotently
     - _Requirements: 10.1, 10.2, 10.3, 10.4_
 
-- [ ] 3. Checkpoint - Verify models and persistence
+- [x] 3. Checkpoint - Verify models and persistence
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. Implement PersonalityEngine (Layer 1)
-  - [ ] 4.1 Create `backend/app/services/personality_engine.py`
+- [x] 4. Implement PersonalityEngine (Layer 1)
+  - [x] 4.1 Create `backend/app/services/personality_engine.py`
     - Implement `PersonalityEngine` class with `SiblingDB` dependency
     - Methods: `update_from_event()`, `record_choice()`, `load_profile()`, `persist_profile()`, `_apply_temporal_decay()`, `_analyze_transcript()`
     - EMA update: `alpha * new_signal + (1 - alpha) * current` with configurable alpha (default 0.3)
@@ -97,8 +97,8 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Test `_analyze_transcript` with various sentence types
     - _Requirements: 1.1, 1.2, 1.5, 2.2, 2.3, 2.5_
 
-- [ ] 5. Implement RelationshipMapper (Layer 2)
-  - [ ] 5.1 Create `backend/app/services/relationship_mapper.py`
+- [x] 5. Implement RelationshipMapper (Layer 2)
+  - [x] 5.1 Create `backend/app/services/relationship_mapper.py`
     - Implement `RelationshipMapper` class with `SiblingDB` dependency
     - Methods: `update_from_event()`, `record_shared_choice()`, `record_conflict()`, `compute_session_score()`, `generate_summary()`, `load_model()`, `persist_model()`, `_apply_cross_session_decay()`
     - Track `leadership_balance` shifting toward initiator on each shared choice
@@ -138,11 +138,11 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Test `_apply_cross_session_decay` with known values
     - _Requirements: 3.1, 3.2, 3.4, 3.5, 3.6, 8.3, 9.1, 9.4_
 
-- [ ] 6. Checkpoint - Verify Layer 1 and Layer 2 services
+- [x] 6. Checkpoint - Verify Layer 1 and Layer 2 services
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Implement ComplementarySkillsDiscoverer (Layer 3)
-  - [ ] 7.1 Create `backend/app/services/skills_discoverer.py`
+- [x] 7. Implement ComplementarySkillsDiscoverer (Layer 3)
+  - [x] 7.1 Create `backend/app/services/skills_discoverer.py`
     - Implement `ComplementarySkillsDiscoverer` class with `SiblingDB` dependency
     - Methods: `evaluate()`, `_find_complementary_pairs()`, `check_growth()`, `load_skill_map()`, `persist_skill_map()`
     - `evaluate()` returns `None` if both profiles don't have `high_confidence_count() >= 3`
@@ -175,8 +175,8 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Test `check_growth()` detects improvement >= 0.2
     - _Requirements: 4.1, 4.2, 4.4, 8.4_
 
-- [ ] 8. Implement narrative directives and StorytellerAgent enhancement (Layer 4)
-  - [ ] 8.1 Create narrative directive builder in `backend/app/services/narrative_directives.py`
+- [x] 8. Implement narrative directives and StorytellerAgent enhancement (Layer 4)
+  - [x] 8.1 Create narrative directive builder in `backend/app/services/narrative_directives.py`
     - Build a `build_narrative_directives()` function that takes `PersonalityProfile` pair, `RelationshipModel`, `SkillMap`, and session state
     - Generate directives: "let less-active child lead" when leadership imbalanced, "cooperative challenge" on conflict/low cooperation, "teaching scenario" when complementary pairs exist, fear avoidance instructions, "soften tone" when child emotion is sad/scared
     - Track protagonist alternation: alternate `protagonist_child_id` across consecutive story moments
@@ -184,7 +184,7 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Return structured dict with directives list, protagonist ID, and child roles
     - _Requirements: 5.2, 5.3, 5.4, 5.5, 6.2, 7.1, 7.2, 7.3, 7.5_
 
-  - [ ] 8.2 Extend `StorytellerAgent._build_prompt()` in `backend/app/agents/storyteller_agent.py`
+  - [x] 8.2 Extend `StorytellerAgent._build_prompt()` in `backend/app/agents/storyteller_agent.py`
     - Add optional kwargs: `personality_context`, `relationship_context`, `skill_map_context`, `narrative_directives`
     - Inject new prompt sections: `PERSONALITY INSIGHTS`, `RELATIONSHIP DYNAMICS`, `COMPLEMENTARY SKILLS`, `NARRATIVE DIRECTIVES`
     - Ensure dual-child prompts address both children by name with distinct roles
@@ -214,11 +214,11 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Test neglected child detection after 3 moments
     - _Requirements: 5.2, 5.3, 5.4, 5.5, 7.1, 7.2, 7.5_
 
-- [ ] 9. Checkpoint - Verify all 4 layers independently
+- [x] 9. Checkpoint - Verify all 4 layers independently
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 10. Integrate layers into Orchestrator
-  - [ ] 10.1 Extend `AgentOrchestrator` in `backend/app/agents/orchestrator.py`
+- [x] 10. Integrate layers into Orchestrator
+  - [x] 10.1 Extend `AgentOrchestrator` in `backend/app/agents/orchestrator.py`
     - Add `PersonalityEngine`, `RelationshipMapper`, `ComplementarySkillsDiscoverer` as dependencies in `__init__`
     - Add `process_sibling_event()` method: calls Layer 1 → Layer 2 → Layer 3 → Layer 4 in sequence
     - Skip Layers 1-3 when event has no usable data (empty transcript and no emotions) per Requirement 11.4
@@ -238,44 +238,44 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Test resilience: one layer failure doesn't block others
     - _Requirements: 11.1, 11.4, 11.5, 8.1, 9.2_
 
-- [ ] 11. Add API endpoints and WebSocket updates
-  - [ ] 11.1 Add REST endpoints in `backend/app/main.py`
+- [x] 11. Add API endpoints and WebSocket updates
+  - [x] 11.1 Add REST endpoints in `backend/app/main.py`
     - `GET /api/sessions/{session_id}/sibling-summary` — returns `Sibling_Dynamics_Score` and plain-language summary (404 if not found)
     - `POST /api/sessions/{session_id}/end` — triggers `end_session` flow, idempotent
     - _Requirements: 9.2, 9.3, 9.4_
 
-  - [ ] 11.2 Update WebSocket handler in `backend/app/main.py`
+  - [x] 11.2 Update WebSocket handler in `backend/app/main.py`
     - Route to `process_sibling_event` instead of `process_multimodal_event` when sibling mode is active
     - Pass `child1_id` and `child2_id` from session context
     - _Requirements: 11.1, 11.5_
 
-- [ ] 12. Checkpoint - Verify full backend integration
+- [x] 12. Checkpoint - Verify full backend integration
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 13. Implement frontend components
-  - [ ] 13.1 Create `frontend/src/stores/siblingStore.js`
+- [x] 13. Implement frontend components
+  - [x] 13.1 Create `frontend/src/stores/siblingStore.js`
     - Zustand store with state: `siblingDynamicsScore`, `sessionSummary`, `parentSuggestion`, `childRoles`, `waitingForChild`
     - Actions: `setSiblingScore()`, `setSessionSummary()`, `setParentSuggestion()`, `setChildRoles()`, `setWaitingForChild()`, `reset()`
     - _Requirements: 9.1, 9.2, 9.3_
 
-  - [ ] 13.2 Create `frontend/src/components/DualPrompt.jsx`
+  - [x] 13.2 Create `frontend/src/components/DualPrompt.jsx`
     - Render interactive prompts addressing both children by name with distinct roles from `siblingStore.childRoles`
     - Show gentle nudge after 15 seconds if one child hasn't responded (use `siblingStore.waitingForChild`)
     - Acknowledge both responses when both children reply
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-  - [ ] 13.3 Create `frontend/src/components/SiblingDashboard.jsx`
+  - [x] 13.3 Create `frontend/src/components/SiblingDashboard.jsx`
     - Parent-facing panel showing `Sibling_Dynamics_Score` from `siblingStore`
     - Display session summary text
     - Show parent suggestion when available (score drop > 0.2)
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
 
-  - [ ] 13.4 Update `frontend/src/components/DualStoryDisplay.jsx`
+  - [x] 13.4 Update `frontend/src/components/DualStoryDisplay.jsx`
     - Integrate with `siblingStore` to show current protagonist child
     - Render role-specific prompt text from `childRoles`
     - _Requirements: 5.5, 6.2, 7.4_
 
-- [ ] 14. Final checkpoint - Ensure all tests pass
+- [x] 14. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
