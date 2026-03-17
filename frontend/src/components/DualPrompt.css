@@ -1,47 +1,49 @@
-/* ==================== DUAL PROMPT ==================== */
+/* ============================================================
+   DUAL PROMPT — Living Storybook
+   Both children's turn indicator with nudge timer
+   ============================================================ */
 
 .dual-prompt {
-  animation: fadeInUp 0.5s ease-out;
+  animation: fadeInUp 0.5s var(--ease-smooth);
+  margin-bottom: 20px;
+  padding: 24px !important;
 }
 
+/* ── Header ───────────────────────────────────────── */
 .dual-prompt__header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .dual-prompt__title {
-  font-family: var(--font-heading);
-  font-size: 1.8rem;
-  font-weight: 800;
-  background: linear-gradient(to right, var(--color-accent-pink), var(--color-accent-purple));
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-gold);
+  margin-bottom: 6px;
 }
 
 .dual-prompt__subtitle {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.5;
 }
 
-/* Role cards for each child */
+/* ── Role cards grid ──────────────────────────────── */
 .dual-prompt__roles {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 14px;
 }
 
 .dual-prompt__role-card {
   background: var(--color-glass);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 2px solid var(--color-glass-border);
-  border-radius: 20px;
-  padding: 20px;
+  border: 1.5px solid var(--color-glass-border);
+  border-radius: var(--radius-md);
+  padding: 18px;
   text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s var(--ease-bounce), box-shadow 0.3s var(--ease-smooth);
 }
 
 .dual-prompt__role-card:hover {
@@ -49,116 +51,105 @@
 }
 
 .dual-prompt__role-card--child1 {
-  border-color: rgba(236, 72, 153, 0.4);
-  box-shadow: 0 4px 20px rgba(236, 72, 153, 0.15);
+  border-color: var(--color-child1-border);
+  box-shadow: 0 4px 20px rgba(244, 114, 182, 0.1);
 }
 
 .dual-prompt__role-card--child2 {
-  border-color: rgba(59, 130, 246, 0.4);
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+  border-color: var(--color-child2-border);
+  box-shadow: 0 4px 20px rgba(96, 165, 250, 0.1);
 }
 
 .dual-prompt__role-card--waiting {
-  opacity: 0.7;
-  animation: pulse-glow 2s ease-in-out infinite;
+  opacity: 0.6;
+  animation: pulse-glow 2.5s ease-in-out infinite;
 }
 
+/* ── Child info ───────────────────────────────────── */
 .dual-prompt__child-emoji {
-  font-size: 2.5rem;
-  margin-bottom: 8px;
+  font-size: 2rem;
+  margin-bottom: 6px;
   display: block;
 }
 
 .dual-prompt__child-name {
-  font-family: var(--font-heading);
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin-bottom: 6px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 4px;
 }
 
-.dual-prompt__child-name--child1 {
-  color: var(--color-accent-pink);
-}
-
-.dual-prompt__child-name--child2 {
-  color: var(--color-accent-blue);
-}
+.dual-prompt__child-name--child1 { color: var(--color-child1); }
+.dual-prompt__child-name--child2 { color: var(--color-child2); }
 
 .dual-prompt__child-role {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
   line-height: 1.4;
 }
 
-/* Response status badges */
+/* ── Status badges ────────────────────────────────── */
 .dual-prompt__status {
   display: inline-block;
   margin-top: 10px;
   padding: 4px 14px;
-  border-radius: 20px;
-  font-size: 0.9rem;
-  font-weight: 700;
+  border-radius: var(--radius-full);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .dual-prompt__status--responded {
-  background: rgba(16, 185, 129, 0.25);
-  color: var(--color-accent-green);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--color-emerald);
+  border: 1px solid rgba(52, 211, 153, 0.3);
 }
 
 .dual-prompt__status--waiting {
-  background: rgba(245, 158, 11, 0.2);
-  color: var(--color-accent-orange);
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--color-gold);
+  border: 1px solid rgba(251, 191, 36, 0.25);
 }
 
-/* Gentle nudge banner */
+/* ── Nudge banner ─────────────────────────────────── */
 .dual-prompt__nudge {
   text-align: center;
-  padding: 14px 20px;
-  margin-bottom: 20px;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  border-radius: 16px;
-  animation: fadeInUp 0.4s ease-out;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: var(--radius-md);
+  animation: fadeInUp 0.4s var(--ease-smooth);
 }
 
 .dual-prompt__nudge-text {
-  font-family: var(--font-heading);
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--color-accent-orange);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--color-gold);
 }
 
-/* Acknowledgment banner */
+/* ── Acknowledgment ───────────────────────────────── */
 .dual-prompt__ack {
   text-align: center;
-  padding: 16px 20px;
-  margin-bottom: 20px;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  border-radius: 16px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  border-radius: var(--radius-md);
   animation: bounce-in 0.5s ease-out;
 }
 
 .dual-prompt__ack-text {
-  font-family: var(--font-heading);
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--color-accent-green);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-emerald);
 }
 
-/* Responsive */
+/* ── Responsive ───────────────────────────────────── */
 @media (max-width: 767px) {
-  .dual-prompt__roles {
-    grid-template-columns: 1fr;
-  }
-
-  .dual-prompt__title {
-    font-size: 1.4rem;
-  }
-
-  .dual-prompt__child-name {
-    font-size: 1.2rem;
-  }
+  .dual-prompt__roles { grid-template-columns: 1fr; }
+  .dual-prompt__title { font-size: 1.3rem; }
 }

@@ -1,24 +1,158 @@
-.App {
+/* ============================================================
+   APP LAYOUT — Living Storybook
+   ============================================================ */
+
+.app-container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive;
+  padding: 24px 20px 40px;
 }
 
-.App-header {
-  padding: 2rem;
+/* ── Floating particles layer ─────────────────────── */
+.app-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(2px 2px at 15% 25%, rgba(251, 191, 36, 0.3) 50%, transparent 50%),
+    radial-gradient(2px 2px at 75% 15%, rgba(244, 114, 182, 0.25) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 40% 70%, rgba(167, 139, 250, 0.2) 50%, transparent 50%),
+    radial-gradient(2px 2px at 85% 60%, rgba(52, 211, 153, 0.2) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 55% 40%, rgba(56, 189, 248, 0.15) 50%, transparent 50%);
+  animation: float 8s ease-in-out infinite;
+}
+
+/* ── Title ────────────────────────────────────────── */
+.app-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
+  font-weight: 700;
   text-align: center;
+  margin-bottom: 32px;
+  letter-spacing: 1px;
+  position: relative;
+  z-index: 1;
 }
 
-.App-header h1 {
-  font-size: 3rem;
-  margin: 0;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-  /* Removed: filter: drop-shadow(0 0 10px rgba(255,255,255,0.5)); */
+/* ── Settings button ──────────────────────────────── */
+.settings-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: var(--color-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.25s var(--ease-smooth);
 }
 
-.main-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem;
+.settings-btn:hover {
+  color: rgba(255, 255, 255, 0.85);
+  background: var(--color-glass-hover);
+  transform: rotate(30deg);
+}
+
+/* ── Mode toggle ──────────────────────────────────── */
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  justify-content: center;
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-full);
+  padding: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.mode-toggle__btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s var(--ease-smooth);
+  color: rgba(255, 255, 255, 0.5);
+  background: transparent;
+}
+
+.mode-toggle__btn--active {
+  background: linear-gradient(135deg, var(--color-violet), var(--color-coral));
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.3);
+}
+
+.mode-toggle__btn:not(.mode-toggle__btn--active):hover {
+  color: rgba(255, 255, 255, 0.8);
+  background: var(--color-glass-hover);
+}
+
+/* ── Story stage wrapper ──────────────────────────── */
+.story-stage {
+  width: 100%;
+  max-width: 960px;
+  position: relative;
+  z-index: 1;
+  animation: fadeInUp 0.6s var(--ease-smooth);
+}
+
+/* ── Waiting / loading state ──────────────────────── */
+.story-waiting {
+  text-align: center;
+  padding: 60px 30px;
+}
+
+.story-waiting__text {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 20px;
+}
+
+/* ── Mic bar ──────────────────────────────────────── */
+.mic-bar {
+  margin-top: auto;
+  padding-top: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Mechanics overlay ────────────────────────────── */
+.mechanic-overlay {
+  padding: 20px 40px;
+  margin-top: 16px;
+  text-align: center;
+  animation: fadeInUp 0.4s var(--ease-smooth);
+}
+
+.mechanic-overlay__text {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--color-gold);
 }

@@ -1,0 +1,234 @@
+/* ============================================================
+   STORY STAGE — Living Storybook
+   The main cinematic story experience
+   ============================================================ */
+
+.story-stage-main {
+  max-width: 920px;
+  margin: 0 auto;
+  animation: fadeInUp 0.6s var(--ease-smooth);
+}
+
+/* ── Empty / loading state ────────────────────────── */
+.story-empty {
+  text-align: center;
+  padding: 80px 30px;
+  animation: fadeIn 0.6s var(--ease-smooth);
+}
+
+.story-empty__sparkle {
+  font-size: 3rem;
+  animation: float 3s ease-in-out infinite;
+  margin-bottom: 16px;
+}
+
+.story-empty__text {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ── Cinematic scene image ────────────────────────── */
+.story-scene {
+  position: relative;
+  margin-bottom: 24px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-float);
+}
+
+.story-scene__img {
+  width: 100%;
+  height: auto;
+  display: block;
+  transition: transform 0.6s var(--ease-smooth);
+}
+
+.story-scene:hover .story-scene__img {
+  transform: scale(1.02);
+}
+
+.story-scene__fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 45%;
+  background: linear-gradient(to top, var(--color-bg-deep), transparent);
+  pointer-events: none;
+}
+
+/* ── Narration ────────────────────────────────────── */
+.story-narration {
+  text-align: center;
+  margin-bottom: 28px;
+  padding: 0 20px;
+  animation: fadeInUp 0.5s var(--ease-smooth) 0.1s both;
+}
+
+.story-narration__text {
+  font-family: var(--font-body);
+  font-size: 1.3rem;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.8;
+  color: var(--color-gold-soft);
+  text-shadow: 0 0 30px rgba(251, 191, 36, 0.15);
+}
+
+/* ── Dual perspective cards ───────────────────────── */
+.story-perspectives {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.story-card {
+  background: var(--color-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  border: 1.5px solid var(--color-glass-border);
+  transition: transform 0.3s var(--ease-bounce), box-shadow 0.3s var(--ease-smooth);
+}
+
+.story-card:hover {
+  transform: translateY(-3px);
+}
+
+.story-card--child1 {
+  border-color: var(--color-child1-border);
+  box-shadow: 0 4px 24px rgba(244, 114, 182, 0.08);
+  animation: slideInLeft 0.5s var(--ease-smooth) 0.15s both;
+}
+
+.story-card--child2 {
+  border-color: var(--color-child2-border);
+  box-shadow: 0 4px 24px rgba(96, 165, 250, 0.08);
+  animation: slideInRight 0.5s var(--ease-smooth) 0.15s both;
+}
+
+.story-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.story-card__avatar {
+  font-size: 1.6rem;
+}
+
+.story-card__name {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.story-card__name--child1 { color: var(--color-child1); }
+.story-card__name--child2 { color: var(--color-child2); }
+
+.story-card__text {
+  font-size: 1.05rem;
+  font-weight: 500;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+/* ── Crossroads — choice moment ───────────────────── */
+.story-crossroads {
+  text-align: center;
+  animation: fadeInUp 0.5s var(--ease-smooth) 0.25s both;
+}
+
+.story-crossroads__title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-gold);
+  margin-bottom: 20px;
+  text-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
+}
+
+.story-crossroads__options {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.story-crossroads__choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 28px;
+  min-width: 220px;
+  background: var(--color-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid var(--color-glass-border);
+  border-radius: var(--radius-lg);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.25s var(--ease-bounce),
+    box-shadow 0.3s var(--ease-smooth),
+    border-color 0.3s var(--ease-smooth),
+    background 0.3s var(--ease-smooth);
+  text-align: left;
+}
+
+.story-crossroads__choice:hover {
+  transform: translateY(-4px) scale(1.03);
+  border-color: rgba(251, 191, 36, 0.4);
+  box-shadow: 0 8px 32px rgba(251, 191, 36, 0.15);
+  background: var(--color-glass-strong);
+}
+
+.story-crossroads__choice:active {
+  transform: scale(0.97);
+}
+
+.story-crossroads__choice-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.story-crossroads__choice-text {
+  line-height: 1.4;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .story-perspectives {
+    grid-template-columns: 1fr;
+  }
+
+  .story-card--child1,
+  .story-card--child2 {
+    animation-name: fadeInUp;
+  }
+
+  .story-narration__text {
+    font-size: 1.15rem;
+  }
+
+  .story-crossroads__options {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .story-crossroads__choice {
+    min-width: unset;
+    justify-content: center;
+    text-align: center;
+  }
+}

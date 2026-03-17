@@ -1,33 +1,35 @@
-/* ==================== SIBLING DASHBOARD ==================== */
+/* ============================================================
+   SIBLING DASHBOARD — Living Storybook
+   Parent-facing collapsible insights panel
+   ============================================================ */
 
 .sibling-dashboard {
-  animation: fadeInUp 0.5s ease-out;
-  position: relative;
+  animation: fadeInUp 0.4s var(--ease-smooth);
 }
 
-/* Toggle button */
+/* ── Toggle button ────────────────────────────────── */
 .sibling-dashboard__toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 14px 20px;
+  padding: 12px 18px;
   background: var(--color-glass);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--color-glass-border);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s ease;
-  color: rgba(255, 255, 255, 0.85);
-  font-family: var(--font-heading);
-  font-size: 1rem;
-  font-weight: 700;
+  transition: all 0.25s var(--ease-smooth);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .sibling-dashboard__toggle:hover {
-  background: rgba(255, 255, 255, 0.12);
-  transform: translateY(-1px);
+  background: var(--color-glass-hover);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .sibling-dashboard__toggle-label {
@@ -37,144 +39,139 @@
 }
 
 .sibling-dashboard__toggle-arrow {
-  transition: transform 0.3s ease;
-  font-size: 0.85rem;
+  transition: transform 0.3s var(--ease-smooth);
+  font-size: 0.75rem;
+  opacity: 0.6;
 }
 
 .sibling-dashboard__toggle-arrow--open {
   transform: rotate(180deg);
 }
 
-/* Panel body */
+/* ── Panel body ───────────────────────────────────── */
 .sibling-dashboard__body {
-  margin-top: 12px;
-  padding: 24px;
-  animation: fadeInUp 0.3s ease-out;
+  margin-top: 8px;
+  padding: 20px !important;
+  animation: fadeInUp 0.3s var(--ease-smooth);
 }
 
-/* Score section */
+/* ── Score section ────────────────────────────────── */
 .sibling-dashboard__score-section {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   text-align: center;
 }
 
 .sibling-dashboard__score-label {
-  font-family: var(--font-heading);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   margin-bottom: 10px;
 }
 
 .sibling-dashboard__score-bar {
   position: relative;
-  height: 14px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 7px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
   overflow: hidden;
   margin-bottom: 8px;
 }
 
 .sibling-dashboard__score-fill {
   height: 100%;
-  border-radius: 7px;
-  transition: width 0.6s ease, background 0.6s ease;
+  border-radius: 5px;
+  transition: width 0.8s var(--ease-smooth), background 0.8s var(--ease-smooth);
 }
 
 .sibling-dashboard__score-fill--high {
-  background: linear-gradient(90deg, var(--color-accent-green), #34d399);
+  background: linear-gradient(90deg, var(--color-emerald), #6ee7b7);
 }
 
 .sibling-dashboard__score-fill--mid {
-  background: linear-gradient(90deg, var(--color-accent-orange), #fbbf24);
+  background: linear-gradient(90deg, var(--color-amber), var(--color-gold));
 }
 
 .sibling-dashboard__score-fill--low {
-  background: linear-gradient(90deg, #ef4444, var(--color-accent-orange));
+  background: linear-gradient(90deg, var(--color-coral), var(--color-amber));
 }
 
 .sibling-dashboard__score-value {
-  font-family: var(--font-heading);
-  font-size: 1.6rem;
-  font-weight: 800;
-  background: linear-gradient(to right, var(--color-accent-pink), var(--color-accent-purple));
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--color-gold), var(--color-coral));
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .sibling-dashboard__score-emoji {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   margin-left: 6px;
 }
 
-/* Summary section */
+/* ── Summary ──────────────────────────────────────── */
 .sibling-dashboard__summary {
   background: var(--color-glass);
   border: 1px solid var(--color-glass-border);
-  border-radius: 16px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 1rem;
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
   line-height: 1.6;
 }
 
 .sibling-dashboard__summary-title {
-  font-family: var(--font-heading);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 8px;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
 }
 
-/* Parent suggestion */
+/* ── Suggestion ───────────────────────────────────── */
 .sibling-dashboard__suggestion {
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  border-radius: 16px;
-  padding: 16px 20px;
-  animation: fadeInUp 0.4s ease-out;
+  background: rgba(251, 191, 36, 0.06);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  animation: fadeInUp 0.4s var(--ease-smooth);
 }
 
 .sibling-dashboard__suggestion-title {
-  font-family: var(--font-heading);
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-accent-orange);
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-gold);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 8px;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
 .sibling-dashboard__suggestion-text {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
   line-height: 1.5;
 }
 
-/* Empty state */
+/* ── Empty state ──────────────────────────────────── */
 .sibling-dashboard__empty {
   text-align: center;
-  padding: 20px;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 0.95rem;
+  padding: 16px;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.85rem;
 }
 
-/* Responsive */
 @media (max-width: 767px) {
-  .sibling-dashboard__body {
-    padding: 16px;
-  }
-
-  .sibling-dashboard__score-value {
-    font-size: 1.3rem;
-  }
+  .sibling-dashboard__body { padding: 14px !important; }
+  .sibling-dashboard__score-value { font-size: 1.2rem; }
 }

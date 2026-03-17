@@ -1,95 +1,85 @@
 import React from 'react';
 
-function LanguageSelector({ onSelect }) {
-  const languages = [
-    { code: 'en', name: 'English', flag: '🇺🇸', emoji: '🗽' },
-    { code: 'es', name: 'Español', flag: '🇪🇸', emoji: '💃' },
-    { code: 'hi', name: 'हिन्दी', flag: '🇮🇳', emoji: '🪔' }
-  ];
+const languages = [
+  { code: 'en', name: 'English', flag: '🇺🇸' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'hi', name: 'हिन्दी', flag: '🇮🇳' },
+];
 
+function LanguageSelector({ onSelect }) {
   return (
     <div style={{
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      padding: '20px'
+      gap: '48px',
+      padding: '40px 20px',
+      animation: 'fadeInUp 0.6s var(--ease-smooth)',
     }}>
-      <h1 style={{
-        fontSize: '3.5rem',
-        color: '#FFD700',
-        marginBottom: '20px',
-        textShadow: '0 0 20px rgba(255, 215, 0, 0.8)',
-        fontFamily: 'Comic Sans MS, cursive, sans-serif',
-        textAlign: 'center'
-      }}>
-        ✨ TwinSpark Chronicles ✨
-      </h1>
-      
       <p style={{
-        fontSize: '1.5rem',
-        color: 'white',
-        marginBottom: '50px',
+        fontFamily: 'var(--font-display)',
+        fontSize: '1.3rem',
+        fontWeight: 600,
+        color: 'rgba(255, 255, 255, 0.55)',
         textAlign: 'center',
-        maxWidth: '600px'
+        maxWidth: '500px',
       }}>
-        Choose your language / Elige tu idioma / अपनी भाषा चुनें
+        Choose your language
       </p>
 
       <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '30px',
-        maxWidth: '800px',
-        width: '100%'
+        display: 'flex',
+        gap: '16px',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
       }}>
         {languages.map((lang) => (
           <button
             key={lang.code}
             onClick={() => onSelect(lang.code)}
             style={{
-              padding: '40px 30px',
-              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%)',
-              border: '3px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '25px',
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '1.3rem',
-              fontWeight: 'bold',
-              fontFamily: 'Comic Sans MS, cursive, sans-serif',
-              boxShadow: '0 10px 30px rgba(102, 126, 234, 0.4)',
-              transition: 'all 0.3s ease',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              gap: '15px'
+              gap: '14px',
+              padding: '32px 40px',
+              minWidth: '180px',
+              background: 'var(--color-glass)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              border: '1.5px solid var(--color-glass-border)',
+              borderRadius: 'var(--radius-lg)',
+              color: 'rgba(255, 255, 255, 0.9)',
+              cursor: 'pointer',
+              fontFamily: 'var(--font-display)',
+              fontSize: '1.15rem',
+              fontWeight: 600,
+              transition: 'all 0.25s var(--ease-bounce)',
             }}
             onMouseEnter={(e) => {
-              e.target.style.transform = 'translateY(-10px) scale(1.05)';
-              e.target.style.boxShadow = '0 20px 50px rgba(102, 126, 234, 0.6)';
+              e.currentTarget.style.transform = 'translateY(-6px) scale(1.04)';
+              e.currentTarget.style.borderColor = 'rgba(251, 191, 36, 0.4)';
+              e.currentTarget.style.boxShadow = '0 12px 40px rgba(251, 191, 36, 0.12)';
             }}
             onMouseLeave={(e) => {
-              e.target.style.transform = 'translateY(0) scale(1)';
-              e.target.style.boxShadow = '0 10px 30px rgba(102, 126, 234, 0.4)';
+              e.currentTarget.style.transform = '';
+              e.currentTarget.style.borderColor = '';
+              e.currentTarget.style.boxShadow = '';
             }}
           >
-            <span style={{ fontSize: '3rem' }}>{lang.flag}</span>
-            <span style={{ fontSize: '1.5rem' }}>{lang.name}</span>
-            <span style={{ fontSize: '2rem' }}>{lang.emoji}</span>
+            <span style={{ fontSize: '2.8rem' }}>{lang.flag}</span>
+            <span>{lang.name}</span>
           </button>
         ))}
       </div>
 
       <p style={{
-        fontSize: '1rem',
-        color: 'rgba(255, 255, 255, 0.6)',
-        marginTop: '50px',
+        fontSize: '0.85rem',
+        color: 'rgba(255, 255, 255, 0.3)',
         textAlign: 'center',
-        maxWidth: '500px',
-        fontStyle: 'italic'
+        fontWeight: 500,
       }}>
-        An AI-powered interactive storytelling experience for children ages 4-8
+        AI-powered interactive storytelling for siblings
       </p>
     </div>
   );

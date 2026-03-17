@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "updatedAt": "2026-03-16T17:58:36.153Z",
+  "product": {
+    "merge": "replace",
+    "appOneLiner": "Twin Spark Chronicles is an AI-powered interactive storytelling app designed for siblings to co-create and experience personalized stories together.",
+    "targetUsers": "- Siblings aged 7-12 who enjoy storytelling and creative play\n- Parents seeking engaging, screen-based activities for their children\n- Educators looking for interactive learning tools",
+    "userJourneys": [],
+    "mvpFeatures": [],
+    "nonGoals": [],
+    "successMetrics": [],
+    "glossary": []
+  },
+  "tech": {},
+  "structure": {},
+  "openQuestions": []
+}

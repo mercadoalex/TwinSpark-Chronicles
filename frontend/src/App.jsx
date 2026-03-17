@@ -447,23 +447,14 @@ function App() {
 
   return (
     <AppContainer>
-      {/* Dashboard Button */}
+      {/* Settings button */}
       {!showDashboard && (
         <button
+          className="settings-btn"
           onClick={() => setShowDashboard(true)}
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '20px',
-            background: 'transparent',
-            border: 'none',
-            color: 'rgba(255,255,255,0.5)',
-            cursor: 'pointer',
-            zIndex: 100
-          }}
           title="Parent Dashboard"
         >
-          <Settings size={30} />
+          <Settings size={24} />
         </button>
       )}
 
@@ -472,41 +463,32 @@ function App() {
         <ParentDashboard onBack={() => setShowDashboard(false)} />
       )}
 
-      {/* Sibling Dynamics Dashboard (collapsible, always available during story) */}
+      {/* Sibling Dynamics — collapsible parent insights */}
       {setup.isComplete && (
-        <div style={{ position: 'absolute', top: '60px', right: '20px', zIndex: 99, width: '320px' }}>
+        <div style={{ position: 'absolute', top: '60px', right: '20px', zIndex: 99, width: '300px' }}>
           <SiblingDashboard />
         </div>
       )}
 
-      {/* ─── STEP 1: Privacy Modal ─────────────────── */}
+      {/* ─── Privacy Modal ─────────────────────────── */}
       {!setup.privacyAccepted && (
         <PrivacyModal onAccept={handlePrivacyAccept} t={t} />
       )}
 
-      {/* ─── STEP 2+ : After Privacy Accepted ─────── */}
+      {/* ─── After Privacy ─────────────────────────── */}
       {setup.privacyAccepted && (
         <>
-          {/* Main Title */}
-          <h1 className="glow-text logo-animation" style={{
-            fontFamily: 'var(--font-heading)',
-            fontSize: '4rem',
-            fontWeight: 900,
-            marginBottom: '40px',
-            textAlign: 'center',
-            letterSpacing: '2px',
-            color: '#ffffff',
-            display: 'inline-block'
-          }}>
+          {/* Title */}
+          <h1 className="app-title text-gradient logo-animation">
             TwinSpark Chronicles
           </h1>
 
-          {/* ─── STEP 2: Language Selection ──────────── */}
+          {/* Language Selection */}
           {setup.currentStep === 'language' && (
             <LanguageSelector onSelect={handleLanguageSelect} />
           )}
 
-          {/* ─── STEP 3: Character Setup ─────────────── */}
+          {/* Character Setup */}
           {setup.currentStep === 'characters' && (
             <CharacterSetup
               onComplete={handleSetupComplete}
@@ -515,37 +497,28 @@ function App() {
             />
           )}
 
-          {/* ─── STEP 4: Story Experience ────────────── */}
+          {/* ─── Story Experience ───────────────────── */}
           {setup.isComplete && (
             <React.Fragment>
-              {/* View Mode Toggle */}
-              <div style={{
-                display: 'flex',
-                gap: '15px',
-                marginBottom: '30px',
-                justifyContent: 'center'
-              }}>
-                <ChildFriendlyButton
+              {/* Mode toggle */}
+              <div className="mode-toggle">
+                <button
+                  className={`mode-toggle__btn ${!voiceOnlyMode ? 'mode-toggle__btn--active' : ''}`}
                   onClick={() => setVoiceOnlyMode(false)}
-                  variant={!voiceOnlyMode ? 'primary' : 'outline'}
-                  icon={<Eye size={24} />}
                 >
-                  Full Story
-                </ChildFriendlyButton>
-
-                <ChildFriendlyButton
+                  <Eye size={18} /> Full Story
+                </button>
+                <button
+                  className={`mode-toggle__btn ${voiceOnlyMode ? 'mode-toggle__btn--active' : ''}`}
                   onClick={() => setVoiceOnlyMode(true)}
-                  variant={voiceOnlyMode ? 'primary' : 'outline'}
-                  icon={<Mic size={24} />}
                 >
-                  Voice Only
-                </ChildFriendlyButton>
+                  <Mic size={18} /> Voice Only
+                </button>
               </div>
 
               {/* Connection Status */}
               <SessionStatus t={t} />
 
-              {/* Voice Only or Full Story Mode */}
               {voiceOnlyMode ? (
                 <VoiceOnlyMode
                   onVoiceInput={() => setIsListening(!isListening)}
@@ -555,8 +528,8 @@ function App() {
                   t={t}
                 />
               ) : (
-                <>
-                  {/* Dual Prompt — sibling turn indicator with nudge timer */}
+                <div className="story-stage">
+                  {/* Sibling turn indicator */}
                   {story.currentBeat && session.profiles?.c1_name && session.profiles?.c2_name && (
                     <DualPrompt
                       child1Name={session.profiles.c1_name}
@@ -571,6 +544,7 @@ function App() {
                     />
                   )}
 
+                  {/* Story display or loading */}
                   {story.currentBeat ? (
                     <DualStoryDisplay
                       storyBeat={story.currentBeat}
@@ -579,48 +553,32 @@ function App() {
                       onChoice={handleChoice}
                     />
                   ) : (
-                    <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
+                    <div className="glass-panel story-waiting">
                       <LoadingAnimation
                         type="story"
-                        message={story.isGenerating 
-                          ? "Creating your next adventure..." 
-                          : (t.waiting || "Waiting for the story to begin...")}
+                        message={story.isGenerating
+                          ? "Creating your next adventure…"
+                          : (t.waiting || "Waiting for the story to begin…")}
                       />
                     </div>
                   )}
 
+                  {/* Mechanic overlay */}
                   {mechanics && story.currentBeat && (
-                    <div className="glass-panel" style={{
-                      padding: '25px 50px',
-                      marginTop: '20px',
-                      textAlign: 'center'
-                    }}>
-                      <h3 style={{ fontSize: '1.8rem', color: '#fff' }}>
-                        {mechanics.prompt}
-                      </h3>
+                    <div className="glass-panel mechanic-overlay">
+                      <p className="mechanic-overlay__text">{mechanics.prompt}</p>
                     </div>
                   )}
 
-                  <div style={{
-                    marginTop: 'auto',
-                    paddingTop: '40px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center'
-                  }}>
+                  {/* Mic bar */}
+                  <div className="mic-bar">
                     <ChildFriendlyButton
                       onClick={() => setIsListening(!isListening)}
                       variant={isListening ? 'danger' : 'success'}
-                      icon={<Mic size={32} color="white" strokeWidth={3} />}
-                      style={{
-                        borderRadius: '50px',
-                        padding: '15px 40px',
-                        fontSize: '1.5rem',
-                        marginBottom: '20px'
-                      }}
+                      icon={<Mic size={28} color="white" strokeWidth={2.5} />}
                     >
-                      {isListening 
-                        ? (t.releaseToStop || "Recording...") 
+                      {isListening
+                        ? (t.releaseToStop || "Recording…")
                         : (t.pushToTalk || "Push to Talk 🎤")}
                     </ChildFriendlyButton>
 
@@ -632,18 +590,16 @@ function App() {
                   </div>
 
                   <MagicMirror />
-
-                  {/* Multimodal UI — camera preview + feedback overlay */}
                   <CameraPreview />
                   <MultimodalFeedback />
-                </>
+                </div>
               )}
             </React.Fragment>
           )}
         </>
       )}
 
-      {/* ─── MODALS (always rendered) ────────────── */}
+      {/* ─── Modals ────────────────────────────────── */}
       <AlertModal
         message={alertMessage}
         onClose={() => setAlertMessage(null)}
