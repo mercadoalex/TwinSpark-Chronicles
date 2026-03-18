@@ -19,13 +19,17 @@ export default function SessionStatus({ t }) {
   };
 
   return (
-    <p style={{
-      fontSize: '1.2rem',
-      color: getStatusColor(),
-      marginBottom: '30px',
-      textAlign: 'center',
-      fontWeight: 500
-    }}>
+    <p
+      role="status"
+      aria-live="assertive"
+      style={{
+        fontSize: '1.2rem',
+        color: getStatusColor(),
+        marginBottom: '30px',
+        textAlign: 'center',
+        fontWeight: 500
+      }}
+    >
       {getStatusText()}
     </p>
   );

@@ -9,9 +9,16 @@ from unittest.mock import MagicMock
 # transitively pulls in these packages.
 # ---------------------------------------------------------------------------
 
+_genai_mock = MagicMock()
+_genai_types_mock = MagicMock()
+_genai_types_mock.StopCandidateException = type("StopCandidateException", (Exception,), {})
+_genai_types_mock.BlockedPromptException = type("BlockedPromptException", (Exception,), {})
+_genai_mock.types = _genai_types_mock
+
 _MOCK_MODULES = {
     # Google AI / Cloud
-    "google.generativeai": MagicMock(),
+    "google.generativeai": _genai_mock,
+    "google.generativeai.types": _genai_types_mock,
     "google.cloud.speech_v1": MagicMock(),
     "google.cloud.texttospeech_v1": MagicMock(),
     "google.cloud.texttospeech": MagicMock(),
@@ -222,3 +229,44 @@ def st_multimodal_event(draw):
         face_detected=has_emotions,
         speech_id=draw(st.none() | _child_id),
     )
+
+
+# ---------------------------------------------------------------------------
+# Shared database fixtures for test isolation
+# ---------------------------------------------------------------------------
+
+import pytest_asyncio
+from app.db.connection import DatabaseConnection
+from app.db.migration_runner import MigrationRunner
+from app.services.sibling_db import SiblingDB
+from app.services.world_db import WorldDB
+
+
+@pytest_asyncio.fixture
+async def db():
+    """In-memory DatabaseConnection with all migrations applied."""
+    conn = DatabaseConnection("sqlite:///:memory:")
+    await conn.connect()
+    runner = MigrationRunner(conn)
+    await runner.apply_all()
+    yield conn
+    await conn.close()
+
+
+@pytest_asyncio.fixture
+async def sibling_db(db):
+    """SiblingDB backed by the in-memory test database."""
+    return SiblingDB(db)
+
+
+@pytest_asyncio.fixture
+async def world_db(db):
+    """WorldDB backed by the in-memory test database."""
+    return WorldDB(db)
+
+@pytest_asyncio.fixture
+async def session_service(db):
+    """SessionService backed by the in-memory test database."""
+    from app.services.session_service import SessionService
+    return SessionService(db)
+

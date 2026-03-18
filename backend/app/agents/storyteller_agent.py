@@ -1,5 +1,6 @@
 # backend/app/agents/storyteller_agent.py
 import google.generativeai as genai
+from google.generativeai.types import StopCandidateException, BlockedPromptException
 from typing import Dict, List, Optional
 import os
 from datetime import datetime
@@ -25,19 +26,19 @@ class StorytellerAgent:
             safety_settings=[
                 {
                     "category": "HARM_CATEGORY_HARASSMENT",
-                    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                    "threshold": "BLOCK_LOW_AND_ABOVE"
                 },
                 {
                     "category": "HARM_CATEGORY_HATE_SPEECH",
-                    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                    "threshold": "BLOCK_LOW_AND_ABOVE"
                 },
                 {
                     "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                    "threshold": "BLOCK_LOW_AND_ABOVE"
                 },
                 {
                     "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                    "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+                    "threshold": "BLOCK_LOW_AND_ABOVE"
                 }
             ]
         )
@@ -105,6 +106,9 @@ FORMAT:
 
             return story_segment
 
+        except (StopCandidateException, BlockedPromptException) as e:
+            print(f"Gemini blocked response due to safety settings: {e}")
+            return self._fallback_story(context)
         except Exception as e:
             print(f"Error generating story: {e}")
             # Fallback story

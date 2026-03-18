@@ -1,6 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useFocusTrap } from '../../../shared/hooks';
+
+const noop = () => {};
 
 function PrivacyModal({ onAccept, t }) {
+  const dialogRef = useRef(null);
+  useFocusTrap(dialogRef, true, noop);
+
   return (
     <div className="privacy-overlay" style={{
       position: 'fixed', inset: 0,
@@ -11,7 +17,13 @@ function PrivacyModal({ onAccept, t }) {
       zIndex: 10000, padding: '20px',
       animation: 'fadeIn 0.4s var(--ease-smooth)',
     }}>
-      <div className="glass-panel" style={{
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="privacy-modal-heading"
+        className="glass-panel"
+        style={{
         padding: '44px',
         borderRadius: 'var(--radius-xl)',
         maxWidth: '640px',
@@ -38,7 +50,7 @@ function PrivacyModal({ onAccept, t }) {
           boxShadow: '0 8px 30px rgba(167, 139, 250, 0.3)',
         }}>🔒</div>
 
-        <h2 style={{
+        <h2 id="privacy-modal-heading" style={{
           fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700,
           marginBottom: '16px',
           background: 'linear-gradient(135deg, var(--color-gold), var(--color-coral))',
@@ -114,6 +126,7 @@ function PrivacyModal({ onAccept, t }) {
             padding: '16px 48px', fontSize: '1.15rem',
             background: 'linear-gradient(135deg, var(--color-emerald), #059669)',
             boxShadow: '0 8px 30px rgba(52, 211, 153, 0.3)',
+            minHeight: '44px',
           }}
         >
           ✓ {t?.accept || 'I Accept & Continue'}

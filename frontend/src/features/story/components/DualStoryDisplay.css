@@ -1,6 +1,5 @@
 /* ============================================================
-   STORY STAGE — Living Storybook
-   The main cinematic story experience
+   STORY DISPLAY — Touch-first, minimal text, 6yo friendly
    ============================================================ */
 
 .story-stage-main {
@@ -9,15 +8,14 @@
   animation: fadeInUp 0.6s var(--ease-smooth);
 }
 
-/* ── Empty / loading state ────────────────────────── */
+/* ── Empty state ──────────────────────────────────── */
 .story-empty {
   text-align: center;
   padding: 80px 30px;
-  animation: fadeIn 0.6s var(--ease-smooth);
 }
 
 .story-empty__sparkle {
-  font-size: 3rem;
+  font-size: 4rem;
   animation: float 3s ease-in-out infinite;
   margin-bottom: 16px;
 }
@@ -26,13 +24,13 @@
   font-family: var(--font-display);
   font-size: 1.3rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.75);
 }
 
-/* ── Cinematic scene image ────────────────────────── */
+/* ── Cinematic scene ──────────────────────────────── */
 .story-scene {
   position: relative;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-float);
@@ -42,11 +40,14 @@
   width: 100%;
   height: auto;
   display: block;
-  transition: transform 0.6s var(--ease-smooth);
+  transition: transform 8s linear;
+  /* Slow Ken Burns drift */
+  animation: kenBurns 20s ease-in-out infinite alternate;
 }
 
-.story-scene:hover .story-scene__img {
-  transform: scale(1.02);
+@keyframes kenBurns {
+  0%   { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.08) translate(-1%, -1%); }
 }
 
 .story-scene__fade {
@@ -54,156 +55,238 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 45%;
+  height: 50%;
   background: linear-gradient(to top, var(--color-bg-deep), transparent);
   pointer-events: none;
+}
+
+/* Floating child avatars on scene */
+.story-scene__avatars {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  z-index: 2;
+}
+
+.story-scene__avatar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1rem;
+  animation: float 4s ease-in-out infinite;
+}
+
+.story-scene__avatar--c1 {
+  background: rgba(244, 114, 182, 0.25);
+  border: 1.5px solid rgba(244, 114, 182, 0.4);
+  color: var(--color-child1);
+  animation-delay: 0s;
+}
+
+.story-scene__avatar--c2 {
+  background: rgba(96, 165, 250, 0.25);
+  border: 1.5px solid rgba(96, 165, 250, 0.4);
+  color: var(--color-child2);
+  animation-delay: 1s;
+}
+
+.story-scene__avatar span:first-child {
+  font-size: 1.4rem;
+}
+
+.story-scene__avatar-name {
+  color: #fff;
 }
 
 /* ── Narration ────────────────────────────────────── */
 .story-narration {
   text-align: center;
-  margin-bottom: 28px;
-  padding: 0 20px;
-  animation: fadeInUp 0.5s var(--ease-smooth) 0.1s both;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+  transition: background 0.2s;
+}
+
+.story-narration:active {
+  background: var(--color-glass-hover);
 }
 
 .story-narration__text {
   font-family: var(--font-body);
-  font-size: 1.3rem;
+  font-size: 1.25rem;
   font-weight: 500;
   font-style: italic;
   line-height: 1.8;
   color: var(--color-gold-soft);
-  text-shadow: 0 0 30px rgba(251, 191, 36, 0.15);
 }
 
-/* ── Dual perspective cards ───────────────────────── */
+.story-narration__tap-hint {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  letter-spacing: 0.05em;
+}
+
+/* ── Perspective cards (expandable) ───────────────── */
 .story-perspectives {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 28px;
+  gap: 12px;
+  margin-bottom: 24px;
+  animation: fadeInUp 0.35s var(--ease-smooth);
 }
 
 .story-card {
   background: var(--color-glass);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: var(--radius-lg);
-  padding: 24px;
+  border-radius: var(--radius-md);
+  padding: 18px;
   border: 1.5px solid var(--color-glass-border);
-  transition: transform 0.3s var(--ease-bounce), box-shadow 0.3s var(--ease-smooth);
-}
-
-.story-card:hover {
-  transform: translateY(-3px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
 }
 
 .story-card--child1 {
   border-color: var(--color-child1-border);
-  box-shadow: 0 4px 24px rgba(244, 114, 182, 0.08);
-  animation: slideInLeft 0.5s var(--ease-smooth) 0.15s both;
+  animation: slideInLeft 0.4s var(--ease-smooth) both;
 }
 
 .story-card--child2 {
   border-color: var(--color-child2-border);
-  box-shadow: 0 4px 24px rgba(96, 165, 250, 0.08);
-  animation: slideInRight 0.5s var(--ease-smooth) 0.15s both;
+  animation: slideInRight 0.4s var(--ease-smooth) both;
 }
 
-.story-card__header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.story-card__avatar {
-  font-size: 1.6rem;
-}
+.story-card__emoji { font-size: 1.8rem; }
 
 .story-card__name {
   font-family: var(--font-display);
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  margin: 0;
 }
 
 .story-card__name--child1 { color: var(--color-child1); }
 .story-card__name--child2 { color: var(--color-child2); }
 
 .story-card__text {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 500;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
   margin: 0;
 }
 
-/* ── Crossroads — choice moment ───────────────────── */
-.story-crossroads {
+/* ── Choice cards — BIG tappable ──────────────────── */
+.story-choices {
   text-align: center;
-  animation: fadeInUp 0.5s var(--ease-smooth) 0.25s both;
+  animation: fadeInUp 0.5s var(--ease-smooth) 0.15s both;
 }
 
-.story-crossroads__title {
+.story-choices__title {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--color-gold);
   margin-bottom: 20px;
   text-shadow: 0 0 20px rgba(251, 191, 36, 0.2);
 }
 
-.story-crossroads__options {
+.story-choices__grid {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
-.story-crossroads__choice {
+.story-choice-card {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  padding: 18px 28px;
-  min-width: 220px;
+  padding: 28px 24px;
+  min-width: 180px;
+  min-height: 140px;
+  max-width: 260px;
+  flex: 1;
   background: var(--color-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1.5px solid var(--color-glass-border);
-  border-radius: var(--radius-lg);
-  color: rgba(255, 255, 255, 0.9);
+  border: 2.5px solid var(--color-glass-border);
+  border-radius: var(--radius-xl);
+  color: rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform 0.25s var(--ease-bounce),
+    border-color 0.3s,
+    box-shadow 0.3s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.story-choice-card:hover {
+  transform: translateY(-8px) scale(1.05);
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 16px 48px rgba(251, 191, 36, 0.15);
+}
+
+.story-choice-card:active {
+  transform: scale(0.93);
+}
+
+.story-choice-card--selected {
+  animation: choicePop 0.4s var(--ease-bounce);
+  border-color: var(--color-gold);
+  box-shadow: 0 0 40px rgba(251, 191, 36, 0.3);
+}
+
+@keyframes choicePop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.12); }
+  60%  { transform: scale(0.95); }
+  100% { transform: scale(1.02); }
+}
+
+.story-choice-card__icon {
+  font-size: 3rem;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+.story-choice-card__text {
   font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 600;
-  cursor: pointer;
-  transition:
-    transform 0.25s var(--ease-bounce),
-    box-shadow 0.3s var(--ease-smooth),
-    border-color 0.3s var(--ease-smooth),
-    background 0.3s var(--ease-smooth);
-  text-align: left;
-}
-
-.story-crossroads__choice:hover {
-  transform: translateY(-4px) scale(1.03);
-  border-color: rgba(251, 191, 36, 0.4);
-  box-shadow: 0 8px 32px rgba(251, 191, 36, 0.15);
-  background: var(--color-glass-strong);
-}
-
-.story-crossroads__choice:active {
-  transform: scale(0.97);
-}
-
-.story-crossroads__choice-icon {
-  font-size: 1.5rem;
-  flex-shrink: 0;
-}
-
-.story-crossroads__choice-text {
   line-height: 1.4;
+  text-align: center;
+}
+
+.story-choice-card__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 120%, rgba(251, 191, 36, 0.08), transparent 70%);
+  pointer-events: none;
+  border-radius: inherit;
 }
 
 /* ── Responsive ───────────────────────────────────── */
@@ -217,18 +300,23 @@
     animation-name: fadeInUp;
   }
 
-  .story-narration__text {
-    font-size: 1.15rem;
-  }
-
-  .story-crossroads__options {
+  .story-choices__grid {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .story-crossroads__choice {
+  .story-choice-card {
     min-width: unset;
-    justify-content: center;
-    text-align: center;
+    max-width: unset;
+    min-height: 100px;
+    flex-direction: row;
+    padding: 20px 24px;
+    gap: 16px;
   }
+
+  .story-choice-card__icon { font-size: 2.4rem; }
+  .story-choice-card__text { text-align: left; }
+
+  .story-scene__avatars { gap: 12px; }
+  .story-scene__avatar { font-size: 0.85rem; padding: 6px 14px; }
 }

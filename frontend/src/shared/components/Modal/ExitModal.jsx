@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useFocusTrap } from '../../hooks';
 
 export default function ExitModal({ onSave, onExit, onClose, isSaving }) {
+    const dialogRef = useRef(null);
+    useFocusTrap(dialogRef, true, onClose);
+
     return (
         <div style={{
             position: 'fixed',
@@ -16,7 +20,13 @@ export default function ExitModal({ onSave, onExit, onClose, isSaving }) {
             zIndex: 1000,
             animation: 'fadeIn 0.3s'
         }}>
-            <div className="glass-panel" style={{
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="exit-modal-heading"
+                className="glass-panel"
+                style={{
                 padding: '40px',
                 maxWidth: '500px',
                 width: '90%',
@@ -26,8 +36,8 @@ export default function ExitModal({ onSave, onExit, onClose, isSaving }) {
                 boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
                 animation: 'slideUp 0.3s'
             }}>
-                <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🚪</div>
-                <h2 style={{ color: 'white', marginBottom: '15px' }}>Leaving the Magic?</h2>
+                <div style={{ fontSize: '4rem', marginBottom: '20px' }} aria-hidden="true">🚪</div>
+                <h2 id="exit-modal-heading" style={{ color: 'white', marginBottom: '15px' }}>Leaving the Magic?</h2>
                 <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1.2rem', marginBottom: '30px' }}>
                     Do you want to save your adventure so you can continue it later?
                 </p>
@@ -46,7 +56,8 @@ export default function ExitModal({ onSave, onExit, onClose, isSaving }) {
                             fontWeight: 'bold',
                             cursor: isSaving ? 'wait' : 'pointer',
                             opacity: isSaving ? 0.7 : 1,
-                            transition: 'transform 0.2s'
+                            transition: 'transform 0.2s',
+                            minHeight: '44px',
                         }}
                         onMouseOver={(e) => !isSaving && (e.currentTarget.style.transform = 'scale(1.02)')}
                         onMouseOut={(e) => !isSaving && (e.currentTarget.style.transform = 'scale(1)')}
@@ -65,7 +76,8 @@ export default function ExitModal({ onSave, onExit, onClose, isSaving }) {
                             color: 'white',
                             fontSize: '1.1rem',
                             cursor: isSaving ? 'not-allowed' : 'pointer',
-                            transition: 'background 0.2s'
+                            transition: 'background 0.2s',
+                            minHeight: '44px',
                         }}
                         onMouseOver={(e) => !isSaving && (e.currentTarget.style.background = 'rgba(255,255,255,0.2)')}
                         onMouseOut={(e) => !isSaving && (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
@@ -83,7 +95,8 @@ export default function ExitModal({ onSave, onExit, onClose, isSaving }) {
                             color: 'rgba(255,255,255,0.6)',
                             fontSize: '1rem',
                             cursor: isSaving ? 'not-allowed' : 'pointer',
-                            marginTop: '10px'
+                            marginTop: '10px',
+                            minHeight: '44px',
                         }}
                     >
                         Cancel

@@ -7,3 +7,4 @@ export * from './Modal';
 export * from './Loading';
 export * from './Feedback';
 export * from './Layout';
+export { default as SkipLink } from './SkipLink';

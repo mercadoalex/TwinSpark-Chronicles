@@ -1,0 +1,39 @@
+/* ── Emergency Stop Button ────────────────────────── */
+.emergency-stop {
+  position: fixed;
+  bottom: 32px;
+  left: 32px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.2);
+  backdrop-filter: blur(10px);
+  color: #f87171;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  transition: all 0.25s var(--ease-smooth, ease);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.emergency-stop:hover {
+  background: rgba(239, 68, 68, 0.45);
+  border-color: rgba(239, 68, 68, 0.8);
+  transform: scale(1.1);
+  color: #fff;
+}
+
+.emergency-stop:active {
+  transform: scale(0.92);
+}
+
+.emergency-stop--active {
+  background: rgba(239, 68, 68, 0.6);
+  color: #fff;
+  pointer-events: none;
+  animation: pulse-ring 1s infinite;
+}

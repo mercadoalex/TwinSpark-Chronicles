@@ -5,16 +5,20 @@ Coordinates all AI agents to create rich multimodal story experiences.
 Extended with sibling dynamics pipeline (Layers 1-4) that processes
 personality, relationship, skills, and narrative directives in sequence.
 
-Requirements: 8.1, 9.1, 9.2, 9.3, 9.4, 11.1, 11.4, 11.5
+Requirements: 2.1, 2.3, 2.4, 2.5, 6.2, 6.5, 8.1, 8.2, 8.3, 9.1, 9.2, 9.3, 9.4, 11.1, 11.4, 11.5
 """
 
+import asyncio
 import logging
 from typing import Dict, Optional, List
 from datetime import datetime
 
 from app.models.multimodal import MultimodalInputEvent, EmotionCategory, EmotionResult
+from app.services.content_filter import ContentFilter, ContentRating
 
 logger = logging.getLogger(__name__)
+
+MAX_CONTENT_RETRIES = 3
 
 
 class AgentOrchestrator:
@@ -41,7 +45,10 @@ class AgentOrchestrator:
         from app.services.relationship_mapper import RelationshipMapper
         from app.services.skills_discoverer import ComplementarySkillsDiscoverer
 
-        self._sibling_db = SiblingDB()
+        from app.db.connection import DatabaseConnection
+
+        self._db_conn = DatabaseConnection()
+        self._sibling_db = SiblingDB(self._db_conn)
         self._db_initialized = False
         self.personality_engine = PersonalityEngine(self._sibling_db)
         self.relationship_mapper = RelationshipMapper(self._sibling_db)
@@ -50,12 +57,164 @@ class AgentOrchestrator:
         # Track protagonist history for narrative directive alternation
         self._protagonist_history: list[str] = []
 
+        # Content safety filter (Req 8.1, 8.2, 8.3)
+        self.content_filter = ContentFilter()
+
+        # Track in-flight asyncio tasks per session for emergency stop (Req 6.2, 6.5)
+        self._session_tasks: Dict[str, set[asyncio.Task]] = {}
+
+        # Persistent world state (cross-session)
+        from app.services.world_db import WorldDB
+        from app.services.world_state_extractor import WorldStateExtractor
+        from app.services.world_context_formatter import WorldContextFormatter
+
+        self._world_db = WorldDB(self._db_conn)
+        self._world_extractor = WorldStateExtractor()
+        self._world_context_formatter = WorldContextFormatter()
+        self._world_state_cache: Dict[str, dict] = {}  # keyed by sibling_pair_id
+
+        # Photo pipeline (family photo integration)
+        from app.agents.style_transfer_agent import StyleTransferAgent
+        from app.services.scene_compositor import SceneCompositor
+
+        self._style_transfer = StyleTransferAgent()
+        self._scene_compositor = SceneCompositor()
+
         print("🎭 Agent orchestrator initialized")
-    
+
+    async def _generate_safe_story_segment(
+        self,
+        story_context: Dict,
+        user_input: Optional[str],
+        allowed_themes: Optional[List[str]] = None,
+        custom_blocked_words: Optional[List[str]] = None,
+    ) -> Dict:
+        """Generate a story segment with content filtering and retry logic.
+
+        Retries up to MAX_CONTENT_RETRIES times when the ContentFilter rates
+        the segment as REVIEW or BLOCKED.  Returns a safe fallback after all
+        retries are exhausted or if the filter itself raises an exception.
+
+        Requirements: 2.1, 2.3, 2.4, 2.5, 8.1, 8.3
+        """
+        session_id = story_context.get("session_id", "")
+
+        for attempt in range(MAX_CONTENT_RETRIES):
+            try:
+                segment = await self.storyteller.generate_story_segment(
+                    context=story_context,
+                    user_input=user_input,
+                )
+            except Exception as e:
+                logger.error(
+                    "Story generation failed: session=%s attempt=%d error=%s",
+                    session_id, attempt + 1, e,
+                )
+                continue
+
+            # Run content filter on the generated text
+            try:
+                result = self.content_filter.scan(
+                    text=segment["text"],
+                    allowed_themes=allowed_themes,
+                    custom_blocked_words=custom_blocked_words,
+                    session_id=session_id,
+                )
+            except Exception as e:
+                logger.error(
+                    "ContentFilter error: session=%s attempt=%d error=%s — returning fallback",
+                    session_id, attempt + 1, e,
+                )
+                return self.storyteller._fallback_story(story_context)
+
+            logger.info(
+                "Content filter: session=%s attempt=%d rating=%s reason=%s",
+                session_id, attempt + 1, result.rating, result.reason,
+            )
+
+            if result.rating == ContentRating.SAFE:
+                return segment
+
+            # REVIEW or BLOCKED — discard and retry
+            logger.warning(
+                "Content rejected: session=%s attempt=%d rating=%s matched=%s",
+                session_id, attempt + 1, result.rating.value, result.matched_terms,
+            )
+
+        # All retries exhausted (Req 2.5)
+        logger.warning(
+            "All %d content retries exhausted for session=%s — returning fallback",
+            MAX_CONTENT_RETRIES, session_id,
+        )
+        return self.storyteller._fallback_story(story_context)
+
+    def _filter_text(
+        self,
+        text: str,
+        session_id: str,
+        allowed_themes: Optional[List[str]] = None,
+        custom_blocked_words: Optional[List[str]] = None,
+    ) -> Optional[str]:
+        """Filter a piece of text through ContentFilter.
+
+        Returns the original text if SAFE, or None if REVIEW/BLOCKED or on error.
+        Requirements: 8.2, 8.3
+        """
+        try:
+            result = self.content_filter.scan(
+                text=text,
+                allowed_themes=allowed_themes,
+                custom_blocked_words=custom_blocked_words,
+                session_id=session_id,
+            )
+            if result.rating == ContentRating.SAFE:
+                return text
+            logger.warning(
+                "Text filtered out: session=%s rating=%s reason=%s",
+                session_id, result.rating.value, result.reason,
+            )
+            return None
+        except Exception as e:
+            logger.error("ContentFilter error during text filter: %s", e)
+            return None
+
+    async def cancel_session(self, session_id: str) -> Dict:
+        """Cancel all in-flight tasks for a session and return state summary.
+
+        Requirements: 6.2, 6.5
+        """
+        tasks = self._session_tasks.pop(session_id, set())
+        cancelled_count = 0
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+                cancelled_count += 1
+
+        # Wait briefly for tasks to wrap up
+        if tasks:
+            await asyncio.wait(tasks, timeout=2.0)
+
+        logger.info(
+            "Emergency stop: session=%s cancelled=%d total=%d",
+            session_id, cancelled_count, len(tasks),
+        )
+
+        return {
+            "session_id": session_id,
+            "cancelled_tasks": cancelled_count,
+            "session_saved": True,
+            "status": "stopped",
+        }
+
     async def generate_rich_story_moment(self, session_id: str, characters: Dict, user_input: Optional[str] = None, language: str = "en", **kwargs) -> Dict:
         """Generate a complete multimodal story moment with all agents."""
         print(f"\n🎬 Generating rich story moment for session {session_id}")
-        
+
+        # Extract parent preference fields from kwargs
+        allowed_themes = kwargs.pop("allowed_themes", None)
+        complexity_level = kwargs.pop("complexity_level", None)
+        custom_blocked_words = kwargs.pop("custom_blocked_words", None)
+
         # STEP 1: Get relevant memories
         memories = []
         if self.memory.enabled:
@@ -67,8 +226,28 @@ class AgentOrchestrator:
                 print(f"🧠 Retrieved {len(memories)} relevant memories")
             except Exception as e:
                 print(f"⚠️  Memory recall skipped: {e}")
-        
-        # STEP 2: Generate story with context
+
+        # STEP 1b: Load and inject world context (cross-session persistence)
+        world_context_str = ""
+        try:
+            child1_name = characters.get("child1", {}).get("name", "child1")
+            child2_name = characters.get("child2", {}).get("name", "child2")
+            sibling_pair_id = ":".join(sorted([child1_name, child2_name]))
+
+            if sibling_pair_id not in self._world_state_cache:
+                await self._ensure_db_initialized()
+                self._world_state_cache[sibling_pair_id] = await self._world_db.load_world_state(sibling_pair_id)
+
+            world_state = self._world_state_cache.get(sibling_pair_id, {})
+            world_context_str = self._world_context_formatter.format_beat_context(
+                world_state, user_input or ""
+            )
+            if world_context_str:
+                print(f"🗺️  World context injected ({len(world_state.get('locations', []))} locations, {len(world_state.get('npcs', []))} NPCs, {len(world_state.get('items', []))} items)")
+        except Exception as e:
+            logger.warning("World context injection failed: %s", e)
+
+        # STEP 2: Generate story with content filtering (Req 2.1, 2.3, 2.4, 2.5, 8.1)
         story_context = {
             "characters": characters,
             "session_id": session_id,
@@ -76,15 +255,96 @@ class AgentOrchestrator:
             "memories": memories,
             **kwargs
         }
-        
-        story_segment = await self.storyteller.generate_story_segment(
-            context=story_context,
-            user_input=user_input
-        )
-        
+
+        if world_context_str:
+            story_context["world_context"] = world_context_str
+
+        if complexity_level is not None:
+            story_context["complexity_level"] = complexity_level
+
+        try:
+            story_segment = await self._generate_safe_story_segment(
+                story_context=story_context,
+                user_input=user_input,
+                allowed_themes=allowed_themes,
+                custom_blocked_words=custom_blocked_words,
+            )
+        except Exception as e:
+            logger.error(
+                "Unhandled error in safe story generation: session=%s error=%s — returning fallback",
+                session_id, e,
+            )
+            story_segment = self.storyteller._fallback_story(story_context)
+
         print(f"📖 Story text generated: {len(story_segment['text'])} chars")
-        
+
+        # STEP 2b: Filter story choices and perspective text (Req 8.2)
+        interactive = story_segment.get("interactive", {})
+        if interactive:
+            choice_text = interactive.get("text", "")
+            if choice_text:
+                filtered = self._filter_text(
+                    choice_text, session_id, allowed_themes, custom_blocked_words,
+                )
+                if filtered is None:
+                    # Replace with a safe generic prompt
+                    interactive["text"] = "What would you like to do next?"
+
+            # Filter individual choices if present
+            choices = interactive.get("choices", [])
+            if choices:
+                safe_choices = []
+                for choice in choices:
+                    choice_str = choice if isinstance(choice, str) else choice.get("text", "")
+                    if choice_str:
+                        result = self._filter_text(
+                            choice_str, session_id, allowed_themes, custom_blocked_words,
+                        )
+                        if result is not None:
+                            safe_choices.append(choice)
+                if safe_choices:
+                    interactive["choices"] = safe_choices
+
+            story_segment["interactive"] = interactive
+
         # STEP 3: Generate scene illustration (if enabled)
+        # Load photo pipeline portraits for compositing (if character mappings exist)
+        photo_portraits = {}
+        try:
+            child1_name = characters.get("child1", {}).get("name", "child1")
+            child2_name = characters.get("child2", {}).get("name", "child2")
+            sibling_pair_id = ":".join(sorted([child1_name, child2_name]))
+
+            await self._ensure_db_initialized()
+            mappings = await self._db_conn.fetch_all(
+                "SELECT mapping_id, sibling_pair_id, character_role, face_id, "
+                "created_at FROM character_mappings WHERE sibling_pair_id = ?",
+                (sibling_pair_id,),
+            )
+            if mappings and any(m["face_id"] for m in mappings):
+                from app.models.photo import CharacterMapping as CM
+                cm_list = [
+                    CM(
+                        mapping_id=m["mapping_id"],
+                        sibling_pair_id=m["sibling_pair_id"],
+                        character_role=m["character_role"],
+                        face_id=m["face_id"],
+                        family_member_name=None,
+                        created_at=m["created_at"],
+                    )
+                    for m in mappings
+                ]
+                photo_portraits = await self._style_transfer.generate_portraits_for_session(
+                    sibling_pair_id=sibling_pair_id,
+                    session_id=session_id,
+                    mappings=cm_list,
+                    db=self._db_conn,
+                )
+                if photo_portraits:
+                    print(f"📸 Photo portraits ready: {len(photo_portraits)} characters")
+        except Exception as e:
+            logger.warning("Photo pipeline skipped: %s", e)
+
         scene_image = None
         if self.visual.enabled:
             try:
@@ -98,9 +358,27 @@ class AgentOrchestrator:
                     scene_description=story_segment['text'][:200]
                 )
                 print(f"🎨 Scene image: {'✅ Generated' if scene_image else '❌ Failed'}")
+
+                # Composite photo portraits into scene if available
+                if scene_image and photo_portraits:
+                    try:
+                        import base64 as b64
+                        scene_bytes = b64.b64decode(scene_image)
+                        portrait_bytes = {}
+                        for role, portrait_b64 in photo_portraits.items():
+                            portrait_bytes[role] = b64.b64decode(portrait_b64)
+                        composited = self._scene_compositor.composite(
+                            base_scene_bytes=scene_bytes,
+                            portraits=portrait_bytes,
+                            character_positions={},
+                        )
+                        scene_image = b64.b64encode(composited).decode("utf-8")
+                        print(f"📸 Scene composited with {len(portrait_bytes)} portraits")
+                    except Exception as comp_err:
+                        logger.warning("Scene compositing failed, using base scene: %s", comp_err)
             except Exception as e:
                 print(f"⚠️  Visual generation skipped: {e}")
-        
+
         # STEP 4: Generate narration audio (if enabled)
         narration_audio = None
         if self.voice.enabled:
@@ -112,24 +390,24 @@ class AgentOrchestrator:
                 print(f"🎤 Narration: {'✅ Generated' if narration_audio else '❌ Failed'}")
             except Exception as e:
                 print(f"⚠️  Voice generation skipped: {e}")
-        
+
         # STEP 5: Generate character dialogue voices (optional)
         character_voices = []
         dialogues = self._extract_dialogues(story_segment['text'])
-        
+
         if dialogues and self.voice.enabled:
             for dialogue in dialogues[:2]:  # Limit to 2 dialogues
                 try:
                     spirit_animal = characters.get('child1', {}).get('spirit_animal', 'dragon')
                     voice_type = self.voice.get_character_voice_for_spirit_animal(spirit_animal)
-                    
+
                     audio = await self.voice.generate_dialogue(
                         text=dialogue['text'],
                         character_type=voice_type,
                         emotion=dialogue.get('emotion', 'neutral'),
                         language=language
                     )
-                    
+
                     if audio:
                         character_voices.append({
                             "character": dialogue['character'],
@@ -138,7 +416,7 @@ class AgentOrchestrator:
                         })
                 except Exception as e:
                     print(f"⚠️  Character voice skipped: {e}")
-        
+
         # STEP 6: Store this moment in memory (if enabled)
         if self.memory.enabled:
             try:
@@ -154,7 +432,7 @@ class AgentOrchestrator:
                 )
             except Exception as e:
                 print(f"⚠️  Memory storage skipped: {e}")
-        
+
         # STEP 7: Return complete multimodal experience
         return {
             "text": story_segment['text'],
@@ -251,9 +529,27 @@ class AgentOrchestrator:
     # ── Sibling Dynamics Pipeline ─────────────────────────────────
 
     async def _ensure_db_initialized(self) -> None:
-        """Lazily initialize the SiblingDB on first use."""
+        """Lazily connect to DB and run migrations on first use."""
         if not self._db_initialized:
-            await self._sibling_db.initialize()
+            import os
+            from app.db.migration_runner import MigrationRunner
+
+            await self._db_conn.connect()
+            runner = MigrationRunner(self._db_conn)
+            await runner.ensure_migration_table()
+
+            if os.getenv("AUTO_MIGRATE", "").lower() == "true":
+                applied = await runner.apply_all()
+                if applied:
+                    logger.info("Auto-applied %d migration(s)", len(applied))
+            else:
+                pending = await runner.get_pending_migrations()
+                if pending:
+                    names = [f for _, f in pending]
+                    logger.warning("Unapplied migrations: %s", names)
+                    # Apply anyway for dev convenience
+                    await runner.apply_all()
+
             self._db_initialized = True
 
     async def process_sibling_event(
@@ -483,6 +779,89 @@ class AgentOrchestrator:
             )
         except Exception as e:
             logger.error("end_session: saving summary failed: %s", e)
+
+        # ── Extract and persist world state (Req 2.1-2.5, 4.1, 4.3, 9.1) ──
+        try:
+            # Retrieve session moments from memory agent
+            session_moments: list[dict] = []
+            if self.memory.enabled:
+                results = self.memory.story_memories.get(
+                    where={"session_id": session_id}
+                )
+                if results and results.get("metadatas"):
+                    session_moments = results["metadatas"]
+
+            if session_moments:
+                changes = await self._world_extractor.extract(session_moments)
+
+                # Persist new locations
+                for loc in changes.get("new_locations", []):
+                    await self._world_db.save_location(
+                        sibling_pair_id,
+                        loc.get("name", "Unknown"),
+                        loc.get("description", ""),
+                        loc.get("state", "discovered"),
+                    )
+
+                # Persist new NPCs
+                for npc in changes.get("new_npcs", []):
+                    await self._world_db.save_npc(
+                        sibling_pair_id,
+                        npc.get("name", "Unknown"),
+                        npc.get("description", ""),
+                        npc.get("relationship_level", 1),
+                    )
+
+                # Persist new items
+                for item in changes.get("new_items", []):
+                    await self._world_db.save_item(
+                        sibling_pair_id,
+                        item.get("name", "Unknown"),
+                        item.get("description", ""),
+                        session_id,
+                    )
+
+                # Apply location updates
+                for upd in changes.get("location_updates", []):
+                    loc_name = upd.get("name", "")
+                    if loc_name:
+                        locs = await self._world_db.load_locations(sibling_pair_id)
+                        for loc in locs:
+                            if loc["name"] == loc_name:
+                                await self._world_db.update_location_state(
+                                    loc["id"],
+                                    upd.get("new_state", loc["state"]),
+                                    upd.get("new_description", loc["description"]),
+                                )
+                                break
+
+                # Apply NPC relationship updates
+                for upd in changes.get("npc_updates", []):
+                    npc_name = upd.get("name", "")
+                    if npc_name:
+                        npcs = await self._world_db.load_npcs(sibling_pair_id)
+                        for npc in npcs:
+                            if npc["name"] == npc_name:
+                                await self._world_db.update_npc_relationship(
+                                    npc["id"],
+                                    upd.get("relationship_level", npc["relationship_level"]),
+                                )
+                                break
+
+                # Invalidate cache so next session picks up fresh state
+                self._world_state_cache.pop(sibling_pair_id, None)
+
+                logger.info(
+                    "end_session: world state persisted for %s — %d locs, %d npcs, %d items, %d loc_upd, %d npc_upd",
+                    sibling_pair_id,
+                    len(changes.get("new_locations", [])),
+                    len(changes.get("new_npcs", [])),
+                    len(changes.get("new_items", [])),
+                    len(changes.get("location_updates", [])),
+                    len(changes.get("npc_updates", [])),
+                )
+        except Exception as e:
+            logger.error("end_session: world state extraction failed: %s", e)
 
         return {
             "session_id": session_id,

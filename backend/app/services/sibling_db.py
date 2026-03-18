@@ -1,92 +1,39 @@
-"""Async SQLite persistence layer for sibling dynamics structured data.
+"""Async persistence layer for sibling dynamics structured data.
 
-Provides CRUD operations for personality profiles, relationship models,
-skill maps, and session summaries using aiosqlite. Each record stores
-its domain object as a JSON string alongside metadata timestamps.
+Uses the DatabaseConnection abstraction so the same code works with
+SQLite (dev) and PostgreSQL (production). Schema creation is handled
+by the migration runner — ``initialize()`` is a no-op kept for
+backward compatibility.
 
-Requirements: 1.4, 8.1, 8.5, 10.1, 10.2
+Requirements: 1.4, 6.1, 6.3, 6.4, 8.1, 8.5, 10.1, 10.2
 """
+
+from __future__ import annotations
 
 from datetime import datetime, timezone
 
-import aiosqlite
+from app.db.connection import DatabaseConnection
 
 
 class SiblingDB:
-    """Async SQLite wrapper for sibling dynamics structured data.
+    """Async wrapper for sibling dynamics structured data."""
 
-    Uses a single persistent connection to support both file-backed and
-    in-memory (`:memory:`) databases. Call ``initialize()`` before any
-    other method, and ``close()`` when done.
-    """
-
-    def __init__(self, db_path: str = "./sibling_data.db") -> None:
-        self.db_path = db_path
-        self._db: aiosqlite.Connection | None = None
-
-    async def _get_db(self) -> aiosqlite.Connection:
-        if self._db is None:
-            self._db = await aiosqlite.connect(self.db_path)
-        return self._db
-
-    async def close(self) -> None:
-        """Close the underlying database connection."""
-        if self._db is not None:
-            await self._db.close()
-            self._db = None
+    def __init__(self, db: DatabaseConnection) -> None:
+        self._db = db
 
     async def initialize(self) -> None:
-        """Create tables if they don't exist."""
-        db = await self._get_db()
-        await db.execute(
-            """CREATE TABLE IF NOT EXISTS personality_profiles (
-                child_id TEXT PRIMARY KEY,
-                profile_json TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )"""
-        )
-        await db.execute(
-            """CREATE TABLE IF NOT EXISTS relationship_models (
-                sibling_pair_id TEXT PRIMARY KEY,
-                model_json TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            )"""
-        )
-        await db.execute(
-            """CREATE TABLE IF NOT EXISTS skill_maps (
-                sibling_pair_id TEXT PRIMARY KEY,
-                skill_map_json TEXT NOT NULL,
-                evaluated_at TEXT NOT NULL
-            )"""
-        )
-        await db.execute(
-            """CREATE TABLE IF NOT EXISTS session_summaries (
-                session_id TEXT PRIMARY KEY,
-                sibling_pair_id TEXT NOT NULL,
-                score REAL NOT NULL,
-                summary TEXT NOT NULL,
-                suggestion TEXT,
-                created_at TEXT NOT NULL
-            )"""
-        )
-        await db.execute(
-            """CREATE TABLE IF NOT EXISTS initial_profiles (
-                child_id TEXT PRIMARY KEY,
-                profile_json TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            )"""
-        )
-        await db.commit()
+        """No-op — schema is managed by the migration runner."""
+        pass
 
-    # ── Personality Profiles ──────────────────────────────────────────
+    # kept for legacy callers that still reference _get_db
+    async def _get_db(self):
+        return self._db._conn
+
+    # ── Personality Profiles ──────────────────────────────────────
 
     async def save_profile(self, child_id: str, profile_json: str) -> None:
-        """Upsert a personality profile."""
         now = datetime.now(timezone.utc).isoformat()
-        db = await self._get_db()
-        await db.execute(
+        await self._db.execute(
             """INSERT INTO personality_profiles (child_id, profile_json, created_at, updated_at)
             VALUES (?, ?, ?, ?)
             ON CONFLICT(child_id) DO UPDATE SET
@@ -94,25 +41,19 @@ class SiblingDB:
                 updated_at = excluded.updated_at""",
             (child_id, profile_json, now, now),
         )
-        await db.commit()
 
     async def load_profile(self, child_id: str) -> str | None:
-        """Load a personality profile JSON string. Returns None if not found."""
-        db = await self._get_db()
-        cursor = await db.execute(
+        row = await self._db.fetch_one(
             "SELECT profile_json FROM personality_profiles WHERE child_id = ?",
             (child_id,),
         )
-        row = await cursor.fetchone()
-        return row[0] if row else None
+        return row["profile_json"] if row else None
 
-    # ── Relationship Models ───────────────────────────────────────────
+    # ── Relationship Models ───────────────────────────────────────
 
     async def save_relationship(self, pair_id: str, model_json: str) -> None:
-        """Upsert a relationship model."""
         now = datetime.now(timezone.utc).isoformat()
-        db = await self._get_db()
-        await db.execute(
+        await self._db.execute(
             """INSERT INTO relationship_models (sibling_pair_id, model_json, created_at, updated_at)
             VALUES (?, ?, ?, ?)
             ON CONFLICT(sibling_pair_id) DO UPDATE SET
@@ -120,25 +61,19 @@ class SiblingDB:
                 updated_at = excluded.updated_at""",
             (pair_id, model_json, now, now),
         )
-        await db.commit()
 
     async def load_relationship(self, pair_id: str) -> str | None:
-        """Load a relationship model JSON string. Returns None if not found."""
-        db = await self._get_db()
-        cursor = await db.execute(
+        row = await self._db.fetch_one(
             "SELECT model_json FROM relationship_models WHERE sibling_pair_id = ?",
             (pair_id,),
         )
-        row = await cursor.fetchone()
-        return row[0] if row else None
+        return row["model_json"] if row else None
 
-    # ── Skill Maps ────────────────────────────────────────────────────
+    # ── Skill Maps ────────────────────────────────────────────────
 
     async def save_skill_map(self, pair_id: str, skill_map_json: str) -> None:
-        """Upsert a skill map."""
         now = datetime.now(timezone.utc).isoformat()
-        db = await self._get_db()
-        await db.execute(
+        await self._db.execute(
             """INSERT INTO skill_maps (sibling_pair_id, skill_map_json, evaluated_at)
             VALUES (?, ?, ?)
             ON CONFLICT(sibling_pair_id) DO UPDATE SET
@@ -146,19 +81,15 @@ class SiblingDB:
                 evaluated_at = excluded.evaluated_at""",
             (pair_id, skill_map_json, now),
         )
-        await db.commit()
 
     async def load_skill_map(self, pair_id: str) -> str | None:
-        """Load a skill map JSON string. Returns None if not found."""
-        db = await self._get_db()
-        cursor = await db.execute(
+        row = await self._db.fetch_one(
             "SELECT skill_map_json FROM skill_maps WHERE sibling_pair_id = ?",
             (pair_id,),
         )
-        row = await cursor.fetchone()
-        return row[0] if row else None
+        return row["skill_map_json"] if row else None
 
-    # ── Session Summaries ─────────────────────────────────────────────
+    # ── Session Summaries ─────────────────────────────────────────
 
     async def save_session_summary(
         self,
@@ -168,10 +99,8 @@ class SiblingDB:
         summary: str,
         suggestion: str | None = None,
     ) -> None:
-        """Insert a session summary. Replaces if session_id already exists."""
         now = datetime.now(timezone.utc).isoformat()
-        db = await self._get_db()
-        await db.execute(
+        await self._db.execute(
             """INSERT INTO session_summaries
                 (session_id, sibling_pair_id, score, summary, suggestion, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -182,15 +111,11 @@ class SiblingDB:
                 created_at = excluded.created_at""",
             (session_id, pair_id, score, summary, suggestion, now),
         )
-        await db.commit()
 
     async def load_session_summaries(
         self, pair_id: str, limit: int = 10
     ) -> list[dict]:
-        """Load recent session summaries for a sibling pair, newest first."""
-        db = await self._get_db()
-        db.row_factory = aiosqlite.Row
-        cursor = await db.execute(
+        return await self._db.fetch_all(
             """SELECT session_id, sibling_pair_id, score, summary, suggestion, created_at
             FROM session_summaries
             WHERE sibling_pair_id = ?
@@ -198,45 +123,30 @@ class SiblingDB:
             LIMIT ?""",
             (pair_id, limit),
         )
-        rows = await cursor.fetchall()
-        return [dict(row) for row in rows]
 
     async def load_session_summary(self, session_id: str) -> dict | None:
-        """Load a single session summary by session_id. Returns None if not found."""
-        db = await self._get_db()
-        db.row_factory = aiosqlite.Row
-        cursor = await db.execute(
+        return await self._db.fetch_one(
             """SELECT session_id, sibling_pair_id, score, summary, suggestion, created_at
             FROM session_summaries
             WHERE session_id = ?""",
             (session_id,),
         )
-        row = await cursor.fetchone()
-        return dict(row) if row else None
 
-
-    # ── Initial Profiles ──────────────────────────────────────────────
+    # ── Initial Profiles ──────────────────────────────────────────
 
     async def save_initial_profile(
         self, child_id: str, profile_json: str
     ) -> None:
-        """Save the first-ever snapshot of a child's profile (for growth tracking).
-        Only inserts if no initial profile exists yet — never overwrites."""
         now = datetime.now(timezone.utc).isoformat()
-        db = await self._get_db()
-        await db.execute(
+        await self._db.execute(
             """INSERT OR IGNORE INTO initial_profiles (child_id, profile_json, created_at)
             VALUES (?, ?, ?)""",
             (child_id, profile_json, now),
         )
-        await db.commit()
 
     async def load_initial_profile(self, child_id: str) -> str | None:
-        """Load the initial profile snapshot. Returns None if not found."""
-        db = await self._get_db()
-        cursor = await db.execute(
+        row = await self._db.fetch_one(
             "SELECT profile_json FROM initial_profiles WHERE child_id = ?",
             (child_id,),
         )
-        row = await cursor.fetchone()
-        return row[0] if row else None
+        return row["profile_json"] if row else None

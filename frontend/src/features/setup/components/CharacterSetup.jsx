@@ -1,126 +1,306 @@
-import React, { useState } from 'react';
-import { LoadingAnimation, ChildFriendlyButton } from '../../../shared/components';
-import { AvatarCreator } from '../../avatar';
+import React, { useState, useRef, useEffect } from 'react';
+import PhotoUploader from './PhotoUploader';
+import PhotoGallery from './PhotoGallery';
+import CharacterMapping from './CharacterMapping';
+import ParentApprovalScreen from './ParentApprovalScreen';
+import { usePhotoStore } from '../../../stores/photoStore';
+import './CharacterSetup.css';
+
+const stepLabels = {
+  name: 'Name',
+  gender: 'Gender',
+  spirit: 'Spirit Animal',
+  photos: 'Family Photos',
+};
 
 const spirits = [
-  { value: 'dragon', label: '🐉 Dragon' },
-  { value: 'unicorn', label: '🦄 Unicorn' },
-  { value: 'owl', label: '🦉 Owl' },
-  { value: 'dolphin', label: '🐬 Dolphin' },
-  { value: 'phoenix', label: '🔥 Phoenix' },
-  { value: 'tiger', label: '🐯 Tiger' },
+  { value: 'dragon', emoji: '🐉', label: 'Dragon', color: '#ef4444' },
+  { value: 'unicorn', emoji: '🦄', label: 'Unicorn', color: '#d946ef' },
+  { value: 'owl', emoji: '🦉', label: 'Owl', color: '#a78bfa' },
+  { value: 'dolphin', emoji: '🐬', label: 'Dolphin', color: '#38bdf8' },
+  { value: 'phoenix', emoji: '🔥', label: 'Phoenix', color: '#f59e0b' },
+  { value: 'tiger', emoji: '🐯', label: 'Tiger', color: '#fb923c' },
 ];
 
-const inputStyle = {
-  width: '100%', padding: '12px 16px', fontSize: '1rem',
-  fontFamily: 'var(--font-body)', fontWeight: 500,
-  borderRadius: 'var(--radius-sm)',
-  border: '1.5px solid var(--color-glass-border)',
-  background: 'rgba(0,0,0,0.25)', color: '#fff',
-  transition: 'border-color 0.2s',
-  outline: 'none',
-};
-
-const labelStyle = {
-  display: 'block', marginBottom: '6px',
-  fontFamily: 'var(--font-display)', fontSize: '0.85rem',
-  fontWeight: 600, color: 'rgba(255,255,255,0.55)',
-  textTransform: 'uppercase', letterSpacing: '0.06em',
-};
+const genders = [
+  { value: 'girl', emoji: '👧', label: 'Girl' },
+  { value: 'boy', emoji: '👦', label: 'Boy' },
+  { value: 'other', emoji: '🌈', label: 'Other' },
+];
 
 export default function CharacterSetup({ t, onComplete }) {
+  const [childNum, setChildNum] = useState(1);
+  const [wizardStep, setWizardStep] = useState('name'); // name → gender → spirit → photos → done
   const [formData, setFormData] = useState({
-    c1_name: '', c1_gender: 'girl', c1_spirit_animal: 'dragon', c1_toy_name: '',
-    c2_name: '', c2_gender: 'boy', c2_spirit_animal: 'owl', c2_toy_name: '',
+    c1_name: '', c1_gender: '', c1_spirit_animal: '', c1_toy_name: '',
+    c2_name: '', c2_gender: '', c2_spirit_animal: '', c2_toy_name: '',
   });
-  const [step, setStep] = useState('form');
-  const [avatars, setAvatars] = useState({ child1: null, child2: null });
-  const [isLoading, setIsLoading] = useState(false);
+  const [bounceCard, setBounceCard] = useState(null);
+  const [photoRefreshKey, setPhotoRefreshKey] = useState(0);
+  const [transitionClass, setTransitionClass] = useState('animation-fade-in');
+  const [nameError, setNameError] = useState('');
+  const nameRef = useRef(null);
+  const stepHeadingRef = useRef(null);
 
-  const set = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+  const prefix = `c${childNum}_`;
+  const childColor = childNum === 1 ? 'var(--color-child1)' : 'var(--color-child2)';
+  const childEmoji = childNum === 1 ? '🌟' : '⭐';
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.c1_name || !formData.c2_name) {
-      alert(t?.enterNames || 'Please enter both names!');
-      return;
-    }
-    const wantAvatars = window.confirm(t?.wantAvatars || 'Create avatars with photos? (Optional)');
-    if (wantAvatars) { setStep('avatar1'); } else { onComplete(formData); }
+  // Step ordering for directional transitions
+  const stepOrder = ['name', 'gender', 'spirit', 'photos'];
+
+  const goToStep = (nextStep) => {
+    const curIdx = stepOrder.indexOf(wizardStep);
+    const nextIdx = stepOrder.indexOf(nextStep);
+    setTransitionClass(nextIdx >= curIdx ? 'animation-slide-in-right' : 'animation-slide-in-left');
+    setWizardStep(nextStep);
   };
 
-  if (step === 'avatar1') {
-    return <AvatarCreator childMetadata={{ name: formData.c1_name, gender: formData.c1_gender, spiritAnimal: formData.c1_spirit_animal, toyName: formData.c1_toy_name }} onComplete={(d) => { setAvatars(p => ({ ...p, child1: d })); setStep('avatar2'); }} onSkip={() => { setAvatars(p => ({ ...p, child1: null })); setStep('avatar2'); }} />;
+  // Fetch review count for the badge on photos step
+  const stats = usePhotoStore((s) => s.stats);
+  const loadPhotos = usePhotoStore((s) => s.loadPhotos);
+  const reviewCount = stats?.review_count ?? 0;
+
+  // Derive sibling pair ID for photo APIs (needed early for stats fetch)
+  const siblingPairId = formData.c1_name && formData.c2_name
+    ? [formData.c1_name, formData.c2_name].sort().join(':')
+    : '';
+
+  // Auto-focus name input on name step, heading on other steps
+  useEffect(() => {
+    if (wizardStep === 'name' && nameRef.current) {
+      setTimeout(() => nameRef.current?.focus(), 400);
+    } else if (stepHeadingRef.current) {
+      setTimeout(() => stepHeadingRef.current?.focus(), 400);
+    }
+  }, [wizardStep, childNum]);
+
+  // Fetch photo stats when entering photos step (for review badge)
+  useEffect(() => {
+    if (wizardStep === 'photos' && siblingPairId) {
+      loadPhotos(siblingPairId);
+    }
+  }, [wizardStep, siblingPairId, loadPhotos]);
+
+  const set = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear name error when typing
+    if (field === `${prefix}name`) setNameError('');
+    // Bounce animation
+    setBounceCard(value);
+    setTimeout(() => setBounceCard(null), 400);
+  };
+
+  const handleNameSubmit = (e) => {
+    e.preventDefault();
+    if (formData[`${prefix}name`].trim()) {
+      setNameError('');
+      goToStep('gender');
+    } else {
+      setNameError('Please enter a name');
+    }
+  };
+
+  const handleGenderPick = (val) => {
+    set(`${prefix}gender`, val);
+    setTimeout(() => goToStep('spirit'), 350);
+  };
+
+  const handleSpiritPick = (val) => {
+    set(`${prefix}spirit_animal`, val);
+    setTimeout(() => {
+      if (childNum === 1) {
+        // Move to child 2 — reset to name step with fresh fade-in
+        setChildNum(2);
+        setTransitionClass('animation-fade-in');
+        setWizardStep('name');
+      } else {
+        // Both kids done — go to optional photo step
+        setFormData(prev => ({ ...prev, [`${prefix}spirit_animal`]: val }));
+        goToStep('photos');
+      }
+    }, 500);
+  };
+
+  // ── NAME STEP ──────────────────────────────────────
+  if (wizardStep === 'name') {
+    return (
+      <section aria-label={`Step: ${stepLabels.name}`}>
+        <div className={`wizard-container ${transitionClass}`} key={`name-${childNum}`}>
+          <div className="wizard-child-badge" style={{ color: childColor }}>
+            <span className="wizard-child-badge__emoji" aria-hidden="true">{childEmoji}</span>
+            <span>Child {childNum}</span>
+          </div>
+
+          <h2 className="wizard-question" ref={stepHeadingRef} tabIndex={-1}>
+            What's your name?
+          </h2>
+
+          <form onSubmit={handleNameSubmit} className="wizard-name-form" noValidate>
+            <label htmlFor={`child-${childNum}-name`} className="sr-only">
+              Name for Child {childNum}
+            </label>
+            <input
+              ref={nameRef}
+              id={`child-${childNum}-name`}
+              type="text"
+              className="wizard-name-input"
+              style={{ borderColor: childColor }}
+              value={formData[`${prefix}name`]}
+              onChange={e => set(`${prefix}name`, e.target.value)}
+              placeholder="Type here…"
+              maxLength={20}
+              autoComplete="off"
+              aria-invalid={nameError ? 'true' : undefined}
+              aria-describedby={nameError ? `child-${childNum}-name-error` : undefined}
+            />
+            <button
+              type="submit"
+              className="wizard-next-btn"
+              disabled={!formData[`${prefix}name`].trim()}
+              aria-label="Next step"
+            >
+              <span className="wizard-next-btn__arrow">→</span>
+            </button>
+          </form>
+
+          {nameError && (
+            <p id={`child-${childNum}-name-error`} className="wizard-hint" role="alert" style={{ color: '#f87171' }}>
+              {nameError}
+            </p>
+          )}
+
+          <p className="wizard-hint">
+            {childNum === 1 ? "Let's meet the first adventurer!" : "Now the second hero!"}
+          </p>
+        </div>
+      </section>
+    );
   }
-  if (step === 'avatar2') {
-    return <AvatarCreator childMetadata={{ name: formData.c2_name, gender: formData.c2_gender, spiritAnimal: formData.c2_spirit_animal, toyName: formData.c2_toy_name }} onComplete={(d) => onComplete({ ...formData, c1_avatar: avatars.child1, c2_avatar: d })} onSkip={() => onComplete({ ...formData, c1_avatar: avatars.child1, c2_avatar: null })} />;
+
+  // ── GENDER STEP ────────────────────────────────────
+  if (wizardStep === 'gender') {
+    return (
+      <section aria-label={`Step: ${stepLabels.gender}`}>
+        <div className={`wizard-container ${transitionClass}`} key={`gender-${childNum}`}>
+          <div className="wizard-child-badge" style={{ color: childColor }}>
+            <span className="wizard-child-badge__emoji" aria-hidden="true">{childEmoji}</span>
+            <span>{formData[`${prefix}name`]}</span>
+          </div>
+
+          <h2 className="wizard-question" ref={stepHeadingRef} tabIndex={-1}>
+            Who are you?
+          </h2>
+
+          <div className="wizard-card-grid wizard-card-grid--3" role="group" aria-label="Gender options">
+            {genders.map(g => (
+              <button
+                key={g.value}
+                className={`wizard-card ${bounceCard === g.value ? 'wizard-card--bounce' : ''}`}
+                onClick={() => handleGenderPick(g.value)}
+              >
+                <span className="wizard-card__emoji" aria-hidden="true">{g.emoji}</span>
+                <span className="wizard-card__label">{g.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   }
-  if (isLoading) {
-    return <div className="glass-panel" style={{ padding: '60px', textAlign: 'center' }}><LoadingAnimation type="setup" message={t?.creatingCharacters || 'Creating your characters…'} /></div>;
+
+  // ── SPIRIT ANIMAL STEP ─────────────────────────────
+  if (wizardStep === 'spirit') {
+    return (
+      <section aria-label={`Step: ${stepLabels.spirit}`}>
+        <div className={`wizard-container ${transitionClass}`} key={`spirit-${childNum}`}>
+          <div className="wizard-child-badge" style={{ color: childColor }}>
+            <span className="wizard-child-badge__emoji" aria-hidden="true">{childEmoji}</span>
+            <span>{formData[`${prefix}name`]}</span>
+          </div>
+
+          <h2 className="wizard-question" ref={stepHeadingRef} tabIndex={-1}>
+            Pick your spirit animal!
+          </h2>
+
+          <div className="wizard-card-grid wizard-card-grid--3" role="group" aria-label="Spirit animal options">
+            {spirits.map(s => (
+              <button
+                key={s.value}
+                className={`wizard-card wizard-card--spirit ${bounceCard === s.value ? 'wizard-card--bounce' : ''}`}
+                onClick={() => handleSpiritPick(s.value)}
+                style={{ '--spirit-color': s.color }}
+              >
+                <span className="wizard-card__emoji wizard-card__emoji--big" aria-hidden="true">{s.emoji}</span>
+                <span className="wizard-card__label">{s.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
   }
 
-  const ChildSection = ({ num, color, borderColor }) => (
-    <div style={{
-      padding: '24px', borderRadius: 'var(--radius-md)',
-      background: `rgba(${color}, 0.04)`,
-      border: `1.5px solid rgba(${color}, 0.2)`,
-    }}>
-      <h3 style={{
-        fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700,
-        marginBottom: '18px', color: `rgba(${color}, 1)`,
-      }}>
-        {num === 1 ? '🌟' : '⭐'} {t?.[`child${num}`] || `Child ${num}`}
-      </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-        <div>
-          <label style={labelStyle}>{t?.name || 'Name'}</label>
-          <input type="text" value={formData[`c${num}_name`]} onChange={e => set(`c${num}_name`, e.target.value)} placeholder={t?.enterName || 'Enter name'} style={{ ...inputStyle, borderColor: `rgba(${color}, 0.3)` }} required />
-        </div>
-        <div>
-          <label style={labelStyle}>{t?.gender || 'Gender'}</label>
-          <select value={formData[`c${num}_gender`]} onChange={e => set(`c${num}_gender`, e.target.value)} style={{ ...inputStyle, borderColor: `rgba(${color}, 0.3)` }}>
-            <option value="girl">{t?.girl || 'Girl'}</option>
-            <option value="boy">{t?.boy || 'Boy'}</option>
-            <option value="other">{t?.other || 'Other'}</option>
-          </select>
-        </div>
-        <div>
-          <label style={labelStyle}>{t?.spiritAnimal || 'Spirit Animal'}</label>
-          <select value={formData[`c${num}_spirit_animal`]} onChange={e => set(`c${num}_spirit_animal`, e.target.value)} style={{ ...inputStyle, borderColor: `rgba(${color}, 0.3)` }}>
-            {spirits.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </select>
-        </div>
-        <div>
-          <label style={labelStyle}>{t?.favoriteToy || 'Favorite Toy'}</label>
-          <input type="text" value={formData[`c${num}_toy_name`]} onChange={e => set(`c${num}_toy_name`, e.target.value)} placeholder={t?.toyName || 'e.g., Bruno'} style={{ ...inputStyle, borderColor: `rgba(${color}, 0.3)` }} />
-        </div>
-      </div>
-    </div>
-  );
+  const handleFinish = () => {
+    onComplete(formData);
+  };
 
-  return (
-    <div className="glass-panel" style={{
-      padding: '36px', maxWidth: '760px', width: '100%',
-      animation: 'fadeInUp 0.5s var(--ease-smooth)',
-    }}>
-      <h2 style={{
-        fontFamily: 'var(--font-display)', fontSize: '1.8rem', fontWeight: 700,
-        marginBottom: '28px', textAlign: 'center',
-        background: 'linear-gradient(135deg, var(--color-gold), var(--color-coral))',
-        WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-        backgroundClip: 'text',
-      }}>
-        {t?.createCharacters || 'Create Your Characters'}
-      </h2>
+  // ── PHOTOS STEP (optional) ─────────────────────────
+  if (wizardStep === 'photos') {
+    return (
+      <section aria-label={`Step: ${stepLabels.photos}`}>
+        <div className={`wizard-container ${transitionClass}`} key="photos">
+          <h2 className="wizard-question" ref={stepHeadingRef} tabIndex={-1}>
+            Add family photos?
+            {reviewCount > 0 && (
+              <span className="wizard-review-badge" aria-label={`${reviewCount} photos to review`}>{reviewCount}</span>
+            )}
+          </h2>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <ChildSection num={1} color="244, 114, 182" />
-        <ChildSection num={2} color="96, 165, 250" />
+          <PhotoUploader
+            siblingPairId={siblingPairId}
+            onUploadComplete={() => setPhotoRefreshKey(k => k + 1)}
+          />
 
-        <ChildFriendlyButton type="submit" variant="primary" style={{ marginTop: '8px', alignSelf: 'center' }}>
-          {t?.startAdventure || '🚀 Start Adventure'}
-        </ChildFriendlyButton>
-      </form>
-    </div>
-  );
+          <PhotoGallery
+            siblingPairId={siblingPairId}
+            refreshKey={photoRefreshKey}
+          />
+
+          <CharacterMapping
+            siblingPairId={siblingPairId}
+            onMappingSaved={() => {}}
+          />
+
+          {reviewCount > 0 && (
+            <ParentApprovalScreen
+              siblingPairId={siblingPairId}
+              onComplete={() => loadPhotos(siblingPairId)}
+            />
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+            <button
+              className="wizard-card"
+              onClick={handleFinish}
+              style={{ padding: '12px 24px', minWidth: '120px' }}
+            >
+              <span className="wizard-card__emoji" aria-hidden="true">⏭️</span>
+              <span className="wizard-card__label">Skip</span>
+            </button>
+            <button
+              className="wizard-card wizard-card--spirit"
+              onClick={handleFinish}
+              style={{ padding: '12px 24px', minWidth: '120px', '--spirit-color': '#4ade80' }}
+            >
+              <span className="wizard-card__emoji" aria-hidden="true">🚀</span>
+              <span className="wizard-card__label">Go!</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return null;
 }

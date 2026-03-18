@@ -406,7 +406,14 @@ body::after {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-duration: 200ms !important;
+  }
+  /* Kill purely decorative animations */
+  .logo-animation,
+  body::before,
+  body::after,
+  .app-container::before {
+    animation: none !important;
   }
 }
 

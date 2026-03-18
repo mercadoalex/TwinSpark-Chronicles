@@ -45,6 +45,7 @@ const MagicMirror = ({ embedded = false }) => {
           autoPlay
           muted
           playsInline
+          aria-label="Live camera preview showing your face"
           style={{
             width: '100%',
             height: 'auto',
@@ -52,21 +53,25 @@ const MagicMirror = ({ embedded = false }) => {
             transform: 'scaleX(-1)' // Mirror effect
           }}
         />
-        <div style={{
-          position: 'absolute',
-          bottom: '15px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          background: 'rgba(0,0,0,0.8)',
-          padding: '8px 20px',
-          borderRadius: '20px',
-          fontSize: '1rem',
-          color: '#a855f7',
-          fontWeight: 'bold',
-          border: '2px solid #a855f7',
-          boxShadow: '0 0 15px rgba(168, 85, 247, 0.6)'
-        }}>
-          👋 Do your gesture here!
+        <div
+          role="status"
+          aria-label="Do your gesture here"
+          style={{
+            position: 'absolute',
+            bottom: '15px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0,0,0,0.8)',
+            padding: '8px 20px',
+            borderRadius: '20px',
+            fontSize: '1rem',
+            color: '#a855f7',
+            fontWeight: 'bold',
+            border: '2px solid #a855f7',
+            boxShadow: '0 0 15px rgba(168, 85, 247, 0.6)'
+          }}
+        >
+          <span aria-hidden="true">👋 </span>Do your gesture here!
         </div>
       </div>
     );
@@ -92,6 +97,7 @@ const MagicMirror = ({ embedded = false }) => {
         autoPlay
         muted
         playsInline
+        aria-label="Live camera preview showing your face"
         style={{
           width: '100%',
           height: '100%',
@@ -99,19 +105,23 @@ const MagicMirror = ({ embedded = false }) => {
           transform: 'scaleX(-1)'
         }}
       />
-      <div style={{
-        position: 'absolute',
-        bottom: '5px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        background: 'rgba(0,0,0,0.7)',
-        padding: '3px 8px',
-        borderRadius: '10px',
-        fontSize: '0.7rem',
-        color: '#a855f7',
-        fontWeight: 'bold'
-      }}>
-        👋 Wave Here!
+      <div
+        role="status"
+        aria-label="Wave here"
+        style={{
+          position: 'absolute',
+          bottom: '5px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(0,0,0,0.7)',
+          padding: '3px 8px',
+          borderRadius: '10px',
+          fontSize: '0.7rem',
+          color: '#a855f7',
+          fontWeight: 'bold'
+        }}
+      >
+        <span aria-hidden="true">👋 </span>Wave Here!
       </div>
     </div>
   );

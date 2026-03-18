@@ -5,17 +5,8 @@ import './DualPrompt.css';
 const NUDGE_DELAY_MS = 15_000;
 
 /**
- * DualPrompt — interactive prompt addressing both children by name
- * with distinct roles. Shows a gentle nudge after 15 s if one child
- * hasn't responded, and acknowledges both responses once they arrive.
- *
- * Props:
- *  - child1Name  (string)  first child's display name
- *  - child2Name  (string)  second child's display name
- *  - promptText  (string)  the current story prompt / question
- *  - child1Responded (bool) whether child 1 has answered
- *  - child2Responded (bool) whether child 2 has answered
- *  - onRespond   (fn)      callback when a child responds: onRespond(childId)
+ * DualPrompt — minimal floating turn indicator for both children.
+ * Shows who's responded with simple avatar bubbles + gentle nudge.
  */
 export default function DualPrompt({
   child1Name = 'Child 1',
@@ -26,11 +17,9 @@ export default function DualPrompt({
   onRespond,
 }) {
   const { childRoles, waitingForChild } = useSiblingStore();
-
   const [showNudge, setShowNudge] = useState(false);
   const nudgeTimer = useRef(null);
 
-  // Determine which child (if any) still hasn't responded
   const silentChild = !child1Responded && child2Responded
     ? { name: child1Name, id: 'child1' }
     : child1Responded && !child2Responded
@@ -39,7 +28,6 @@ export default function DualPrompt({
 
   const bothResponded = child1Responded && child2Responded;
 
-  // ── 15-second nudge timer ──────────────────────────────────
   const clearNudge = useCallback(() => {
     if (nudgeTimer.current) {
       clearTimeout(nudgeTimer.current);
@@ -49,136 +37,63 @@ export default function DualPrompt({
   }, []);
 
   useEffect(() => {
-    // Reset nudge whenever responses change
     clearNudge();
-
     if (silentChild && !bothResponded) {
       nudgeTimer.current = setTimeout(() => setShowNudge(true), NUDGE_DELAY_MS);
     }
-
     return clearNudge;
   }, [child1Responded, child2Responded, silentChild, bothResponded, clearNudge]);
 
-  // Also respect the store-level waitingForChild flag
   const nudgeTarget = showNudge
     ? silentChild
     : waitingForChild
       ? { name: waitingForChild === 'child1' ? child1Name : child2Name, id: waitingForChild }
       : null;
 
-  // ── Render ─────────────────────────────────────────────────
   return (
-    <div className="dual-prompt glass-panel" style={{ padding: '28px' }}>
-      {/* Header */}
-      <div className="dual-prompt__header">
-        <h2 className="dual-prompt__title">
-          ✨ {child1Name} &amp; {child2Name}'s Turn! ✨
-        </h2>
-        {promptText && (
-          <p className="dual-prompt__subtitle">{promptText}</p>
+    <div className="dual-prompt-bar">
+      {/* Child 1 bubble */}
+      <button
+        className={`dp-bubble dp-bubble--c1 ${child1Responded ? 'dp-bubble--done' : 'dp-bubble--waiting'}`}
+        onClick={() => !child1Responded && onRespond?.('child1')}
+        disabled={child1Responded}
+        aria-label={`${child1Name} ${child1Responded ? 'answered' : 'tap to answer'}`}
+      >
+        <span className="dp-bubble__emoji">🌟</span>
+        <span className="dp-bubble__name">{child1Name}</span>
+        {child1Responded
+          ? <span className="dp-bubble__check">✓</span>
+          : <span className="dp-bubble__pulse" />
+        }
+      </button>
+
+      {/* Center status */}
+      <div className="dp-center">
+        {bothResponded ? (
+          <span className="dp-center__text dp-center__text--done">🎉</span>
+        ) : nudgeTarget ? (
+          <span className="dp-center__text dp-center__text--nudge">
+            💫 {nudgeTarget.name}?
+          </span>
+        ) : (
+          <span className="dp-center__text">Your turn!</span>
         )}
       </div>
 
-      {/* Both-responded acknowledgment */}
-      {bothResponded && (
-        <div className="dual-prompt__ack" role="status" aria-live="polite">
-          <span className="dual-prompt__ack-text">
-            🎉 Great job, {child1Name} &amp; {child2Name}! Both of you answered!
-          </span>
-        </div>
-      )}
-
-      {/* Gentle nudge */}
-      {!bothResponded && nudgeTarget && (
-        <div className="dual-prompt__nudge" role="status" aria-live="polite">
-          <span className="dual-prompt__nudge-text">
-            💫 Hey {nudgeTarget.name}, we'd love to hear from you too!
-          </span>
-        </div>
-      )}
-
-      {/* Role cards */}
-      <div className="dual-prompt__roles">
-        {/* Child 1 */}
-        <div
-          className={`dual-prompt__role-card dual-prompt__role-card--child1${
-            !child1Responded && child2Responded ? ' dual-prompt__role-card--waiting' : ''
-          }`}
-        >
-          <span className="dual-prompt__child-emoji" aria-hidden="true">🌟</span>
-          <div className="dual-prompt__child-name dual-prompt__child-name--child1">
-            {child1Name}
-          </div>
-          {childRoles.child1 && (
-            <div className="dual-prompt__child-role">{childRoles.child1}</div>
-          )}
-          {child1Responded ? (
-            <span className="dual-prompt__status dual-prompt__status--responded">
-              ✅ Answered
-            </span>
-          ) : (
-            <span className="dual-prompt__status dual-prompt__status--waiting">
-              ⏳ Waiting…
-            </span>
-          )}
-          {!child1Responded && onRespond && (
-            <button
-              className="btn-magic"
-              style={{
-                marginTop: 12,
-                padding: '10px 24px',
-                fontSize: '1.1rem',
-                background: 'linear-gradient(135deg, var(--color-accent-pink), var(--color-accent-purple))',
-                color: '#fff',
-              }}
-              onClick={() => onRespond('child1')}
-              aria-label={`${child1Name} responds`}
-            >
-              {child1Name}, answer! 🗣️
-            </button>
-          )}
-        </div>
-
-        {/* Child 2 */}
-        <div
-          className={`dual-prompt__role-card dual-prompt__role-card--child2${
-            !child2Responded && child1Responded ? ' dual-prompt__role-card--waiting' : ''
-          }`}
-        >
-          <span className="dual-prompt__child-emoji" aria-hidden="true">⭐</span>
-          <div className="dual-prompt__child-name dual-prompt__child-name--child2">
-            {child2Name}
-          </div>
-          {childRoles.child2 && (
-            <div className="dual-prompt__child-role">{childRoles.child2}</div>
-          )}
-          {child2Responded ? (
-            <span className="dual-prompt__status dual-prompt__status--responded">
-              ✅ Answered
-            </span>
-          ) : (
-            <span className="dual-prompt__status dual-prompt__status--waiting">
-              ⏳ Waiting…
-            </span>
-          )}
-          {!child2Responded && onRespond && (
-            <button
-              className="btn-magic"
-              style={{
-                marginTop: 12,
-                padding: '10px 24px',
-                fontSize: '1.1rem',
-                background: 'linear-gradient(135deg, var(--color-accent-blue), var(--color-accent-purple))',
-                color: '#fff',
-              }}
-              onClick={() => onRespond('child2')}
-              aria-label={`${child2Name} responds`}
-            >
-              {child2Name}, answer! 🗣️
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Child 2 bubble */}
+      <button
+        className={`dp-bubble dp-bubble--c2 ${child2Responded ? 'dp-bubble--done' : 'dp-bubble--waiting'}`}
+        onClick={() => !child2Responded && onRespond?.('child2')}
+        disabled={child2Responded}
+        aria-label={`${child2Name} ${child2Responded ? 'answered' : 'tap to answer'}`}
+      >
+        <span className="dp-bubble__emoji">⭐</span>
+        <span className="dp-bubble__name">{child2Name}</span>
+        {child2Responded
+          ? <span className="dp-bubble__check">✓</span>
+          : <span className="dp-bubble__pulse" />
+        }
+      </button>
     </div>
   );
 }

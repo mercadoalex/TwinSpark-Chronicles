@@ -1,6 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { useFocusTrap } from '../../hooks';
 
 export default function AlertModal({ message, onClose }) {
+    const dialogRef = useRef(null);
+    const isOpen = Boolean(message);
+
+    useFocusTrap(dialogRef, isOpen, onClose);
+
     if (!message) return null;
 
     return (
@@ -18,29 +24,41 @@ export default function AlertModal({ message, onClose }) {
             zIndex: 1000,
             animation: 'fadeIn 0.3s ease'
         }}>
-            <div className="glass-panel" style={{
-                padding: '40px 50px',
-                maxWidth: '500px',
-                textAlign: 'center',
-                border: '2px solid var(--color-accent-pink)',
-                boxShadow: '0 10px 30px rgba(236, 72, 153, 0.4)',
-                animation: 'slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-            }}>
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="alert-modal-heading"
+                className="glass-panel"
+                style={{
+                    padding: '40px 50px',
+                    maxWidth: '500px',
+                    textAlign: 'center',
+                    border: '2px solid var(--color-accent-pink)',
+                    boxShadow: '0 10px 30px rgba(236, 72, 153, 0.4)',
+                    animation: 'slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                }}
+            >
 
                 <div style={{
                     fontSize: '4rem',
                     marginBottom: '20px',
                     animation: 'bounce 2s infinite'
-                }}>
+                }}
+                    aria-hidden="true"
+                >
                     ✨
                 </div>
 
-                <h2 style={{
-                    fontFamily: 'var(--font-heading)',
-                    color: '#fff',
-                    fontSize: '2rem',
-                    marginBottom: '15px'
-                }}>
+                <h2
+                    id="alert-modal-heading"
+                    style={{
+                        fontFamily: 'var(--font-heading)',
+                        color: '#fff',
+                        fontSize: '2rem',
+                        marginBottom: '15px'
+                    }}
+                >
                     TwinSpark Magic
                 </h2>
 
@@ -65,7 +83,9 @@ export default function AlertModal({ message, onClose }) {
                         fontWeight: 'bold',
                         cursor: 'pointer',
                         boxShadow: '0 5px 15px rgba(236, 72, 153, 0.3)',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                        minWidth: '44px',
+                        minHeight: '44px',
                     }}
                     onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                     onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}

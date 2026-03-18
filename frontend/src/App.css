@@ -142,6 +142,41 @@
   z-index: 1;
 }
 
+/* ── Floating mic button ──────────────────────────── */
+.floating-mic {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, var(--color-violet), var(--color-coral));
+  box-shadow: 0 8px 32px rgba(167, 139, 250, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  transition: transform 0.25s var(--ease-bounce), box-shadow 0.25s;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.floating-mic:hover {
+  transform: scale(1.1);
+}
+
+.floating-mic:active {
+  transform: scale(0.92);
+}
+
+.floating-mic--active {
+  background: linear-gradient(135deg, var(--color-emerald), #059669);
+  box-shadow: 0 8px 32px rgba(52, 211, 153, 0.5);
+  animation: pulse-ring 1.8s infinite;
+}
+
 /* ── Mechanics overlay ────────────────────────────── */
 .mechanic-overlay {
   padding: 20px 40px;

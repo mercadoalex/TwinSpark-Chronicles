@@ -90,6 +90,7 @@ const CameraPreview = () => {
         autoPlay
         playsInline
         muted
+        aria-label="Live camera preview showing your face"
       />
       {emotionDisplay && (
         <span className="camera-preview__emoji" aria-label={primaryEmotion.emotion}>

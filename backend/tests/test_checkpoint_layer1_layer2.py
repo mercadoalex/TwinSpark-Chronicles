@@ -18,6 +18,8 @@ from app.models.sibling import PersonalityProfile, RelationshipModel
 from app.services.personality_engine import PersonalityEngine
 from app.services.relationship_mapper import RelationshipMapper
 from app.services.sibling_db import SiblingDB
+from app.db.connection import DatabaseConnection
+from app.db.migration_runner import MigrationRunner
 
 
 def _run(coro):
@@ -26,8 +28,11 @@ def _run(coro):
 
 
 async def _make_db():
-    sdb = SiblingDB(db_path=":memory:")
-    await sdb.initialize()
+    conn = DatabaseConnection("sqlite:///:memory:")
+    await conn.connect()
+    runner = MigrationRunner(conn)
+    await runner.apply_all()
+    sdb = SiblingDB(conn)
     return sdb
 
 
@@ -52,7 +57,6 @@ def test_sibling_db_initialize():
         db = await _make_db()
         # calling again is idempotent
         await db.initialize()
-        await db.close()
 
     _run(_test())
 
@@ -67,7 +71,6 @@ def test_sibling_db_save_load_profile():
         assert loaded_json is not None
         loaded = PersonalityProfile.model_validate_json(loaded_json)
         assert loaded.child_id == "child-a"
-        await db.close()
 
     _run(_test())
 
@@ -79,7 +82,6 @@ def test_sibling_db_load_missing_returns_none():
         assert await db.load_profile("nonexistent") is None
         assert await db.load_relationship("nonexistent") is None
         assert await db.load_skill_map("nonexistent") is None
-        await db.close()
 
     _run(_test())
 
@@ -96,7 +98,6 @@ def test_personality_engine_load_default():
         assert profile.child_id == "new-child"
         assert profile.is_emerging()
         assert profile.status == "emerging"
-        await db.close()
 
     _run(_test())
 
@@ -127,7 +128,6 @@ def test_personality_engine_update_from_event():
         profile = await engine.update_from_event("child-a", event)
         assert profile.total_interactions == 1
         assert profile.child_id == "child-a"
-        await db.close()
 
     _run(_test())
 
@@ -142,7 +142,6 @@ def test_personality_engine_record_choice():
         )
         assert "exploration" in profile.preferred_themes
         assert profile.total_interactions == 1
-        await db.close()
 
     _run(_test())
 
@@ -159,7 +158,6 @@ def test_relationship_mapper_load_default():
         assert model.sibling_pair_id == "pair-1"
         assert model.leadership_balance == 0.5
         assert model.cooperation_score == 0.5
-        await db.close()
 
     _run(_test())
 
@@ -176,7 +174,6 @@ def test_relationship_mapper_record_shared_choice():
         )
         assert model.total_shared_choices == 1
         assert model.cooperation_score > 0.5  # shifted toward 1.0
-        await db.close()
 
     _run(_test())
 
@@ -204,7 +201,6 @@ def test_relationship_mapper_update_from_event():
         model = await mapper.update_from_event(event, (profile_a, profile_b))
         # Both happy → synchrony should increase from default 0.5
         assert model.emotional_synchrony > 0.5
-        await db.close()
 
     _run(_test())
 
@@ -216,6 +212,5 @@ def test_relationship_mapper_compute_session_score():
         mapper = RelationshipMapper(db)
         score = await mapper.compute_session_score("pair-1")
         assert 0.0 <= score <= 1.0
-        await db.close()
 
     _run(_test())

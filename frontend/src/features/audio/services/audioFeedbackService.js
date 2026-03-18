@@ -123,6 +123,47 @@ class AudioFeedbackService {
   }
 
   /**
+   * Play camera shutter sound — short click sequence (high freq, very short duration)
+   */
+  playShutter() {
+    this.playSequence([
+      { frequency: 1200, duration: 0.03 },
+      { frequency: 900, duration: 0.02, delay: 20 },
+    ]);
+  }
+
+  /**
+   * Play chime — ascending two-note success sequence
+   */
+  playChime() {
+    this.playSequence([
+      { frequency: 660, duration: 0.12 },
+      { frequency: 880, duration: 0.18, delay: 30 },
+    ]);
+  }
+
+  /**
+   * Play whoosh — descending sweep sequence
+   */
+  playWhoosh() {
+    this.playSequence([
+      { frequency: 700, duration: 0.06 },
+      { frequency: 500, duration: 0.06, delay: 20 },
+      { frequency: 350, duration: 0.06, delay: 20 },
+    ]);
+  }
+
+  /**
+   * Play snap — single sharp note
+   */
+  playSnap() {
+    this.playSequence([
+      { frequency: 1000, duration: 0.04 },
+    ]);
+  }
+
+
+  /**
    * Enable/disable audio feedback
    * @param {boolean} enabled
    */

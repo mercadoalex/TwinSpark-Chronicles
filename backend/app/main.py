@@ -1,4 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+import fastapi
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict
@@ -21,10 +22,20 @@ from app.services.face_detector import FaceDetector
 from app.services.emotion_detector import EmotionDetector
 from app.services.stt_service import STTService
 from app.services.input_manager import InputManager
+from app.services.photo_service import PhotoService, ValidationError, PhotoNotFoundError
+from app.services.content_scanner import ContentScanner
+from app.services.face_extractor import FaceExtractor
+from app.services.session_service import SessionService
 from app.models.multimodal import TranscriptResult
+from app.models.photo import CharacterMappingInput
+from app.models.session import SessionSnapshotPayload, SessionSnapshotResponse, SessionSaveResult
+from app.services.cache_manager import CacheManager
 
 # Track ended sessions for idempotent POST /api/sessions/{id}/end
 _ended_sessions: Dict[str, dict] = {}
+
+# Module-level CacheManager — initialized at startup (task 12.1)
+cache_manager: CacheManager | None = None
 
 # Load environment variables
 load_dotenv()
@@ -87,6 +98,9 @@ class StoryRequest(BaseModel):
     session_id: str
     language: str = "en"
     user_input: Optional[str] = None
+    allowed_themes: Optional[list[str]] = None
+    complexity_level: Optional[str] = None
+    custom_blocked_words: Optional[list[str]] = None
 
 
 # ============================================
@@ -177,7 +191,10 @@ async def generate_rich_story(request: StoryRequest):
             session_id=request.session_id,
             characters=request.characters,
             user_input=request.user_input,
-            language=request.language
+            language=request.language,
+            allowed_themes=request.allowed_themes,
+            complexity_level=request.complexity_level,
+            custom_blocked_words=request.custom_blocked_words,
         )
         
         return rich_moment
@@ -258,6 +275,412 @@ async def end_session(session_id: str, body: dict | None = None):
 
     _ended_sessions[session_id] = result
     return result
+
+
+# ============================================
+# PARENT DASHBOARD ENDPOINTS
+# ============================================
+
+@app.get("/api/dashboard/stats")
+async def dashboard_stats():
+    """Aggregate stats for the parent dashboard overview."""
+    try:
+        await orchestrator._ensure_db_initialized()
+        db_conn = orchestrator._db_conn
+
+        row = await db_conn.fetch_one("SELECT COUNT(*) as cnt FROM session_summaries")
+        total_sessions = row["cnt"] if row else 0
+
+        row = await db_conn.fetch_one("SELECT AVG(score) as avg_score FROM session_summaries")
+        avg_bond = round(row["avg_score"], 2) if row and row["avg_score"] is not None else 0
+
+        return {
+            "total_sessions": total_sessions,
+            "total_duration_minutes": total_sessions * 8,
+            "average_bond_score": avg_bond,
+        }
+    except Exception as e:
+        logger.error("dashboard_stats failed: %s", e)
+        return {"total_sessions": 0, "total_duration_minutes": 0, "average_bond_score": 0}
+
+
+@app.get("/api/dashboard/sessions")
+async def dashboard_sessions():
+    """Return recent session history for the parent dashboard."""
+    try:
+        await orchestrator._ensure_db_initialized()
+        db_conn = orchestrator._db_conn
+
+        rows = await db_conn.fetch_all(
+            "SELECT session_id, sibling_pair_id, score, summary, suggestion, created_at "
+            "FROM session_summaries ORDER BY created_at DESC LIMIT 20"
+        )
+
+        sessions = []
+        for r in rows:
+            sessions.append({
+                "session_id": r["session_id"],
+                "title": (r.get("summary") or "Adventure")[:60],
+                "started_at": r["created_at"],
+                "duration_minutes": 8,
+                "theme": "Fantasy",
+                "skills_practiced": [],
+                "emotions_addressed": [],
+                "has_divergence": False,
+                "reunion_count": 0,
+            })
+        return sessions
+    except Exception as e:
+        logger.error("dashboard_sessions failed: %s", e)
+        return []
+
+
+@app.get("/api/dashboard/duration-chart")
+async def dashboard_duration_chart():
+    """Return playtime chart data for the parent dashboard."""
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    return {"data": [{"label": d, "value": 0} for d in days]}
+
+
+@app.get("/api/dashboard/leadership-chart")
+async def dashboard_leadership_chart():
+    """Return leadership balance chart data for the parent dashboard."""
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    return {"data": [{"label": d, "value": 0} for d in days]}
+
+
+# ============================================
+# EMERGENCY STOP ENDPOINT
+# ============================================
+
+@app.post("/api/emergency-stop/{session_id}")
+async def emergency_stop(session_id: str):
+    """Cancel all in-flight tasks for a session and return status.
+
+    Returns 404 for unknown sessions (no active tasks tracked).
+    Requirements: 6.2, 6.3, 6.5
+    """
+    # Check if session has any tracked tasks or is known
+    if session_id not in orchestrator._session_tasks and session_id not in manager.active_connections:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    try:
+        result = await orchestrator.cancel_session(session_id)
+        return {
+            "status": result["status"],
+            "session_id": result["session_id"],
+            "session_saved": result["session_saved"],
+        }
+    except Exception as e:
+        logger.error("Emergency stop failed for session=%s: %s", session_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# WORLD STATE ENDPOINTS
+# ============================================
+
+class LocationResponse(BaseModel):
+    id: str
+    sibling_pair_id: str
+    name: str
+    description: str
+    state: str
+    discovered_at: str
+    updated_at: str
+
+
+class NpcResponse(BaseModel):
+    id: str
+    sibling_pair_id: str
+    name: str
+    description: str
+    relationship_level: int
+    met_at: str
+    updated_at: str
+
+
+class ItemResponse(BaseModel):
+    id: str
+    sibling_pair_id: str
+    name: str
+    description: str
+    collected_at: str
+    session_id: str
+
+
+class WorldStateResponse(BaseModel):
+    locations: list[LocationResponse] = []
+    npcs: list[NpcResponse] = []
+    items: list[ItemResponse] = []
+
+
+@app.get("/api/world/{sibling_pair_id}", response_model=WorldStateResponse)
+async def get_world_state(sibling_pair_id: str):
+    """Return full world state for a sibling pair. Empty 200 if none exists."""
+    try:
+        await orchestrator._ensure_db_initialized()
+        state = await orchestrator._world_db.load_world_state(sibling_pair_id)
+        return WorldStateResponse(
+            locations=[LocationResponse(**loc) for loc in state.get("locations", [])],
+            npcs=[NpcResponse(**npc) for npc in state.get("npcs", [])],
+            items=[ItemResponse(**item) for item in state.get("items", [])],
+        )
+    except Exception as e:
+        logger.error("GET /api/world/%s failed: %s", sibling_pair_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/world/{sibling_pair_id}/locations", response_model=list[LocationResponse])
+async def get_world_locations(sibling_pair_id: str):
+    """Return locations for a sibling pair."""
+    try:
+        await orchestrator._ensure_db_initialized()
+        locs = await orchestrator._world_db.load_locations(sibling_pair_id)
+        return [LocationResponse(**loc) for loc in locs]
+    except Exception as e:
+        logger.error("GET /api/world/%s/locations failed: %s", sibling_pair_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/world/{sibling_pair_id}/npcs", response_model=list[NpcResponse])
+async def get_world_npcs(sibling_pair_id: str):
+    """Return NPCs for a sibling pair."""
+    try:
+        await orchestrator._ensure_db_initialized()
+        npcs = await orchestrator._world_db.load_npcs(sibling_pair_id)
+        return [NpcResponse(**npc) for npc in npcs]
+    except Exception as e:
+        logger.error("GET /api/world/%s/npcs failed: %s", sibling_pair_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/world/{sibling_pair_id}/items", response_model=list[ItemResponse])
+async def get_world_items(sibling_pair_id: str):
+    """Return items for a sibling pair."""
+    try:
+        await orchestrator._ensure_db_initialized()
+        items = await orchestrator._world_db.load_items(sibling_pair_id)
+        return [ItemResponse(**item) for item in items]
+    except Exception as e:
+        logger.error("GET /api/world/%s/items failed: %s", sibling_pair_id, e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================
+# PHOTO API ENDPOINTS
+# ============================================
+
+# Lazy-initialized PhotoService singleton
+_photo_service: PhotoService | None = None
+
+
+async def _get_photo_service() -> PhotoService:
+    """Return (and lazily create) the shared PhotoService instance."""
+    global _photo_service
+    if _photo_service is None:
+        await orchestrator._ensure_db_initialized()
+        from app.services.content_filter import ContentFilter
+
+        content_filter = ContentFilter()
+        scanner = ContentScanner(content_filter)
+        extractor = FaceExtractor(face_detector)
+        _photo_service = PhotoService(
+            db=orchestrator._db_conn,
+            content_scanner=scanner,
+            face_extractor=extractor,
+        )
+    return _photo_service
+
+
+@app.post("/api/photos/upload")
+async def upload_photo(
+    sibling_pair_id: str = fastapi.Form(...),
+    file: fastapi.UploadFile = fastapi.File(...),
+):
+    """Upload a family photo. Validates, scans for safety, extracts faces."""
+    svc = await _get_photo_service()
+    image_bytes = await file.read()
+    try:
+        result = await svc.upload_photo(
+            sibling_pair_id=sibling_pair_id,
+            image_bytes=image_bytes,
+            filename=file.filename or "photo.jpg",
+        )
+        return result.model_dump()
+    except ValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        logger.error("Photo upload failed: %s", e)
+        raise HTTPException(status_code=500, detail="Upload failed")
+
+
+@app.get("/api/photos/{sibling_pair_id}")
+async def list_photos(sibling_pair_id: str):
+    """List all photos for a sibling pair."""
+    svc = await _get_photo_service()
+    photos = await svc.get_photos(sibling_pair_id)
+    return [p.model_dump() for p in photos]
+
+
+@app.delete("/api/photos/{photo_id}")
+async def delete_photo(photo_id: str):
+    """Delete a photo and cascade-remove faces, portraits, and mappings."""
+    svc = await _get_photo_service()
+    try:
+        result = await svc.delete_photo(photo_id)
+        return result.model_dump()
+    except PhotoNotFoundError:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    except Exception as e:
+        logger.error("Photo delete failed: %s", e)
+        raise HTTPException(status_code=500, detail="Delete failed")
+
+
+@app.post("/api/photos/{photo_id}/approve")
+async def approve_photo(photo_id: str):
+    """Parent approves a photo flagged as REVIEW."""
+    svc = await _get_photo_service()
+    try:
+        photo = await svc.approve_photo(photo_id)
+        return photo.model_dump()
+    except PhotoNotFoundError:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    except Exception as e:
+        logger.error("Photo approve failed: %s", e)
+        raise HTTPException(status_code=500, detail="Approve failed")
+
+
+@app.put("/api/photos/faces/{face_id}/label")
+async def label_face(face_id: str, body: dict):
+    """Set a family member name on a face portrait."""
+    name = body.get("name", "").strip()
+    if not name:
+        raise HTTPException(status_code=422, detail="Name is required")
+    svc = await _get_photo_service()
+    try:
+        member = await svc.save_family_member(face_id, name)
+        return member.model_dump()
+    except Exception as e:
+        logger.error("Face label failed: %s", e)
+        raise HTTPException(status_code=500, detail="Label failed")
+
+
+@app.get("/api/photos/mappings/{sibling_pair_id}")
+async def get_character_mappings(sibling_pair_id: str):
+    """Get character-to-family-member mappings for a sibling pair."""
+    svc = await _get_photo_service()
+    mappings = await svc.get_character_mappings(sibling_pair_id)
+    return [m.model_dump() for m in mappings]
+
+
+@app.post("/api/photos/mappings/{sibling_pair_id}")
+async def save_character_mappings(sibling_pair_id: str, body: list[dict]):
+    """Save character-to-family-member mappings."""
+    svc = await _get_photo_service()
+    try:
+        inputs = [CharacterMappingInput(**item) for item in body]
+        mappings = await svc.save_character_mapping(sibling_pair_id, inputs)
+        return [m.model_dump() for m in mappings]
+    except Exception as e:
+        logger.error("Save mappings failed: %s", e)
+        raise HTTPException(status_code=500, detail="Save mappings failed")
+
+
+@app.get("/api/photos/stats/{sibling_pair_id}")
+async def get_storage_stats(sibling_pair_id: str):
+    """Return photo count and storage usage for a sibling pair."""
+    svc = await _get_photo_service()
+    stats = await svc.get_storage_stats(sibling_pair_id)
+    return stats.model_dump()
+
+
+# ============================================
+# SESSION PERSISTENCE ENDPOINTS
+# ============================================
+
+# Lazy-initialized SessionService singleton
+_session_service: SessionService | None = None
+
+
+async def _get_session_service() -> SessionService:
+    global _session_service
+    if _session_service is None:
+        await orchestrator._ensure_db_initialized()
+        _session_service = SessionService(orchestrator._db_conn)
+    return _session_service
+
+
+@app.post("/api/session/save", response_model=SessionSaveResult)
+async def save_session(payload: SessionSnapshotPayload):
+    """Save or update a session snapshot for a sibling pair."""
+    svc = await _get_session_service()
+    try:
+        result = await svc.save_snapshot(payload.model_dump())
+        return SessionSaveResult(**result)
+    except Exception as e:
+        logger.error("Session save failed: %s", e)
+        raise HTTPException(status_code=500, detail="Session save failed")
+
+
+@app.get("/api/session/load/{sibling_pair_id}", response_model=SessionSnapshotResponse)
+async def load_session(sibling_pair_id: str):
+    """Load the active session snapshot for a sibling pair."""
+    svc = await _get_session_service()
+    try:
+        snapshot = await svc.load_snapshot(sibling_pair_id)
+        if snapshot is None:
+            raise HTTPException(status_code=404, detail="No session found")
+        return SessionSnapshotResponse(**snapshot)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Session load failed: %s", e)
+        raise HTTPException(status_code=500, detail="Session load failed")
+
+
+@app.delete("/api/session/{sibling_pair_id}")
+async def delete_session(sibling_pair_id: str):
+    """Delete the active session snapshot for a sibling pair."""
+    svc = await _get_session_service()
+    try:
+        deleted = await svc.delete_snapshot(sibling_pair_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="No session found")
+        return {"deleted": True}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Session delete failed: %s", e)
+        raise HTTPException(status_code=500, detail="Session delete failed")
+
+
+@app.on_event("startup")
+async def _cleanup_stale_sessions():
+    """Run stale session cleanup on app startup."""
+    try:
+        svc = await _get_session_service()
+        count = await svc.cleanup_stale(max_age_days=30)
+        if count > 0:
+            logger.info("Cleaned up %d stale session(s) on startup", count)
+    except Exception as e:
+        logger.warning("Stale session cleanup failed on startup: %s", e)
+
+
+# ============================================
+# CACHE STATS ENDPOINT
+# ============================================
+
+
+@app.get("/api/cache/stats")
+async def get_cache_stats():
+    """Return aggregate cache statistics for style transfer and face crop caches."""
+    import dataclasses
+
+    if cache_manager is None:
+        raise HTTPException(status_code=503, detail="Cache manager not initialized")
+    stats = cache_manager.get_stats()
+    return dataclasses.asdict(stats)
 
 
 # ============================================
