@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './DualStoryDisplay.css';
+import SceneImageLoader from './SceneImageLoader';
 
 const choiceIcons = ['🌙', '⚡', '🌿', '🔮', '🌊', '🦋'];
 
@@ -49,8 +50,7 @@ function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
       {/* ── Cinematic scene image ──────────────────── */}
       {storyBeat?.scene_image_url && (
         <div className="story-scene">
-          <img
-            className="story-scene__img"
+          <SceneImageLoader
             src={storyBeat.scene_image_url.startsWith('http')
               ? storyBeat.scene_image_url
               : `http://localhost:8000${storyBeat.scene_image_url}`}

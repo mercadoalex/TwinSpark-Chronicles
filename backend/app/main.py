@@ -30,6 +30,8 @@ from app.models.multimodal import TranscriptResult
 from app.models.photo import CharacterMappingInput
 from app.models.session import SessionSnapshotPayload, SessionSnapshotResponse, SessionSaveResult
 from app.services.cache_manager import CacheManager
+from app.services.style_transfer_cache import StyleTransferCache
+from app.services.face_crop_cache import FaceCropCache
 
 # Track ended sessions for idempotent POST /api/sessions/{id}/end
 _ended_sessions: Dict[str, dict] = {}
@@ -68,6 +70,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+    global cache_manager
+
+    # Initialize caches
+    style_transfer_cache = StyleTransferCache(
+        storage_root=os.path.join("photo_storage", "style_cache"),
+    )
+    face_crop_cache = FaceCropCache()
+
+    # Create CacheManager and start cleanup loop
+    cache_manager = CacheManager(
+        style_transfer_cache=style_transfer_cache,
+        face_crop_cache=face_crop_cache,
+    )
+    await cache_manager.start_cleanup_loop()
+
+    logger.info("CacheManager initialized and cleanup loop started")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    global cache_manager
+    if cache_manager is not None:
+        await cache_manager.stop_cleanup_loop()
+        logger.info("CacheManager cleanup loop stopped")
 
 
 # ============================================

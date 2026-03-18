@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import LazyImage from '../../../shared/components/LazyImage';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -252,7 +253,7 @@ export default function PhotoGallery({ siblingPairId, refreshKey }) {
             }}
             aria-label={`Photo with ${photo.faces?.length || 0} faces`}
           >
-            <img
+            <LazyImage
               src={`${API_BASE}/photo_storage/${photo.file_path}`}
               alt={(() => {
                 const faces = photo.faces || [];
@@ -265,7 +266,7 @@ export default function PhotoGallery({ siblingPairId, refreshKey }) {
               style={styles.gridThumbImg}
               onError={(e) => {
                 e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
+                e.target.parentElement.nextSibling.style.display = 'flex';
               }}
             />
             <div style={{ ...styles.gridThumbFallback, display: 'none' }}>🖼️</div>

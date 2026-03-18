@@ -1,0 +1,81 @@
+/* ============================================================
+   SCENE IMAGE LOADER — Cinematic loading with crossfade
+   ============================================================ */
+
+.scene-loader {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+/* ── Blurred skeleton placeholder ─────────────────── */
+.scene-loader__skeleton {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: rgba(88, 28, 135, 0.25);
+  filter: blur(8px);
+  overflow: hidden;
+}
+
+.scene-loader__skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.1) 35%,
+    rgba(167, 139, 250, 0.18) 50%,
+    rgba(139, 92, 246, 0.1) 65%,
+    transparent 100%
+  );
+  animation: scene-shimmer 2s ease-in-out infinite;
+}
+
+/* ── Loaded image with crossfade ──────────────────── */
+.scene-loader__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+/* ── Fallback illustration ────────────────────────── */
+.scene-loader__fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 240px;
+  border-radius: 16px;
+  background: rgba(88, 28, 135, 0.2);
+  border: 2px dashed rgba(167, 139, 250, 0.3);
+}
+
+.scene-loader__fallback-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.scene-loader__fallback-text {
+  font-family: var(--font-display, sans-serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+
+/* ── Shimmer animation ────────────────────────────── */
+@keyframes scene-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}

@@ -50,11 +50,11 @@ Incrementally build the caching layer, frontend lazy loading, parallel processin
     - Return JSON with style transfer and face crop cache sizes, hit rates, and eviction counts
     - _Requirements: 7.4_
 
-- [ ] 5. Checkpoint — Ensure all tests pass
+- [x] 5. Checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 6. Integrate caching into PhotoService and FaceExtractor
-  - [ ] 6.1 Add content hash computation to `PhotoService.upload_photo`
+  - [x] 6.1 Add content hash computation to `PhotoService.upload_photo`
     - Compute SHA-256 content hash of `resized_bytes` after resize, before face extraction
     - Store `content_hash` in the `photos` table via the existing DB insert
     - Pass `content_hash` to `FaceExtractor.extract_faces`
@@ -73,21 +73,21 @@ Incrementally build the caching layer, frontend lazy loading, parallel processin
     - _Requirements: 2.3, 9.1, 9.2_
 
 - [ ] 7. Integrate caching and parallel generation into StyleTransferAgent
-  - [ ] 7.1 Add cache lookup to `StyleTransferAgent.generate_portrait`
+  - [x] 7.1 Add cache lookup to `StyleTransferAgent.generate_portrait`
     - Accept `face_content_hash` parameter
     - Check `StyleTransferCache` before calling Imagen 3
     - On cache miss, generate portrait, store in cache, return
     - Handle stale cache record (file missing from disk) by regenerating
     - _Requirements: 1.1, 1.2, 1.4, 8.3_
 
-  - [ ] 7.2 Implement parallel portrait generation in `StyleTransferAgent.generate_portraits_for_session`
+  - [x] 7.2 Implement parallel portrait generation in `StyleTransferAgent.generate_portraits_for_session`
     - Use `asyncio.TaskGroup` to process all character mappings concurrently
     - Use `asyncio.Semaphore(max_concurrent)` to limit concurrent Imagen 3 calls (default 3)
     - On per-character failure, use default avatar and continue processing remaining portraits
     - _Requirements: 5.1, 5.2, 5.3_
 
 - [ ] 8. SceneCompositor NumPy optimization
-  - [ ] 8.1 Replace per-pixel loops with NumPy operations in `SceneCompositor`
+  - [x] 8.1 Replace per-pixel loops with NumPy operations in `SceneCompositor`
     - Rewrite `_apply_color_grading` to use NumPy array operations for vectorized blend
     - Rewrite `_create_shadow` to use NumPy array operations for alpha channel manipulation
     - Add `_batch_scale_portraits` method to pre-scale all portraits before the compositing loop
@@ -97,32 +97,32 @@ Incrementally build the caching layer, frontend lazy loading, parallel processin
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 10. Frontend LazyImage component
-  - [ ] 10.1 Create `LazyImage` component in `frontend/src/shared/components/LazyImage.jsx`
+  - [x] 10.1 Create `LazyImage` component in `frontend/src/shared/components/LazyImage.jsx`
     - Use IntersectionObserver with configurable `rootMargin` (default 200px) to detect when image enters viewport
     - Show skeleton placeholder with matching dimensions until loaded
     - Fade in over configurable `fadeDuration` (default 200ms) on load
     - Set `loading="lazy"` attribute on `<img>` as baseline fallback
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-  - [-] 10.2 Integrate `LazyImage` into `PhotoGallery.jsx`
+  - [x] 10.2 Integrate `LazyImage` into `PhotoGallery.jsx`
     - Replace existing `<img>` elements in the photo gallery grid with `LazyImage`
     - _Requirements: 3.1, 3.4_
 
 - [ ] 11. Frontend SceneImageLoader component
-  - [ ] 11.1 Create `SceneImageLoader` component in `frontend/src/features/story/components/SceneImageLoader.jsx`
+  - [x] 11.1 Create `SceneImageLoader` component in `frontend/src/features/story/components/SceneImageLoader.jsx`
     - Begin loading scene image immediately in background
     - Show blurred skeleton placeholder while loading
     - Crossfade from placeholder to full image over configurable `fadeDuration` (default 300ms)
     - Show fallback illustration and log failure if image fails to load within configurable `timeout` (default 10 seconds)
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
 
-  - [ ] 11.2 Integrate `SceneImageLoader` into `DualStoryDisplay.jsx`
+  - [x] 11.2 Integrate `SceneImageLoader` into `DualStoryDisplay.jsx`
     - Replace existing scene image rendering with `SceneImageLoader`
     - Ensure narration text displays immediately while scene image loads in background
     - _Requirements: 4.1, 4.2_
 
 - [ ] 12. Wire CacheManager lifecycle into application startup/shutdown
-  - [ ] 12.1 Initialize caches and CacheManager in `backend/app/main.py`
+  - [x] 12.1 Initialize caches and CacheManager in `backend/app/main.py`
     - Create `StyleTransferCache`, `FaceCropCache`, and `CacheManager` instances at app startup
     - Start the background cleanup loop on startup
     - Stop the cleanup loop on shutdown

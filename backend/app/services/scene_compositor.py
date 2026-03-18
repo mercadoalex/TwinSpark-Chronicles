@@ -12,6 +12,13 @@ from __future__ import annotations
 import logging
 from io import BytesIO
 
+try:
+    import numpy as np
+
+    _HAS_NUMPY = True
+except ImportError:  # pragma: no cover
+    _HAS_NUMPY = False
+
 from PIL import Image, ImageFilter
 
 from app.models.photo import CharacterPosition
@@ -47,6 +54,11 @@ class SceneCompositor:
         # Compute average scene colour for colour grading
         scene_avg = self._average_color(scene)
 
+        # Pre-scale all portraits in one batch before the compositing loop
+        scaled_portraits = self._batch_scale_portraits(
+            portraits, character_positions, scene_height
+        )
+
         # Sort positions by z_order so lower layers are composited first
         sorted_roles = sorted(
             character_positions.items(),
@@ -54,30 +66,16 @@ class SceneCompositor:
         )
 
         for role, position in sorted_roles:
-            if role not in portraits:
-                logger.warning(
-                    "No portrait for character role '%s'; skipping", role
-                )
+            if role not in scaled_portraits:
+                if role not in portraits:
+                    logger.warning(
+                        "No portrait for character role '%s'; skipping", role
+                    )
                 continue
 
             try:
-                portrait = Image.open(BytesIO(portraits[role])).convert("RGBA")
-            except Exception:
-                logger.warning(
-                    "Failed to open portrait for role '%s'; skipping", role
-                )
-                continue
-
-            try:
-                # Scale portrait relative to scene height
-                target_height = int(scene_height * position.scale * 0.3)
-                if target_height < 1:
-                    target_height = 1
-                aspect = portrait.width / max(portrait.height, 1)
-                target_width = max(1, int(target_height * aspect))
-                portrait = portrait.resize(
-                    (target_width, target_height), Image.LANCZOS
-                )
+                portrait = scaled_portraits[role]
+                target_width, target_height = portrait.size
 
                 # Apply colour grading to match scene tone
                 portrait = self._apply_color_grading(portrait, scene_avg)
@@ -134,7 +132,20 @@ class SceneCompositor:
 
         Blends each pixel's RGB channels toward *scene_avg* by *strength*
         (0 = no change, 1 = fully scene colour). Alpha is preserved.
+
+        Uses NumPy vectorized operations when available, falling back to
+        per-pixel iteration otherwise.
         """
+        if _HAS_NUMPY:
+            arr = np.array(portrait, dtype=np.float32)
+            mask = arr[:, :, 3] > 0
+            for c in range(3):
+                channel = arr[:, :, c]
+                channel[mask] = channel[mask] + (scene_avg[c] - channel[mask]) * strength
+            arr = np.clip(arr, 0, 255).astype(np.uint8)
+            return Image.fromarray(arr, "RGBA")
+
+        # Fallback: per-pixel loop when NumPy is not available
         r_avg, g_avg, b_avg = scene_avg
         pixels = portrait.load()
         width, height = portrait.size
@@ -161,12 +172,26 @@ class SceneCompositor:
         opacity: int = 80,
         blur_radius: int = 6,
     ) -> Image.Image:
-        """Create a soft drop-shadow image from the portrait's alpha channel."""
+        """Create a soft drop-shadow image from the portrait's alpha channel.
+
+        Uses NumPy vectorized operations when available, falling back to
+        per-pixel iteration otherwise.
+        """
+        if _HAS_NUMPY:
+            alpha_arr = np.array(portrait.split()[3], dtype=np.uint8)
+            shadow_alpha = np.minimum(alpha_arr, opacity)
+            h, w = shadow_alpha.shape
+            shadow_arr = np.zeros((h, w, 4), dtype=np.uint8)
+            shadow_arr[:, :, 3] = shadow_alpha
+            shadow = Image.fromarray(shadow_arr, "RGBA")
+            shadow = shadow.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+            return shadow
+
+        # Fallback: per-pixel loop when NumPy is not available
         shadow = Image.new("RGBA", portrait.size, (0, 0, 0, 0))
-        alpha = portrait.split()[3]  # extract alpha channel
+        alpha = portrait.split()[3]
         shadow.putalpha(alpha)
 
-        # Darken to shadow colour
         shadow_pixels = shadow.load()
         w, h = shadow.size
         for y in range(h):
@@ -176,3 +201,38 @@ class SceneCompositor:
 
         shadow = shadow.filter(ImageFilter.GaussianBlur(radius=blur_radius))
         return shadow
+
+    @staticmethod
+    def _batch_scale_portraits(
+        portraits: dict[str, bytes],
+        character_positions: dict[str, CharacterPosition],
+        scene_height: int,
+    ) -> dict[str, Image.Image]:
+        """Pre-scale all portraits in one pass before the compositing loop.
+
+        Returns dict of {role: scaled_portrait_image}.
+        Roles present in *character_positions* but missing from *portraits*
+        are silently skipped.  Portraits that fail to open are logged and
+        skipped.
+        """
+        scaled: dict[str, Image.Image] = {}
+        for role, position in character_positions.items():
+            if role not in portraits:
+                continue
+            try:
+                portrait = Image.open(BytesIO(portraits[role])).convert("RGBA")
+            except Exception:
+                logger.warning(
+                    "Failed to open portrait for role '%s'; skipping", role
+                )
+                continue
+
+            target_height = int(scene_height * position.scale * 0.3)
+            if target_height < 1:
+                target_height = 1
+            aspect = portrait.width / max(portrait.height, 1)
+            target_width = max(1, int(target_height * aspect))
+            scaled[role] = portrait.resize(
+                (target_width, target_height), Image.LANCZOS
+            )
+        return scaled
