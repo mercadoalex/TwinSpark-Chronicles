@@ -1,0 +1,209 @@
+/* ExitModal — warm gradients, friendly emoji, differentiated buttons, 56px height */
+
+/* ── Backdrop ─────────────────────────────────────── */
+.exit-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: exit-backdrop-in 300ms var(--ease-smooth) forwards;
+}
+
+.exit-modal-backdrop--closing {
+  animation: exit-backdrop-out 200ms var(--ease-smooth) forwards;
+}
+
+/* ── Dialog panel ─────────────────────────────────── */
+.exit-modal-dialog {
+  padding: var(--space-xl);
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  background: linear-gradient(
+    160deg,
+    rgba(20, 20, 40, 0.92),
+    rgba(30, 20, 50, 0.88)
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-lg, 28px);
+  box-shadow: var(--shadow-glow-violet, 0 0 24px rgba(167, 139, 250, 0.3)),
+              var(--shadow-float, 0 12px 40px rgba(0, 0, 0, 0.4));
+  animation: exit-dialog-in 300ms var(--ease-bounce) forwards;
+}
+
+.exit-modal-backdrop--closing .exit-modal-dialog {
+  animation: exit-dialog-out 200ms var(--ease-smooth) forwards;
+}
+
+/* ── Emoji header ─────────────────────────────────── */
+.exit-modal-emoji {
+  font-size: 4rem;
+  margin-bottom: var(--space-md);
+}
+
+/* ── Title ────────────────────────────────────────── */
+.exit-modal-title {
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  margin-bottom: var(--space-sm);
+}
+
+/* ── Description ──────────────────────────────────── */
+.exit-modal-description {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+  margin-bottom: var(--space-lg);
+  line-height: 1.5;
+}
+
+/* ── Button group ─────────────────────────────────── */
+.exit-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* ── Save button (green gradient) ─────────────────── */
+.exit-modal-btn-save {
+  padding: 14px;
+  border-radius: var(--radius-full, 9999px);
+  border: none;
+  background: linear-gradient(135deg, var(--color-emerald), #059669);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: var(--touch-min, 56px);
+  box-shadow: var(--shadow-glow-emerald);
+  transition: transform 0.2s var(--ease-bounce), box-shadow 0.2s var(--ease-smooth);
+}
+
+.exit-modal-btn-save:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 0 32px var(--color-emerald-glow);
+}
+
+.exit-modal-btn-save:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.exit-modal-btn-save:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+/* ── Exit button (muted) ──────────────────────────── */
+.exit-modal-btn-exit {
+  padding: 14px;
+  border-radius: var(--radius-full, 9999px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: var(--touch-min, 56px);
+  transition: background 0.2s var(--ease-smooth), transform 0.2s var(--ease-bounce);
+}
+
+.exit-modal-btn-exit:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.exit-modal-btn-exit:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.exit-modal-btn-exit:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ── Cancel link ──────────────────────────────────── */
+.exit-modal-btn-cancel {
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: var(--space-sm);
+  min-height: 44px;
+  transition: color 0.2s var(--ease-smooth);
+}
+
+.exit-modal-btn-cancel:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.exit-modal-btn-cancel:disabled {
+  cursor: not-allowed;
+}
+
+/* ── Entrance / exit keyframes ────────────────────── */
+@keyframes exit-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes exit-backdrop-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes exit-dialog-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1.0); }
+}
+
+@keyframes exit-dialog-out {
+  from { opacity: 1; transform: scale(1.0); }
+  to   { opacity: 0; transform: scale(0.9); }
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .exit-modal-backdrop,
+  .exit-modal-dialog {
+    animation: none !important;
+  }
+
+  .exit-modal-backdrop {
+    opacity: 1;
+  }
+
+  .exit-modal-dialog {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .exit-modal-dialog {
+    padding: var(--space-lg) var(--space-md);
+    width: 94%;
+  }
+
+  .exit-modal-emoji {
+    font-size: 3rem;
+  }
+
+  .exit-modal-title {
+    font-size: 1.4rem;
+  }
+
+  .exit-modal-description {
+    font-size: 1rem;
+  }
+}

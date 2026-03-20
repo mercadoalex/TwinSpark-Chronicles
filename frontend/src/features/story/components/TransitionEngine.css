@@ -1,0 +1,213 @@
+/* ============================================================
+   TRANSITION ENGINE — Magical Storybook Scene Transitions
+   CSS-first animations for TwinSpark Chronicles
+   ============================================================ */
+
+/* ── Container ────────────────────────────────────── */
+.transition-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Scene slots ──────────────────────────────────── */
+.transition-scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.transition-scene--outgoing {
+  z-index: 2;
+}
+
+.transition-scene--incoming {
+  z-index: 1;
+}
+
+/* ── Performance & interaction helpers ────────────── */
+.transition-scene--will-change {
+  will-change: transform, opacity;
+}
+
+.transition-scene--no-interaction {
+  pointer-events: none;
+}
+
+/* ============================================================
+   PAGE TURN EFFECT — 3D storybook page flip
+   ============================================================ */
+
+@keyframes page-turn-out {
+  0% {
+    transform: perspective(1000px) rotateY(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(1000px) rotateY(-90deg);
+    opacity: 0;
+  }
+}
+
+@keyframes page-turn-in {
+  0% {
+    transform: perspective(1000px) rotateY(90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: perspective(1000px) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+.transition-page-turn-out {
+  animation: page-turn-out 900ms ease-in forwards;
+  transform-origin: left center;
+  backface-visibility: hidden;
+}
+
+.transition-page-turn-in {
+  animation: page-turn-in 900ms ease-out forwards;
+  transform-origin: right center;
+  backface-visibility: hidden;
+}
+
+/* Gradient shadow on turning edge — page thickness illusion */
+.transition-page-turn-out::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40px;
+  height: 100%;
+  background: linear-gradient(
+    to left,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.15) 40%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 3;
+  border-radius: 0 var(--radius-sm, 12px) var(--radius-sm, 12px) 0;
+  opacity: 0;
+  animation: page-shadow-reveal 900ms ease-in forwards;
+}
+
+@keyframes page-shadow-reveal {
+  0%   { opacity: 0; }
+  30%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ============================================================
+   CINEMATIC FADE EFFECT — Movie-style dissolve with scale
+   ============================================================ */
+
+@keyframes cinematic-fade-out {
+  0% {
+    opacity: 1;
+    transform: scale(1.0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes cinematic-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.0);
+  }
+}
+
+.transition-cinematic-fade-out {
+  animation: cinematic-fade-out 800ms var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1)) forwards;
+}
+
+.transition-cinematic-fade-in {
+  animation: cinematic-fade-in 800ms var(--ease-smooth, cubic-bezier(0.4, 0, 0.2, 1)) forwards;
+}
+
+/* ============================================================
+   ACCESSIBILITY — Reduced Motion
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .transition-page-turn-out,
+  .transition-page-turn-in,
+  .transition-cinematic-fade-out,
+  .transition-cinematic-fade-in {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .transition-page-turn-out::after {
+    animation: none !important;
+    display: none;
+  }
+
+  .transition-scene--will-change {
+    will-change: auto !important;
+  }
+}
+
+/* ============================================================
+   MOBILE RESPONSIVE — Scaled perspective & relative units
+   ============================================================ */
+
+@media (max-width: 767px) {
+  .transition-container {
+    width: 100vw;
+    max-width: 100%;
+  }
+
+  .transition-scene {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Scale perspective proportionally for smaller screens */
+  .transition-page-turn-out {
+    animation-name: page-turn-out-mobile;
+  }
+
+  .transition-page-turn-in {
+    animation-name: page-turn-in-mobile;
+  }
+
+  @keyframes page-turn-out-mobile {
+    0% {
+      transform: perspective(70vw) rotateY(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: perspective(70vw) rotateY(-90deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes page-turn-in-mobile {
+    0% {
+      transform: perspective(70vw) rotateY(90deg);
+      opacity: 0;
+    }
+    100% {
+      transform: perspective(70vw) rotateY(0deg);
+      opacity: 1;
+    }
+  }
+
+  .transition-page-turn-out::after {
+    width: 5vw;
+    min-width: 20px;
+  }
+}

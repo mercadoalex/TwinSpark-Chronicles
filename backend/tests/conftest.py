@@ -270,3 +270,10 @@ async def session_service(db):
     from app.services.session_service import SessionService
     return SessionService(db)
 
+
+@pytest_asyncio.fixture
+async def story_archive_service(db):
+    """StoryArchiveService backed by the in-memory test database."""
+    from app.services.story_archive_service import StoryArchiveService
+    return StoryArchiveService(db)
+

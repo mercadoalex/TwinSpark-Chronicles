@@ -1,0 +1,221 @@
+/* ── ContinueScreen ───────────────────────────────── */
+.continue-screen {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a1040 0%, #2d1b69 50%, #1a1040 100%);
+}
+
+.continue-screen__bg-image {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(8px) brightness(0.4);
+  z-index: 0;
+}
+
+.continue-screen__overlay {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  padding: 40px 24px;
+  animation: fadeInUp 0.6s var(--ease-smooth);
+}
+
+.continue-screen__greeting {
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+  margin: 0;
+}
+
+/* ── Spirit row ───────────────────────────────────── */
+.continue-screen__spirits {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.continue-screen__spirit-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.continue-screen__spirit-emoji {
+  font-size: 48px;
+  line-height: 1;
+}
+
+.continue-screen__spirit-name {
+  color: #e0d4f7;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* ── Action cards ─────────────────────────────────── */
+.continue-screen__actions {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.continue-screen__card {
+  min-width: 200px;
+  min-height: 120px;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px solid var(--color-glass-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-lg, 28px);
+  background: var(--color-glass, rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  cursor: pointer;
+  transition: transform 0.25s var(--ease-bounce, cubic-bezier(0.34, 1.56, 0.64, 1)),
+              box-shadow 0.25s var(--ease-smooth, ease);
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: #fff;
+  font-size: 1.15rem;
+  text-align: center;
+}
+
+.continue-screen__card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: var(--shadow-glow-violet, 0 0 24px rgba(167, 139, 250, 0.3)),
+              0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.continue-screen__card:active {
+  transform: scale(0.92);
+}
+
+.continue-screen__card--continue {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(255, 170, 0, 0.15));
+  border-color: rgba(251, 191, 36, 0.35);
+}
+
+.continue-screen__card--continue:hover {
+  box-shadow: var(--shadow-glow-gold, 0 0 24px rgba(251, 191, 36, 0.3)),
+              0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.continue-screen__card--new {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.continue-screen__card-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.continue-screen__card-label {
+  font-size: 1.1rem;
+}
+
+/* ── Confirm dialog ───────────────────────────────── */
+.continue-screen__confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 28px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: var(--radius-md, 20px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeInUp 0.3s var(--ease-smooth);
+}
+
+.continue-screen__confirm-text {
+  color: var(--color-gold, #fbbf24);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  margin: 0;
+  text-align: center;
+}
+
+.continue-screen__confirm-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.continue-screen__confirm-yes {
+  padding: 10px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: #fff;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  border: none;
+  border-radius: var(--radius-full, 9999px);
+  cursor: pointer;
+  min-height: 44px;
+  transition: transform 0.2s var(--ease-bounce);
+}
+
+.continue-screen__confirm-yes:hover {
+  transform: scale(1.05);
+}
+
+.continue-screen__confirm-yes:active {
+  transform: scale(0.92);
+}
+
+.continue-screen__confirm-no {
+  padding: 10px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: #e0d4f7;
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-full, 9999px);
+  cursor: pointer;
+  min-height: 44px;
+  transition: transform 0.2s var(--ease-bounce);
+}
+
+.continue-screen__confirm-no:hover {
+  transform: scale(1.05);
+}
+
+.continue-screen__confirm-no:active {
+  transform: scale(0.92);
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .continue-screen__actions {
+    flex-direction: column;
+    width: 100%;
+    padding: 0 16px;
+  }
+
+  .continue-screen__card {
+    min-width: unset;
+    width: 100%;
+  }
+}

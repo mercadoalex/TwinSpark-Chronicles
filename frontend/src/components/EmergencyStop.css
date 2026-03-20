@@ -3,13 +3,14 @@
   position: fixed;
   bottom: 32px;
   left: 32px;
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
-  border: 2px solid rgba(239, 68, 68, 0.5);
-  background: rgba(239, 68, 68, 0.2);
+  border: 2px solid rgba(239, 68, 68, 0.35);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.35), rgba(220, 38, 38, 0.25));
   backdrop-filter: blur(10px);
-  color: #f87171;
+  -webkit-backdrop-filter: blur(10px);
+  color: #fca5a5;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -18,13 +19,15 @@
   transition: all 0.25s var(--ease-smooth, ease);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  font-size: 1.6rem;
+  line-height: 1;
 }
 
 .emergency-stop:hover {
-  background: rgba(239, 68, 68, 0.45);
-  border-color: rgba(239, 68, 68, 0.8);
-  transform: scale(1.1);
-  color: #fff;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.5), rgba(220, 38, 38, 0.4));
+  border-color: rgba(239, 68, 68, 0.6);
+  transform: scale(1.08);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
 }
 
 .emergency-stop:active {
@@ -32,8 +35,19 @@
 }
 
 .emergency-stop--active {
-  background: rgba(239, 68, 68, 0.6);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.6), rgba(220, 38, 38, 0.5));
   color: #fff;
   pointer-events: none;
-  animation: pulse-ring 1s infinite;
+  animation: pulse-ring-gentle 1.5s infinite;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .emergency-stop {
+    bottom: 16px;
+    left: 16px;
+    width: 56px;
+    height: 56px;
+    font-size: 1.4rem;
+  }
 }

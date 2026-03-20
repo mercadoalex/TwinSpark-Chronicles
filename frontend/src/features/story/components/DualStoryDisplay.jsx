@@ -1,14 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './DualStoryDisplay.css';
 import SceneImageLoader from './SceneImageLoader';
+import CelebrationOverlay from '../../../shared/components/CelebrationOverlay';
+import { useAudioStore } from '../../../stores/audioStore';
+import { useSceneAudioStore } from '../../../stores/sceneAudioStore';
 
 const choiceIcons = ['🌙', '⚡', '🌿', '🔮', '🌊', '🦋'];
 
 function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [showPerspectives, setShowPerspectives] = useState(false);
+  const [showSceneShimmer, setShowSceneShimmer] = useState(false);
   const narrationRef = useRef(null);
   const prevBeatRef = useRef(null);
+  const prevSceneUrlRef = useRef(null);
+
+  const { queueVoiceRecording, isPlayingVoiceRecording, currentVoiceRecording } = useAudioStore();
+
+  // Play voice recordings when a new story beat arrives with voice_recordings
+  useEffect(() => {
+    if (
+      storyBeat?.voice_recordings &&
+      Array.isArray(storyBeat.voice_recordings) &&
+      storyBeat.voice_recordings.length > 0 &&
+      storyBeat !== prevBeatRef.current
+    ) {
+      for (const rec of storyBeat.voice_recordings) {
+        if (rec.audio_base64 && rec.source === 'recording') {
+          queueVoiceRecording(rec);
+        }
+      }
+    }
+  }, [storyBeat, queueVoiceRecording]);
 
   // Move focus to narration text when a new story beat loads (Req 9.3)
   useEffect(() => {
@@ -21,6 +44,17 @@ function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
     }
   }, [storyBeat]);
 
+  // Trigger shimmer sweep when a new scene image appears (Req 4.3)
+  useEffect(() => {
+    const currentUrl = storyBeat?.scene_image_url;
+    if (currentUrl && currentUrl !== prevSceneUrlRef.current) {
+      prevSceneUrlRef.current = currentUrl;
+      setShowSceneShimmer(true);
+      const timer = setTimeout(() => setShowSceneShimmer(false), 900);
+      return () => clearTimeout(timer);
+    }
+  }, [storyBeat?.scene_image_url]);
+
   if (!storyBeat) {
     return (
       <div className="story-empty">
@@ -32,6 +66,7 @@ function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
 
   const handleChoiceTap = (choice, idx) => {
     setSelectedIdx(idx);
+    useSceneAudioStore.getState().playSfx('choice_select');
     // Satisfying bounce then send
     setTimeout(() => {
       onChoice(choice);
@@ -57,6 +92,11 @@ function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
             alt={sceneAlt}
           />
           <div className="story-scene__fade" />
+
+          {/* Shimmer sweep on new scene image load (Req 4.3) */}
+          {showSceneShimmer && (
+            <CelebrationOverlay type="shimmer" duration={800} particleCount={1} />
+          )}
 
           {/* Floating child avatars on the scene */}
           <div className="story-scene__avatars">
@@ -85,6 +125,17 @@ function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
           <span className="story-narration__tap-hint">
             {showPerspectives ? '▲ hide details' : '▼ tap for details'}
           </span>
+        </div>
+      )}
+
+      {/* ── Voice recording playing indicator ──────── */}
+      {isPlayingVoiceRecording && currentVoiceRecording?.recorder_name && (
+        <div className="story-voice-badge" aria-live="polite">
+          <span className="story-voice-badge__icon" aria-hidden="true">🎙️</span>
+          <span className="story-voice-badge__name">
+            {currentVoiceRecording.recorder_name}
+          </span>
+          <span className="story-voice-badge__pulse" aria-hidden="true" />
         </div>
       )}
 
@@ -120,7 +171,7 @@ function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
             {storyBeat.choices.map((choice, idx) => (
               <button
                 key={idx}
-                className={`story-choice-card ${selectedIdx === idx ? 'story-choice-card--selected' : ''}`}
+                className={`story-choice-card ${selectedIdx === idx ? 'story-choice-card--selected' : ''} ${selectedIdx !== null && selectedIdx !== idx ? 'story-choice-card--dimmed' : ''}`}
                 onClick={() => handleChoiceTap(choice, idx)}
                 disabled={selectedIdx !== null}
               >

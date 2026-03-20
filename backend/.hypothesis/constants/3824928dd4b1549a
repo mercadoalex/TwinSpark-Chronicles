@@ -1,4 +1,0 @@
-# file: /Users/alexmarket/Desktop/gemini_idea/twinspark-chronicles/backend/app/models/multimodal.py
-# hypothesis_version: 6.151.9
-
-[0.0, 1.0, 'ISO 8601 UTC', 'angry', 'emotion', 'emotion_confidence', 'en-US', 'face_detected', 'happy', 'neutral', 'sad', 'scared', 'surprised', 'timestamp', 'user_input']

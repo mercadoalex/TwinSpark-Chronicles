@@ -1,0 +1,163 @@
+/* LoadingAnimation — magical animated object instead of generic spinner */
+
+.loading-magic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-2xl) var(--space-xl);
+  text-align: center;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* ── Bouncing star with orbiting sparkles ─────────── */
+.loading-magic__star-container {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin-bottom: var(--space-lg);
+}
+
+.loading-magic__star {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  animation: loading-star-bounce 1.4s var(--ease-bounce) infinite;
+  filter: drop-shadow(0 0 12px var(--color-gold-glow));
+  min-width: 64px;
+  min-height: 64px;
+}
+
+.loading-magic__sparkle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  animation: loading-orbit 2.4s linear infinite;
+}
+
+.loading-magic__sparkle:nth-child(2) {
+  background: var(--color-pink);
+  box-shadow: 0 0 8px var(--color-pink-glow);
+  animation-delay: 0s;
+}
+
+.loading-magic__sparkle:nth-child(3) {
+  background: var(--color-violet);
+  box-shadow: 0 0 8px var(--color-violet-glow);
+  animation-delay: -0.8s;
+}
+
+.loading-magic__sparkle:nth-child(4) {
+  background: var(--color-sky);
+  box-shadow: 0 0 8px var(--color-sky-glow);
+  animation-delay: -1.6s;
+}
+
+/* ── Title ────────────────────────────────────────── */
+.loading-magic__title {
+  font-family: var(--font-display);
+  font-size: var(--text-heading);
+  color: #fff;
+  margin-bottom: var(--space-sm);
+  animation: float 3s ease-in-out infinite;
+}
+
+.loading-magic__subtitle {
+  font-size: 1.15rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: var(--space-lg);
+  max-width: 500px;
+}
+
+/* ── Bouncing dots ────────────────────────────────── */
+.loading-magic__dots {
+  display: flex;
+  gap: var(--space-md);
+}
+
+.loading-magic__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-pink), var(--color-violet));
+  animation: loading-dot-bounce 1.4s ease-in-out infinite;
+}
+
+.loading-magic__dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-magic__dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* ── Keyframes ────────────────────────────────────── */
+@keyframes loading-star-bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-12px) scale(1.1);
+  }
+}
+
+@keyframes loading-orbit {
+  0% {
+    transform: rotate(0deg) translateX(34px) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) translateX(34px) rotate(-180deg) scale(0.6);
+  }
+  100% {
+    transform: rotate(360deg) translateX(34px) rotate(-360deg) scale(1);
+  }
+}
+
+@keyframes loading-dot-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .loading-magic__star,
+  .loading-magic__sparkle,
+  .loading-magic__dot,
+  .loading-magic__title {
+    animation: none !important;
+  }
+
+  .loading-magic__star {
+    filter: drop-shadow(0 0 8px var(--color-gold-glow));
+  }
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .loading-magic {
+    padding: var(--space-xl) var(--space-md);
+  }
+
+  .loading-magic__star-container {
+    width: 64px;
+    height: 64px;
+  }
+
+  .loading-magic__title {
+    font-size: 1.4rem;
+  }
+
+  .loading-magic__subtitle {
+    font-size: 1rem;
+  }
+}

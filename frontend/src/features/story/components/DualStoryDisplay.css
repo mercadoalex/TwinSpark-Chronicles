@@ -117,16 +117,17 @@
   border-radius: var(--radius-lg);
   background: var(--color-glass);
   border: 1px solid var(--color-glass-border);
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.2s var(--ease-smooth);
 }
 
 .story-narration:active {
   background: var(--color-glass-hover);
+  transform: scale(0.92);
 }
 
 .story-narration__text {
   font-family: var(--font-body);
-  font-size: 1.25rem;
+  font-size: 20px;
   font-weight: 500;
   font-style: italic;
   line-height: 1.8;
@@ -167,11 +168,13 @@
 
 .story-card--child1 {
   border-color: var(--color-child1-border);
+  border-top: 3px solid var(--color-child1);
   animation: slideInLeft 0.4s var(--ease-smooth) both;
 }
 
 .story-card--child2 {
   border-color: var(--color-child2-border);
+  border-top: 3px solid var(--color-child2);
   animation: slideInRight 0.4s var(--ease-smooth) both;
 }
 
@@ -251,7 +254,7 @@
 }
 
 .story-choice-card:active {
-  transform: scale(0.93);
+  transform: scale(0.92);
 }
 
 .story-choice-card--selected {
@@ -284,9 +287,24 @@
 .story-choice-card__glow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at 50% 120%, rgba(251, 191, 36, 0.08), transparent 70%);
+  background: radial-gradient(circle at 50% 120%, rgba(251, 191, 36, 0.18), rgba(167, 139, 250, 0.06) 60%, transparent 80%);
   pointer-events: none;
   border-radius: inherit;
+  transition: opacity 0.3s var(--ease-smooth);
+}
+
+.story-choice-card:hover .story-choice-card__glow {
+  background: radial-gradient(circle at 50% 110%, rgba(251, 191, 36, 0.28), rgba(167, 139, 250, 0.1) 55%, transparent 80%);
+}
+
+/* ── Non-selected card dimming ────────────────────── */
+.story-choice-card--dimmed {
+  opacity: 0.3;
+  transform: scale(0.95);
+  pointer-events: none;
+  transition:
+    opacity 0.35s var(--ease-smooth),
+    transform 0.35s var(--ease-smooth);
 }
 
 /* ── Responsive ───────────────────────────────────── */
@@ -319,4 +337,85 @@
 
   .story-scene__avatars { gap: 12px; }
   .story-scene__avatar { font-size: 0.85rem; padding: 6px 14px; }
+}
+
+/* ── Voice recording playing badge ────────────────── */
+.story-voice-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 20px;
+  margin: 0 auto 20px;
+  max-width: 280px;
+  border-radius: var(--radius-full, 999px);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(236, 72, 153, 0.2));
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
+  backdrop-filter: blur(8px);
+  animation: fadeInUp 0.35s var(--ease-smooth, ease);
+}
+
+.story-voice-badge__icon {
+  font-size: 1.4rem;
+}
+
+.story-voice-badge__name {
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.story-voice-badge__pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #8b5cf6;
+  animation: voicePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes voicePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+/* ── Voice command toast ──────────────────────────── */
+.story-voice-command-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  border-radius: var(--radius-lg, 16px);
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(59, 130, 246, 0.25));
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  backdrop-filter: blur(12px);
+  z-index: 500;
+  animation: voiceCommandSlideIn 0.4s var(--ease-bounce, ease) both;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.2);
+}
+
+.story-voice-command-toast__icon {
+  font-size: 1.6rem;
+}
+
+.story-voice-command-toast__text {
+  font-family: var(--font-display, inherit);
+  font-weight: 700;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.story-voice-command-toast__action {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(16, 185, 129, 0.9);
+}
+
+@keyframes voiceCommandSlideIn {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+  100% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }

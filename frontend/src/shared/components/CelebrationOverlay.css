@@ -1,0 +1,83 @@
+/* ============================================================
+   CelebrationOverlay — Particle Animation Styles
+   ============================================================ */
+
+.celebration-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ── Base particle ─────────────────────────────────── */
+.celebration-particle {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ── Confetti variant ──────────────────────────────── */
+.celebration-particle--confetti {
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--color, #fbbf24);
+  left: calc(var(--x) * 1%);
+  top: -20px;
+  transform: scale(var(--scale, 1));
+  animation: confetti-fall var(--duration, 2500ms) ease-in var(--delay, 0ms) forwards;
+}
+
+/* ── Sparkle variant ───────────────────────────────── */
+.celebration-particle--sparkle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color, #fbbf24);
+  left: calc(var(--x) * 1%);
+  top: calc(var(--y) * 1%);
+  transform: scale(var(--scale, 1));
+  animation: sparkle-burst var(--duration, 800ms) ease-out var(--delay, 0ms) forwards;
+}
+
+/* ── Star variant ──────────────────────────────────── */
+.celebration-particle--star {
+  width: 12px;
+  height: 12px;
+  background: var(--color, #fbbf24);
+  left: calc(var(--x) * 1%);
+  top: -24px;
+  clip-path: polygon(
+    50% 0%, 61% 35%, 98% 35%, 68% 57%,
+    79% 91%, 50% 70%, 21% 91%, 32% 57%,
+    2% 35%, 39% 35%
+  );
+  transform: scale(var(--scale, 1));
+  animation: star-fall var(--duration, 1500ms) ease-in var(--delay, 0ms) forwards;
+}
+
+/* ── Shimmer variant ───────────────────────────────── */
+.celebration-particle--shimmer {
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color, rgba(255, 255, 255, 0.6)) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: shimmer-sweep var(--duration, 800ms) ease-in-out var(--delay, 0ms) forwards;
+}
+
+/* ── Reduced motion: hide all particles ────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .celebration-particle {
+    animation: none !important;
+    display: none !important;
+  }
+}

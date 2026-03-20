@@ -23,6 +23,13 @@ from app.services.emotion_detector import EmotionDetector
 from app.services.stt_service import STTService
 from app.services.input_manager import InputManager
 from app.services.photo_service import PhotoService, ValidationError, PhotoNotFoundError
+from app.services.voice_recording_service import (
+    VoiceRecordingService,
+    VoiceRecordingValidationError,
+    VoiceRecordingCapacityError,
+)
+from app.services.audio_normalizer import AudioNormalizer, AudioNormalizationError
+from app.models.voice_recording import RecordingMetadata, MessageType, RecordingStats
 from app.services.content_scanner import ContentScanner
 from app.services.face_extractor import FaceExtractor
 from app.services.session_service import SessionService
@@ -32,6 +39,10 @@ from app.models.session import SessionSnapshotPayload, SessionSnapshotResponse, 
 from app.services.cache_manager import CacheManager
 from app.services.style_transfer_cache import StyleTransferCache
 from app.services.face_crop_cache import FaceCropCache
+from app.models.audio_theme import SceneThemeRequest, AudioThemeResult
+from app.services.scene_audio_mapper import SceneAudioMapper
+from app.services.story_archive_service import StoryArchiveService
+from app.models.storybook import StorybookSummary, StorybookDetail, DeleteStorybookResult
 
 # Track ended sessions for idempotent POST /api/sessions/{id}/end
 _ended_sessions: Dict[str, dict] = {}
@@ -626,6 +637,237 @@ async def get_storage_stats(sibling_pair_id: str):
 
 
 # ============================================
+# VOICE RECORDING API ENDPOINTS
+# ============================================
+
+# Lazy-initialized VoiceRecordingService singleton (follows _photo_service pattern)
+_voice_recording_service: VoiceRecordingService | None = None
+
+
+async def _get_voice_recording_service() -> VoiceRecordingService:
+    """Return (and lazily create) the shared VoiceRecordingService instance."""
+    global _voice_recording_service
+    if _voice_recording_service is None:
+        await orchestrator._ensure_db_initialized()
+        normalizer = AudioNormalizer()
+        _voice_recording_service = VoiceRecordingService(
+            db=orchestrator._db_conn,
+            audio_normalizer=normalizer,
+        )
+    return _voice_recording_service
+
+
+def _verify_parent_pin(pin: str | None) -> None:
+    """Verify the parent PIN from the X-Parent-Pin header.
+
+    Raises HTTPException 401 if the PIN is missing or invalid.
+    The expected PIN is read from the PARENT_PIN env var (default: '1234').
+    """
+    expected = os.getenv("PARENT_PIN", "1234")
+    if not pin or pin != expected:
+        raise HTTPException(status_code=401, detail="Parent PIN required")
+
+
+@app.post("/api/voice-recordings/upload", status_code=201)
+async def upload_voice_recording(
+    sibling_pair_id: str = fastapi.Form(...),
+    recorder_name: str = fastapi.Form(...),
+    relationship: str = fastapi.Form(...),
+    message_type: str = fastapi.Form(...),
+    language: str = fastapi.Form("en"),
+    command_phrase: str | None = fastapi.Form(None),
+    command_action: str | None = fastapi.Form(None),
+    file: fastapi.UploadFile = fastapi.File(...),
+):
+    """Upload a voice recording with audio file and metadata."""
+    svc = await _get_voice_recording_service()
+    audio_bytes = await file.read()
+    try:
+        metadata = RecordingMetadata(
+            recorder_name=recorder_name,
+            relationship=relationship,
+            message_type=MessageType(message_type),
+            language=language,
+            sibling_pair_id=sibling_pair_id,
+            command_phrase=command_phrase,
+            command_action=command_action,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    try:
+        result = await svc.upload_recording(sibling_pair_id, audio_bytes, metadata)
+        return result.model_dump()
+    except VoiceRecordingValidationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except VoiceRecordingCapacityError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except AudioNormalizationError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        logger.error("Voice recording upload failed: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to save recording")
+
+
+@app.get("/api/voice-recordings/detail/{recording_id}")
+async def get_voice_recording_detail(recording_id: str):
+    """Get a single voice recording with audio URL."""
+    svc = await _get_voice_recording_service()
+    record = await svc.get_recording(recording_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Recording not found")
+    return record.model_dump()
+
+
+@app.get("/api/voice-recordings/stats/{sibling_pair_id}", response_model=RecordingStats)
+async def get_voice_recording_stats(sibling_pair_id: str):
+    """Return recording count and capacity for a sibling pair."""
+    svc = await _get_voice_recording_service()
+    count = await svc.get_recording_count(sibling_pair_id)
+    return RecordingStats(
+        recording_count=count,
+        max_recordings=50,
+        remaining=50 - count,
+    )
+
+
+@app.get("/api/voice-recordings/commands/{sibling_pair_id}")
+async def get_voice_commands(sibling_pair_id: str):
+    """List voice commands for a sibling pair."""
+    svc = await _get_voice_recording_service()
+    commands = await svc.get_voice_commands(sibling_pair_id)
+    return [c.model_dump() for c in commands]
+
+
+@app.get("/api/voice-recordings/{sibling_pair_id}")
+async def list_voice_recordings(
+    sibling_pair_id: str,
+    message_type: str | None = None,
+    recorder_name: str | None = None,
+):
+    """List voice recordings for a sibling pair with optional filters."""
+    svc = await _get_voice_recording_service()
+    recordings = await svc.get_recordings(sibling_pair_id, message_type, recorder_name)
+    return [r.model_dump() for r in recordings]
+
+
+@app.delete("/api/voice-recordings/all/{sibling_pair_id}")
+async def delete_all_voice_recordings(
+    sibling_pair_id: str,
+    x_parent_pin: str | None = fastapi.Header(None),
+):
+    """Delete all voice recordings for a sibling pair. Requires parent PIN."""
+    _verify_parent_pin(x_parent_pin)
+    svc = await _get_voice_recording_service()
+    try:
+        count = await svc.delete_all_recordings(sibling_pair_id)
+        return {"deleted_count": count}
+    except Exception as e:
+        logger.error("Bulk voice recording delete failed: %s", e)
+        raise HTTPException(status_code=500, detail="Bulk delete failed")
+
+
+@app.delete("/api/voice-recordings/{recording_id}")
+async def delete_voice_recording(
+    recording_id: str,
+    x_parent_pin: str | None = fastapi.Header(None),
+):
+    """Delete a single voice recording. Requires parent PIN."""
+    _verify_parent_pin(x_parent_pin)
+    svc = await _get_voice_recording_service()
+    try:
+        result = await svc.delete_recording(recording_id)
+        return result.model_dump()
+    except VoiceRecordingValidationError:
+        raise HTTPException(status_code=404, detail="Recording not found")
+    except Exception as e:
+        logger.error("Voice recording delete failed: %s", e)
+        raise HTTPException(status_code=500, detail="Delete failed")
+
+
+# ============================================
+# SCENE AUDIO ENDPOINTS
+# ============================================
+
+
+@app.post("/api/audio/scene-theme", response_model=AudioThemeResult)
+async def scene_theme(request: SceneThemeRequest):
+    """Map a scene description to an audio theme via keyword matching."""
+    mapper = SceneAudioMapper()
+    return mapper.map_scene(request.scene_description)
+
+
+# ============================================
+# GALLERY ENDPOINTS
+# ============================================
+
+# Lazy-initialized StoryArchiveService singleton (follows _voice_recording_service pattern)
+_story_archive_service: StoryArchiveService | None = None
+
+
+async def _get_story_archive_service() -> StoryArchiveService:
+    """Return (and lazily create) the shared StoryArchiveService instance."""
+    global _story_archive_service
+    if _story_archive_service is None:
+        await orchestrator._ensure_db_initialized()
+        _story_archive_service = StoryArchiveService(db=orchestrator._db_conn)
+    return _story_archive_service
+
+
+@app.get("/api/gallery/detail/{storybook_id}")
+async def get_storybook_detail(storybook_id: str):
+    """Get full storybook with all beats for the reader."""
+    svc = await _get_story_archive_service()
+    detail = await svc.get_storybook(storybook_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="Storybook not found")
+    return detail.model_dump()
+
+
+@app.get("/api/gallery/{sibling_pair_id}")
+async def list_gallery_storybooks(sibling_pair_id: str):
+    """List storybook summaries for a sibling pair."""
+    svc = await _get_story_archive_service()
+    storybooks = await svc.list_storybooks(sibling_pair_id)
+    return [s.model_dump() for s in storybooks]
+
+
+@app.delete("/api/gallery/all/{sibling_pair_id}")
+async def delete_all_gallery_storybooks(
+    sibling_pair_id: str,
+    x_parent_pin: str | None = fastapi.Header(None),
+):
+    """Bulk delete all storybooks for a sibling pair. Requires parent PIN."""
+    _verify_parent_pin(x_parent_pin)
+    svc = await _get_story_archive_service()
+    try:
+        count = await svc.delete_all_storybooks(sibling_pair_id)
+        return {"deleted_count": count}
+    except Exception as e:
+        logger.error("Bulk gallery delete failed: %s", e)
+        raise HTTPException(status_code=500, detail="Bulk delete failed")
+
+
+@app.delete("/api/gallery/{storybook_id}")
+async def delete_gallery_storybook(
+    storybook_id: str,
+    x_parent_pin: str | None = fastapi.Header(None),
+):
+    """Delete a single storybook. Requires parent PIN."""
+    _verify_parent_pin(x_parent_pin)
+    svc = await _get_story_archive_service()
+    try:
+        deleted = await svc.delete_storybook(storybook_id)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Storybook not found")
+        return {"deleted_count": 1}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Gallery storybook delete failed: %s", e)
+        raise HTTPException(status_code=500, detail="Delete failed")
+
+
+# ============================================
 # SESSION PERSISTENCE ENDPOINTS
 # ============================================
 
@@ -940,6 +1182,29 @@ async def _process_audio_segment(session_id: str, data: dict) -> None:
                 "text": transcript.text,
                 "confidence": transcript.confidence,
             })
+
+            # Voice command matching (Task 6.3)
+            try:
+                await orchestrator._ensure_db_initialized()
+                if orchestrator._playback_integrator is not None:
+                    ctx = manager.get_session_context(session_id) or {}
+                    characters = ctx.get("characters", {})
+                    child1_name = characters.get("child1", {}).get("name", "child1")
+                    child2_name = characters.get("child2", {}).get("name", "child2")
+                    sibling_pair_id = ":".join(sorted([child1_name, child2_name]))
+
+                    match = await orchestrator._playback_integrator.match_voice_command(
+                        sibling_pair_id, transcript.text
+                    )
+                    if match and match.matched:
+                        await manager.send_story(session_id, {
+                            "type": "voice_command_match",
+                            "command_action": match.command_action,
+                            "similarity_score": match.similarity_score,
+                            "confirmation_audio_url": match.confirmation_audio_url,
+                        })
+            except Exception as e:
+                logger.warning("Voice command matching failed for session=%s: %s", session_id, e)
 
         # Fuse into a MultimodalInputEvent (audio-only: no emotions)
         input_mgr = manager.get_input_manager(session_id)

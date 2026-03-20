@@ -7,3 +7,5 @@ export * from './useDebounce';
 export * from './usePhotoUxEffects';
 export * from './useFocusTrap';
 export * from './useAnnounce';
+export * from './useReducedMotion';
+export * from './useImagePreloader';

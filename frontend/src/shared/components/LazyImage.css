@@ -8,8 +8,13 @@
 .lazy-image__skeleton {
   position: absolute;
   inset: 0;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm, 12px);
+  background: linear-gradient(
+    135deg,
+    rgba(167, 139, 250, 0.08),
+    rgba(244, 114, 182, 0.06),
+    rgba(56, 189, 248, 0.08)
+  );
   overflow: hidden;
 }
 
@@ -20,9 +25,9 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.06) 40%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.06) 60%,
+    var(--color-violet-glow, rgba(167, 139, 250, 0.15)) 30%,
+    var(--color-pink-glow, rgba(244, 114, 182, 0.18)) 50%,
+    var(--color-sky-glow, rgba(56, 189, 248, 0.15)) 70%,
     transparent 100%
   );
   animation: shimmer 1.5s ease-in-out infinite;

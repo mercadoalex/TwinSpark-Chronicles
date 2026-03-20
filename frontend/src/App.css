@@ -27,7 +27,10 @@
     radial-gradient(2px 2px at 75% 15%, rgba(244, 114, 182, 0.25) 50%, transparent 50%),
     radial-gradient(1.5px 1.5px at 40% 70%, rgba(167, 139, 250, 0.2) 50%, transparent 50%),
     radial-gradient(2px 2px at 85% 60%, rgba(52, 211, 153, 0.2) 50%, transparent 50%),
-    radial-gradient(1.5px 1.5px at 55% 40%, rgba(56, 189, 248, 0.15) 50%, transparent 50%);
+    radial-gradient(1.5px 1.5px at 55% 40%, rgba(56, 189, 248, 0.15) 50%, transparent 50%),
+    radial-gradient(2.5px 2.5px at 25% 55%, var(--color-pink-glow, rgba(244, 114, 182, 0.25)) 50%, transparent 50%),
+    radial-gradient(2px 2px at 65% 80%, var(--color-emerald-glow, rgba(52, 211, 153, 0.2)) 50%, transparent 50%),
+    radial-gradient(1.5px 1.5px at 90% 30%, var(--color-amber-glow, rgba(245, 158, 11, 0.2)) 50%, transparent 50%);
   animation: float 8s ease-in-out infinite;
 }
 
@@ -41,6 +44,8 @@
   letter-spacing: 1px;
   position: relative;
   z-index: 1;
+  background-size: 200% 200%;
+  animation: logo-intro 1s var(--ease-bounce) forwards, title-shimmer 5s ease-in-out infinite;
 }
 
 /* ── Settings button ──────────────────────────────── */
@@ -147,8 +152,8 @@
   position: fixed;
   bottom: 32px;
   right: 32px;
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   border: 3px solid rgba(255, 255, 255, 0.15);
   background: linear-gradient(135deg, var(--color-violet), var(--color-coral));
@@ -173,8 +178,48 @@
 
 .floating-mic--active {
   background: linear-gradient(135deg, var(--color-emerald), #059669);
-  box-shadow: 0 8px 32px rgba(52, 211, 153, 0.5);
-  animation: pulse-ring 1.8s infinite;
+  box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5);
+  animation: floating-mic-pulse 1.8s infinite;
+}
+
+@keyframes floating-mic-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5), 0 0 0 0 rgba(52, 211, 153, 0.3); }
+  40%  { box-shadow: 0 0 0 15px rgba(52, 211, 153, 0.0), 0 0 0 0 rgba(52, 211, 153, 0.3); }
+  70%  { box-shadow: 0 0 0 15px rgba(52, 211, 153, 0.0), 0 0 0 25px rgba(52, 211, 153, 0.0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.0), 0 0 0 0 rgba(52, 211, 153, 0.0); }
+}
+
+/* ── Audio unlock button ──────────────────────────── */
+.audio-unlock-btn {
+  position: fixed;
+  bottom: 100px;
+  right: 32px;
+  z-index: 150;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4);
+  animation: audio-unlock-pulse 2s ease-in-out infinite;
+  transition: transform 0.15s ease;
+}
+
+.audio-unlock-btn:hover {
+  transform: scale(1.05);
+}
+
+.audio-unlock-btn:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+@keyframes audio-unlock-pulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4); }
+  50% { box-shadow: 0 4px 24px rgba(124, 58, 237, 0.7); }
 }
 
 /* ── Mechanics overlay ────────────────────────────── */

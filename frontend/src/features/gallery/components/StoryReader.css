@@ -1,0 +1,461 @@
+/* ============================================================
+   STORY READER — Immersive Full-Screen Beat Reader
+   Living Storybook Design System
+   ============================================================ */
+
+/* ── Full-screen overlay ──────────────────────────── */
+.reader-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  background: rgba(7, 11, 26, 0.97);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  animation: fadeIn 300ms var(--ease-smooth, ease) forwards;
+}
+
+/* ── Header ───────────────────────────────────────── */
+.reader-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md, 16px) var(--space-lg, 24px);
+  flex-shrink: 0;
+}
+
+.reader-header__close {
+  width: var(--touch-min, 56px);
+  height: var(--touch-min, 56px);
+  border: none;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-glass, rgba(255, 255, 255, 0.05));
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.4rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s var(--ease-smooth, ease), transform 0.2s var(--ease-bounce, ease);
+}
+
+.reader-header__close:hover {
+  background: var(--color-glass-hover, rgba(255, 255, 255, 0.08));
+  transform: scale(1.1);
+}
+
+/* ── Page indicator ───────────────────────────────── */
+.reader-page-indicator {
+  font-family: var(--font-display, 'Fredoka', sans-serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.05em;
+}
+
+/* ── Beat content area ────────────────────────────── */
+.reader-beat {
+  flex: 1;
+  max-width: 720px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 var(--space-lg, 24px) var(--space-xl, 32px);
+  transition: transform 0.3s var(--ease-smooth, ease), opacity 0.3s var(--ease-smooth, ease);
+}
+
+/* ── Page-turn transitions ────────────────────────── */
+.reader-beat--entering {
+  animation: reader-slide-in 350ms var(--ease-smooth, ease) forwards;
+}
+
+.reader-beat--exiting {
+  animation: reader-slide-out 300ms var(--ease-smooth, ease) forwards;
+}
+
+/* Forward direction (default): slide from right */
+@keyframes reader-slide-in {
+  0%   { opacity: 0; transform: translateX(60px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes reader-slide-out {
+  0%   { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(-60px); }
+}
+
+/* Backward direction: slide from left */
+.reader-beat--reverse.reader-beat--entering {
+  animation-name: reader-slide-in-reverse;
+}
+
+.reader-beat--reverse.reader-beat--exiting {
+  animation-name: reader-slide-out-reverse;
+}
+
+@keyframes reader-slide-in-reverse {
+  0%   { opacity: 0; transform: translateX(-60px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes reader-slide-out-reverse {
+  0%   { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(60px); }
+}
+
+/* ── Scene image ──────────────────────────────────── */
+.reader-beat__scene {
+  position: relative;
+  margin-bottom: var(--space-md, 16px);
+  border-radius: var(--radius-lg, 28px);
+  overflow: hidden;
+  box-shadow: var(--shadow-float, 0 12px 40px rgba(0, 0, 0, 0.4));
+}
+
+.reader-beat__scene img {
+  width: 100%;
+  max-height: 40vh;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius-lg, 28px);
+}
+
+.reader-beat__scene-fallback {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.5rem;
+  background: linear-gradient(135deg, var(--color-bg-surface, #151d35), var(--color-bg-mid, #0f1629));
+  border-radius: var(--radius-lg, 28px);
+}
+
+.reader-beat__scene-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(7, 11, 26, 0.95), transparent);
+  pointer-events: none;
+}
+
+/* ── Narration ────────────────────────────────────── */
+.reader-beat__narration {
+  text-align: center;
+  margin-bottom: var(--space-md, 16px);
+  padding: 20px 24px;
+  cursor: pointer;
+  border-radius: var(--radius-lg, 28px);
+  background: var(--color-glass, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--color-glass-border, rgba(255, 255, 255, 0.1));
+  transition: background 0.2s, transform 0.2s var(--ease-smooth, ease);
+}
+
+.reader-beat__narration:active {
+  background: var(--color-glass-hover, rgba(255, 255, 255, 0.08));
+  transform: scale(0.97);
+}
+
+.reader-beat__narration-text {
+  font-family: var(--font-body, 'Quicksand', sans-serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.8;
+  color: var(--color-gold-soft, #fde68a);
+  margin: 0;
+}
+
+.reader-beat__tap-hint {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-display, 'Fredoka', sans-serif);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.05em;
+}
+
+/* ── Perspective cards ────────────────────────────── */
+.reader-perspectives {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: var(--space-md, 16px);
+  animation: fadeInUp 0.35s var(--ease-smooth, ease);
+}
+
+.reader-card {
+  background: var(--color-glass, rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: var(--radius-md, 20px);
+  padding: 16px;
+  border: 1.5px solid var(--color-glass-border, rgba(255, 255, 255, 0.1));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.reader-card--child1 {
+  border-color: var(--color-child1-border, rgba(244, 114, 182, 0.3));
+  border-top: 3px solid var(--color-child1, #f472b6);
+  animation: slideInLeft 0.4s var(--ease-smooth, ease) both;
+}
+
+.reader-card--child2 {
+  border-color: var(--color-child2-border, rgba(96, 165, 250, 0.3));
+  border-top: 3px solid var(--color-child2, #60a5fa);
+  animation: slideInRight 0.4s var(--ease-smooth, ease) both;
+}
+
+.reader-card__emoji {
+  font-size: 1.6rem;
+}
+
+.reader-card__text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+}
+
+/* ── "You chose:" badge ───────────────────────────── */
+.reader-beat__choice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 20px;
+  margin: 0 auto var(--space-md, 16px);
+  max-width: 400px;
+  border-radius: var(--radius-full, 9999px);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.12), rgba(167, 139, 250, 0.12));
+  border: 1.5px solid rgba(251, 191, 36, 0.25);
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.1);
+}
+
+.reader-beat__choice-label {
+  font-family: var(--font-display, 'Fredoka', sans-serif);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.reader-beat__choice-text {
+  font-family: var(--font-display, 'Fredoka', sans-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-gold, #fbbf24);
+}
+
+/* ── Navigation ───────────────────────────────────── */
+.reader-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xl, 32px);
+  padding: var(--space-md, 16px) var(--space-lg, 24px) var(--space-lg, 24px);
+  flex-shrink: 0;
+}
+
+.reader-nav__btn {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-glass, rgba(255, 255, 255, 0.05));
+  border: 1.5px solid var(--color-glass-border, rgba(255, 255, 255, 0.1));
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.3rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s var(--ease-smooth, ease),
+              transform 0.2s var(--ease-bounce, ease),
+              box-shadow 0.2s var(--ease-smooth, ease);
+}
+
+.reader-nav__btn:hover:not(:disabled) {
+  background: var(--color-glass-hover, rgba(255, 255, 255, 0.08));
+  transform: scale(1.1);
+  box-shadow: var(--shadow-glow-gold, 0 0 24px rgba(251, 191, 36, 0.3));
+}
+
+.reader-nav__btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.reader-nav__btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+/* ── "The End" card ───────────────────────────────── */
+.reader-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md, 16px);
+  padding: var(--space-xl, 32px) var(--space-lg, 24px);
+  text-align: center;
+  position: relative;
+  animation: fadeInUp 0.5s var(--ease-smooth, ease);
+}
+
+.reader-end__title {
+  font-family: var(--font-display, 'Fredoka', sans-serif);
+  font-size: 2.4rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--color-gold, #fbbf24), var(--color-coral, #fb7185));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.reader-end__subtitle {
+  font-family: var(--font-body, 'Quicksand', sans-serif);
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.reader-end__btn {
+  min-height: var(--touch-min, 56px);
+  padding: 14px 32px;
+  border: none;
+  border-radius: var(--radius-full, 9999px);
+  background: linear-gradient(135deg, var(--color-violet, #a78bfa), var(--color-coral, #fb7185));
+  color: #fff;
+  font-family: var(--font-display, 'Fredoka', sans-serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.25s var(--ease-bounce, ease), box-shadow 0.25s var(--ease-smooth, ease);
+  box-shadow: 0 4px 20px rgba(167, 139, 250, 0.3);
+}
+
+.reader-end__btn:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 8px 30px rgba(167, 139, 250, 0.5);
+}
+
+.reader-end__btn:active {
+  transform: scale(0.92);
+}
+
+/* ── Loading state ────────────────────────────────── */
+.reader-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md, 16px);
+  flex: 1;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-display, 'Fredoka', sans-serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+/* ============================================================
+   ACCESSIBILITY — Reduced Motion
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .reader-overlay {
+    animation: none;
+  }
+
+  .reader-beat--entering,
+  .reader-beat--exiting,
+  .reader-beat--reverse.reader-beat--entering,
+  .reader-beat--reverse.reader-beat--exiting {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .reader-card--child1,
+  .reader-card--child2 {
+    animation: none;
+  }
+
+  .reader-perspectives {
+    animation: none;
+  }
+
+  .reader-end {
+    animation: none;
+  }
+
+  .reader-nav__btn {
+    transition: none;
+  }
+
+  .reader-end__btn {
+    transition: none;
+  }
+
+  .reader-header__close {
+    transition: none;
+  }
+}
+
+/* ── Focus indicators ─────────────────────────────── */
+.reader-header__close:focus-visible {
+  outline: 3px solid var(--color-gold, #fbbf24);
+  outline-offset: 3px;
+}
+
+.reader-nav__btn:focus-visible {
+  outline: 3px solid var(--color-gold, #fbbf24);
+  outline-offset: 3px;
+}
+
+.reader-beat__narration:focus-visible {
+  outline: 3px solid var(--color-gold, #fbbf24);
+  outline-offset: 3px;
+}
+
+.reader-end__btn:focus-visible {
+  outline: 3px solid var(--color-gold, #fbbf24);
+  outline-offset: 3px;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .reader-beat {
+    padding: 0 var(--space-md, 16px) var(--space-md, 16px);
+  }
+
+  .reader-perspectives {
+    grid-template-columns: 1fr;
+  }
+
+  .reader-card--child1,
+  .reader-card--child2 {
+    animation-name: fadeInUp;
+  }
+
+  .reader-beat__scene img {
+    max-height: 30vh;
+  }
+
+  .reader-end__title {
+    font-size: 1.8rem;
+  }
+}

@@ -16,8 +16,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   padding: 14px 20px;
+  min-width: 90px;
+  min-height: 80px;
   border-radius: var(--radius-xl);
   border: 2px solid var(--color-glass-border);
   background: var(--color-glass);
@@ -27,7 +29,7 @@
   transition: transform 0.25s var(--ease-bounce), border-color 0.3s, box-shadow 0.3s;
   position: relative;
   touch-action: manipulation;
-  min-width: 90px;
+  justify-content: center;
 }
 
 .dp-bubble:not(:disabled):hover {
@@ -35,7 +37,7 @@
 }
 
 .dp-bubble:not(:disabled):active {
-  transform: scale(0.93);
+  transform: scale(0.92);
 }
 
 .dp-bubble:disabled {
@@ -49,22 +51,25 @@
   opacity: 0.7;
 }
 
+/* ── Colored pulsing glow on active turn ──────────── */
 .dp-bubble--waiting.dp-bubble--c1 {
-  animation: pulseC1 2s ease-in-out infinite;
+  box-shadow: 0 0 18px var(--color-pink-glow, rgba(244, 114, 182, 0.4));
+  animation: glowPulseC1 2.2s ease-in-out infinite;
 }
 
 .dp-bubble--waiting.dp-bubble--c2 {
-  animation: pulseC2 2s ease-in-out infinite;
+  box-shadow: 0 0 18px var(--color-sky-glow, rgba(56, 189, 248, 0.4));
+  animation: glowPulseC2 2.2s ease-in-out infinite;
 }
 
-@keyframes pulseC1 {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 114, 182, 0.3); }
-  50%      { box-shadow: 0 0 0 10px rgba(244, 114, 182, 0); }
+@keyframes glowPulseC1 {
+  0%, 100% { box-shadow: 0 0 8px rgba(244, 114, 182, 0.25); }
+  50%      { box-shadow: 0 0 22px rgba(244, 114, 182, 0.5); }
 }
 
-@keyframes pulseC2 {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(96, 165, 250, 0.3); }
-  50%      { box-shadow: 0 0 0 10px rgba(96, 165, 250, 0); }
+@keyframes glowPulseC2 {
+  0%, 100% { box-shadow: 0 0 8px rgba(96, 165, 250, 0.25); }
+  50%      { box-shadow: 0 0 22px rgba(96, 165, 250, 0.5); }
 }
 
 .dp-bubble__emoji {
@@ -79,10 +84,12 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+/* ── Celebratory checkmark animation ──────────────── */
 .dp-bubble__check {
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: var(--color-emerald);
   font-weight: 700;
+  animation: check-pop 0.5s var(--ease-bounce) both;
 }
 
 .dp-bubble__pulse {
@@ -117,8 +124,12 @@
 }
 
 /* ── Responsive ───────────────────────────────────── */
-@media (max-width: 500px) {
-  .dp-bubble { padding: 10px 14px; min-width: 72px; }
+@media (max-width: 767px) {
+  .dp-bubble {
+    padding: 10px 14px;
+    min-width: 72px;
+    min-height: 64px;
+  }
   .dp-bubble__emoji { font-size: 1.4rem; }
   .dp-bubble__name { font-size: 0.75rem; }
   .dp-center { min-width: 70px; }

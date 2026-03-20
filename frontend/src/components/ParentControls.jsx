@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Camera } from 'lucide-react';
 import { useParentControlsStore, AVAILABLE_THEMES } from '../stores/parentControlsStore';
 import { usePhotoStore } from '../stores/photoStore';
+import { useSessionStore } from '../stores/sessionStore';
+import { GalleryView } from '../features/gallery';
+import VolumeController from './VolumeController';
 import './ParentControls.css';
 
 const TIME_OPTIONS = [15, 30, 45, 60];
@@ -12,6 +15,12 @@ export default function ParentControls({ onClose, onReviewPhotos }) {
   const photos = usePhotoStore((s) => s.photos);
   const pendingCount = photos.filter((p) => p.status === 'review').length;
   const [newWord, setNewWord] = useState('');
+  const [showGallery, setShowGallery] = useState(false);
+
+  const sessionProfiles = useSessionStore((s) => s.profiles);
+  const siblingPairId = sessionProfiles?.c1_name && sessionProfiles?.c2_name
+    ? [sessionProfiles.c1_name, sessionProfiles.c2_name].sort().join(':')
+    : '';
 
   // Close on Escape key
   useEffect(() => {
@@ -118,6 +127,25 @@ export default function ParentControls({ onClose, onReviewPhotos }) {
           </div>
         </section>
 
+        {/* Scene Audio */}
+        <section className="pc-section">
+          <h3 className="pc-label">Scene Audio</h3>
+          <VolumeController />
+        </section>
+
+        {/* Story Gallery */}
+        <section className="pc-section">
+          <h3 className="pc-label">Story Gallery</h3>
+          <button
+            className="pc-review-btn"
+            onClick={() => setShowGallery(true)}
+            aria-label="Open story gallery"
+          >
+            📚
+            <span>Browse Past Adventures</span>
+          </button>
+        </section>
+
         {/* Review Photos */}
         <section className="pc-section">
           <h3 className="pc-label">Photo Review</h3>
@@ -136,6 +164,13 @@ export default function ParentControls({ onClose, onReviewPhotos }) {
           </button>
         </section>
       </div>
+      {showGallery && (
+        <GalleryView
+          siblingPairId={siblingPairId}
+          onClose={() => setShowGallery(false)}
+          isParentMode={true}
+        />
+      )}
     </div>
   );
 }

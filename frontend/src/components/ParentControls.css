@@ -1,29 +1,81 @@
-/* ── Parent Controls Overlay ─────────────────────── */
+/* ============================================================
+   PARENT CONTROLS — Living Storybook
+   Modal with same entrance/exit animations as child-facing modals
+   ============================================================ */
+
+/* ── Overlay ──────────────────────────────────────── */
 .parent-controls-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 500;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.2s ease;
+  animation: pc-backdrop-in 0.3s var(--ease-smooth) forwards;
 }
 
+@keyframes pc-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal panel — entrance: scale 0.85→1.0 over 300ms ── */
 .parent-controls {
   background: var(--color-glass);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--color-glass-border);
-  border-radius: var(--radius-lg, 20px);
+  border-radius: var(--radius-lg);
   padding: 28px 32px 32px;
   width: 90%;
   max-width: 420px;
   max-height: 85vh;
   overflow-y: auto;
   color: #fff;
+  animation: pc-modal-enter 0.3s var(--ease-bounce) forwards;
+  transform-origin: center center;
 }
 
+@keyframes pc-modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.0);
+  }
+}
+
+/* Exit animation class — applied via JS if needed */
+.parent-controls--exiting {
+  animation: pc-modal-exit 0.2s var(--ease-smooth) forwards;
+}
+
+@keyframes pc-modal-exit {
+  from {
+    opacity: 1;
+    transform: scale(1.0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+.parent-controls-overlay--exiting {
+  animation: pc-backdrop-out 0.2s var(--ease-smooth) forwards;
+}
+
+@keyframes pc-backdrop-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ── Header ───────────────────────────────────────── */
 .pc-header {
   display: flex;
   justify-content: space-between;
@@ -40,7 +92,7 @@
 .pc-close {
   background: none;
   border: none;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   padding: 4px;
   min-width: 44px;
@@ -48,67 +100,85 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s var(--ease-smooth), background 0.2s var(--ease-smooth);
 }
-.pc-close:hover { color: #fff; }
 
-.pc-section { margin-bottom: 20px; }
+.pc-close:hover {
+  color: #fff;
+  background: var(--color-glass-hover);
+}
+
+.pc-section {
+  margin-bottom: 20px;
+}
 
 .pc-label {
+  font-family: var(--font-display);
   font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: rgba(255,255,255,0.6);
+  color: rgba(255, 255, 255, 0.6);
   margin-bottom: 10px;
 }
 
-/* Theme chips */
-.pc-themes { display: flex; flex-wrap: wrap; gap: 8px; }
+/* ── Theme chips ──────────────────────────────────── */
+.pc-themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 
 .pc-theme-chip {
   padding: 6px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   background: transparent;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 0.82rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s var(--ease-smooth);
   min-height: 44px;
 }
+
 .pc-theme-chip--on {
   background: linear-gradient(135deg, var(--color-violet), var(--color-coral));
   color: #fff;
   border-color: transparent;
   font-weight: 700;
-  box-shadow: 0 0 0 2px var(--color-violet, #7c3aed);
+  box-shadow: 0 0 0 2px var(--color-violet);
 }
 
-/* Complexity */
-.pc-complexity { display: flex; gap: 8px; }
+/* ── Complexity ───────────────────────────────────── */
+.pc-complexity {
+  display: flex;
+  gap: 8px;
+}
 
 .pc-complexity-btn {
   flex: 1;
   padding: 8px 0;
-  border-radius: var(--radius-md, 12px);
-  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   background: transparent;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 0.85rem;
   text-transform: capitalize;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s var(--ease-smooth);
   min-height: 44px;
 }
+
 .pc-complexity-btn--active {
   background: linear-gradient(135deg, var(--color-violet), var(--color-coral));
   color: #fff;
   border-color: transparent;
   font-weight: 700;
-  box-shadow: 0 0 0 2px var(--color-violet, #7c3aed);
+  box-shadow: 0 0 0 2px var(--color-violet);
 }
 
-/* Blocked words */
+/* ── Blocked words ────────────────────────────────── */
 .pc-word-input {
   display: flex;
   gap: 8px;
@@ -118,18 +188,26 @@
 .pc-input {
   flex: 1;
   padding: 8px 12px;
-  border-radius: var(--radius-md, 12px);
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.06);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
   color: #fff;
   font-size: 0.85rem;
   outline: none;
+  transition: border-color 0.2s var(--ease-smooth);
 }
-.pc-input::placeholder { color: rgba(255,255,255,0.3); }
+
+.pc-input:focus {
+  border-color: var(--color-violet);
+}
+
+.pc-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
 
 .pc-add-btn {
   padding: 8px 12px;
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   border: none;
   background: var(--color-violet);
   color: #fff;
@@ -139,24 +217,34 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: box-shadow 0.2s var(--ease-smooth);
 }
 
-.pc-word-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.pc-add-btn:hover {
+  box-shadow: var(--shadow-glow-violet);
+}
+
+.pc-word-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
 
 .pc-word-tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(244,114,182,0.2);
-  color: rgba(255,255,255,0.8);
+  border-radius: var(--radius-full);
+  background: rgba(244, 114, 182, 0.2);
+  color: rgba(255, 255, 255, 0.8);
   font-size: 0.78rem;
 }
+
 .pc-word-tag button {
   background: none;
   border: none;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   padding: 0;
   display: flex;
@@ -166,48 +254,54 @@
   justify-content: center;
 }
 
-/* Time options */
-.pc-time-options { display: flex; gap: 8px; }
+/* ── Time options ─────────────────────────────────── */
+.pc-time-options {
+  display: flex;
+  gap: 8px;
+}
 
 .pc-time-btn {
   flex: 1;
   padding: 8px 0;
-  border-radius: var(--radius-md, 12px);
-  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   background: transparent;
-  color: rgba(255,255,255,0.5);
+  color: rgba(255, 255, 255, 0.5);
   font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s var(--ease-smooth);
   min-height: 44px;
 }
+
 .pc-time-btn--active {
   background: linear-gradient(135deg, var(--color-emerald), #059669);
   color: #fff;
   border-color: transparent;
   font-weight: 700;
-  box-shadow: 0 0 0 2px var(--color-emerald, #34d399);
+  box-shadow: 0 0 0 2px var(--color-emerald);
 }
 
-/* Review Photos entry point */
+/* ── Review Photos ────────────────────────────────── */
 .pc-review-btn {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   padding: 12px 16px;
-  border-radius: var(--radius-md, 12px);
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.06);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--color-glass);
   color: #fff;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s var(--ease-smooth);
   min-height: 48px;
 }
+
 .pc-review-btn:hover {
-  background: rgba(255,255,255,0.12);
-  border-color: rgba(255,255,255,0.25);
+  background: var(--color-glass-hover);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: var(--shadow-glow-violet);
 }
 
 .pc-review-badge {
@@ -218,7 +312,7 @@
   min-width: 24px;
   height: 24px;
   padding: 0 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: linear-gradient(135deg, var(--color-violet), var(--color-coral));
   color: #fff;
   font-size: 0.75rem;
@@ -227,6 +321,36 @@
 
 .pc-review-secondary {
   margin-left: auto;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255, 255, 255, 0.4);
   font-size: 0.8rem;
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .parent-controls {
+    animation: none;
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .parent-controls-overlay {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .parent-controls {
+    padding: 20px 16px 24px;
+    max-width: 100%;
+    width: 96%;
+    max-height: 90vh;
+  }
+
+  .pc-themes,
+  .pc-complexity,
+  .pc-time-options {
+    flex-wrap: wrap;
+  }
 }

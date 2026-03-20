@@ -15,6 +15,10 @@ from datetime import datetime
 
 from app.models.multimodal import MultimodalInputEvent, EmotionCategory, EmotionResult
 from app.services.content_filter import ContentFilter, ContentRating
+from app.services.session_service import SessionService
+from app.services.story_archive_service import StoryArchiveService
+from app.utils.title_generator import generate_story_title
+from app.utils.beat_transformer import transform_beats
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +83,9 @@ class AgentOrchestrator:
 
         self._style_transfer = StyleTransferAgent()
         self._scene_compositor = SceneCompositor()
+
+        # Voice recording playback integration (initialized lazily in _ensure_db_initialized)
+        self._playback_integrator = None
 
         print("🎭 Agent orchestrator initialized")
 
@@ -307,6 +314,65 @@ class AgentOrchestrator:
 
             story_segment["interactive"] = interactive
 
+        # STEP 2c: Check for voice recording playback triggers
+        voice_recordings = []
+        try:
+            if self._playback_integrator is not None:
+                child1_name = characters.get("child1", {}).get("name", "child1")
+                child2_name = characters.get("child2", {}).get("name", "child2")
+                sibling_pair_id = ":".join(sorted([child1_name, child2_name]))
+
+                story_text_lower = story_segment.get("text", "").lower()
+                user_input_lower = (user_input or "").lower()
+
+                # Check STORY_INTRO on first beat (no user input = session start)
+                if not user_input or user_input_lower in ("story_start", "story beginning"):
+                    intro_result = await self._playback_integrator.get_story_intro_audio(
+                        sibling_pair_id, language
+                    )
+                    if intro_result:
+                        voice_recordings.append({
+                            "type": "story_intro",
+                            "audio_base64": intro_result.audio_base64,
+                            "source": intro_result.source,
+                            "recorder_name": intro_result.recorder_name,
+                            "recording_id": intro_result.recording_id,
+                        })
+
+                # Check ENCOURAGEMENT on brave decisions
+                brave_keywords = ["brave", "courage", "hero", "valiente", "coraje"]
+                if any(kw in story_text_lower for kw in brave_keywords) or any(
+                    kw in user_input_lower for kw in brave_keywords
+                ):
+                    enc_result = await self._playback_integrator.get_encouragement_audio(
+                        sibling_pair_id, language
+                    )
+                    if enc_result:
+                        voice_recordings.append({
+                            "type": "encouragement",
+                            "audio_base64": enc_result.audio_base64,
+                            "source": enc_result.source,
+                            "recorder_name": enc_result.recorder_name,
+                            "recording_id": enc_result.recording_id,
+                        })
+
+                # Check SOUND_EFFECT on playful moments
+                playful_keywords = ["silly", "funny", "laugh", "giggle", "play", "divertido", "risa"]
+                if any(kw in story_text_lower for kw in playful_keywords):
+                    sfx_result = await self._playback_integrator.get_sound_effect(
+                        sibling_pair_id, language
+                    )
+                    if sfx_result:
+                        voice_recordings.append({
+                            "type": "sound_effect",
+                            "audio_base64": sfx_result.audio_base64,
+                            "source": sfx_result.source,
+                            "recorder_name": sfx_result.recorder_name,
+                            "recording_id": sfx_result.recording_id,
+                        })
+        except Exception as e:
+            logger.warning("Voice recording playback check failed: %s", e)
+
         # STEP 3: Generate scene illustration (if enabled)
         # Load photo pipeline portraits for compositing (if character mappings exist)
         photo_portraits = {}
@@ -444,6 +510,7 @@ class AgentOrchestrator:
             "interactive": story_segment.get('interactive', {}),
             "timestamp": story_segment.get('timestamp'),
             "memories_used": len(memories),
+            "voice_recordings": voice_recordings,
             "agents_used": {
                 "storyteller": True,
                 "visual": scene_image is not None,
@@ -549,6 +616,27 @@ class AgentOrchestrator:
                     logger.warning("Unapplied migrations: %s", names)
                     # Apply anyway for dev convenience
                     await runner.apply_all()
+
+            # Initialize PlaybackIntegrator for voice recording playback
+            try:
+                from app.services.playback_integrator import PlaybackIntegrator
+                from app.services.voice_recording_service import VoiceRecordingService
+                from app.services.audio_normalizer import AudioNormalizer
+
+                audio_normalizer = AudioNormalizer()
+                vrs = VoiceRecordingService(
+                    db=self._db_conn,
+                    audio_normalizer=audio_normalizer,
+                )
+                self._playback_integrator = PlaybackIntegrator(
+                    voice_recording_service=vrs,
+                    voice_agent=self.voice,
+                    audio_normalizer=audio_normalizer,
+                )
+                logger.info("PlaybackIntegrator initialized")
+            except Exception as e:
+                logger.warning("PlaybackIntegrator initialization failed: %s", e)
+                self._playback_integrator = None
 
             self._db_initialized = True
 
@@ -863,12 +951,38 @@ class AgentOrchestrator:
         except Exception as e:
             logger.error("end_session: world state extraction failed: %s", e)
 
+        # ── Archive story to gallery ──────────────────────────────
+        storybook_id = None
+        try:
+            snapshot = await SessionService(self._db_conn).load_snapshot(sibling_pair_id)
+            if snapshot is None:
+                logger.warning("end_session: no snapshot found for %s — skipping archival", sibling_pair_id)
+            elif not snapshot.get("story_history"):
+                logger.warning("end_session: empty story_history for %s — skipping archival", sibling_pair_id)
+            else:
+                story_history = snapshot["story_history"]
+                session_metadata = snapshot.get("session_metadata") or {}
+                language = session_metadata.get("language", "en")
+                duration_seconds = session_metadata.get("session_duration_seconds", 0)
+
+                beats = transform_beats(story_history)
+                title = generate_story_title(beats[0].get("narration"))
+
+                record = await StoryArchiveService(self._db_conn).archive_story(
+                    sibling_pair_id, title, language, beats, duration_seconds
+                )
+                if record is not None:
+                    storybook_id = record.storybook_id
+        except Exception as e:
+            logger.error("end_session: story archival failed: %s", e)
+
         return {
             "session_id": session_id,
             "sibling_pair_id": sibling_pair_id,
             "sibling_dynamics_score": score,
             "summary": summary,
             "suggestion": suggestion,
+            "storybook_id": storybook_id,
         }
 
     def _resolve_perspective_emotion(

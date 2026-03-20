@@ -1,0 +1,147 @@
+/* AlertModal — glassmorphism, 24px radius, large emoji header, 56px buttons */
+
+/* ── Backdrop ─────────────────────────────────────── */
+.alert-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: alert-backdrop-in 300ms var(--ease-smooth) forwards;
+}
+
+.alert-modal-backdrop--closing {
+  animation: alert-backdrop-out 200ms var(--ease-smooth) forwards;
+}
+
+/* ── Dialog panel ─────────────────────────────────── */
+.alert-modal-dialog {
+  padding: var(--space-xl) var(--space-2xl);
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  background: var(--color-glass-strong, rgba(255, 255, 255, 0.12));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-glass-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-lg, 28px);
+  box-shadow: var(--shadow-glow-pink, 0 0 24px rgba(244, 114, 182, 0.3)),
+              var(--shadow-float, 0 12px 40px rgba(0, 0, 0, 0.4));
+  animation: alert-dialog-in 300ms var(--ease-bounce) forwards;
+}
+
+.alert-modal-backdrop--closing .alert-modal-dialog {
+  animation: alert-dialog-out 200ms var(--ease-smooth) forwards;
+}
+
+/* ── Emoji header ─────────────────────────────────── */
+.alert-modal-emoji {
+  font-size: 4rem;
+  margin-bottom: var(--space-md);
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ── Title ────────────────────────────────────────── */
+.alert-modal-title {
+  font-family: var(--font-display);
+  color: #fff;
+  font-size: 2rem;
+  margin-bottom: var(--space-sm);
+}
+
+/* ── Message ──────────────────────────────────────── */
+.alert-modal-message {
+  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: var(--space-lg);
+  line-height: 1.5;
+}
+
+/* ── Action button ────────────────────────────────── */
+.alert-modal-btn {
+  background: linear-gradient(135deg, var(--color-pink), var(--color-violet));
+  color: #fff;
+  border: none;
+  padding: 14px 32px;
+  border-radius: var(--radius-full, 9999px);
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: var(--touch-min, 56px);
+  min-width: 120px;
+  box-shadow: var(--shadow-glow-pink);
+  transition: transform 0.2s var(--ease-bounce), box-shadow 0.2s var(--ease-smooth);
+}
+
+.alert-modal-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 32px var(--color-pink-glow);
+}
+
+.alert-modal-btn:active {
+  transform: scale(0.92);
+}
+
+/* ── Entrance / exit keyframes ────────────────────── */
+@keyframes alert-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes alert-backdrop-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes alert-dialog-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to   { opacity: 1; transform: scale(1.0); }
+}
+
+@keyframes alert-dialog-out {
+  from { opacity: 1; transform: scale(1.0); }
+  to   { opacity: 0; transform: scale(0.9); }
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .alert-modal-backdrop,
+  .alert-modal-dialog,
+  .alert-modal-emoji {
+    animation: none !important;
+  }
+
+  .alert-modal-backdrop {
+    opacity: 1;
+  }
+
+  .alert-modal-dialog {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Responsive ───────────────────────────────────── */
+@media (max-width: 767px) {
+  .alert-modal-dialog {
+    padding: var(--space-lg) var(--space-md);
+    width: 94%;
+  }
+
+  .alert-modal-emoji {
+    font-size: 3rem;
+  }
+
+  .alert-modal-title {
+    font-size: 1.5rem;
+  }
+
+  .alert-modal-message {
+    font-size: 1rem;
+  }
+}

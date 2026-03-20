@@ -16,7 +16,8 @@ import {
 } from './features/setup';
 
 // Story Feature
-import { DualStoryDisplay } from './features/story';
+import { TransitionEngine } from './features/story';
+import VoiceCommandToast from './features/story/components/VoiceCommandToast';
 
 // Camera / Multimodal Feature
 import CameraPreview from './features/camera/components/CameraPreview.jsx';
@@ -35,7 +36,8 @@ import {
   LoadingAnimation,
   useFeedback,
   AppContainer,
-  SkipLink
+  SkipLink,
+  CelebrationOverlay
 } from './shared/components';
 
 // ==========================================
@@ -57,6 +59,9 @@ import EmergencyStop from './components/EmergencyStop.jsx';
 // World Feature
 import WorldMapView from './features/world/components/WorldMapView.jsx';
 
+// Gallery Feature
+import { GalleryView } from './features/gallery';
+
 // ==========================================
 // STORES
 // ==========================================
@@ -68,6 +73,8 @@ import { useSetupStore } from './stores/setupStore';
 import { useSiblingStore } from './stores/siblingStore';
 import { useParentControlsStore } from './stores/parentControlsStore';
 import { useSessionPersistenceStore } from './stores/sessionPersistenceStore';
+import { useSceneAudioStore } from './stores/sceneAudioStore';
+import { useGalleryStore } from './stores/galleryStore';
 
 // ==========================================
 // HOOKS
@@ -121,10 +128,15 @@ function App() {
   const [showDashboard, setShowDashboard] = React.useState(false);
   const [showParentControls, setShowParentControls] = React.useState(false);
   const [showWorldMap, setShowWorldMap] = React.useState(false);
+  const [showGallery, setShowGallery] = React.useState(false);
   const [showPhotoReview, setShowPhotoReview] = React.useState(false);
   const [mechanics, setMechanics] = React.useState(null);
+  const [voiceCommandMatch, setVoiceCommandMatch] = React.useState(null);
   const [child1Responded, setChild1Responded] = React.useState(false);
   const [child2Responded, setChild2Responded] = React.useState(false);
+  const [showSetupCelebration, setShowSetupCelebration] = React.useState(false);
+  const [audioUnlocked, setAudioUnlocked] = React.useState(false);
+  const [archivedToGallery, setArchivedToGallery] = React.useState(false);
 
   const unsubscribers = useRef([]);
   const mainRef = useRef(null);
@@ -199,7 +211,7 @@ function App() {
       story.addAsset(data.media_type, data.content, metadata);
     });
 
-    const unsubscribeComplete = websocketService.on('STORY_COMPLETE', () => {
+    const unsubscribeComplete = websocketService.on('STORY_COMPLETE', (data) => {
       console.log('✅ STORY_COMPLETE received!');
       
       setTimeout(() => {
@@ -215,7 +227,8 @@ function App() {
           scene_image_url: assets.image,
           choices: assets.choices.length > 0 
             ? assets.choices 
-            : ["Continue the adventure"]
+            : ["Continue the adventure"],
+          voice_recordings: data?.voice_recordings || null
         };
 
         console.log('🎬 Setting storyBeat:', newBeat);
@@ -258,6 +271,14 @@ function App() {
       }
     });
 
+    // Voice command match: show toast and play confirmation audio
+    const unsubscribeVoiceCommand = websocketService.on('VOICE_COMMAND_MATCH', (data) => {
+      if (data?.matched) {
+        console.log('🎤 Voice command matched:', data.command_action);
+        setVoiceCommandMatch(data);
+      }
+    });
+
     unsubscribers.current = [
       unsubscribeConnected,
       unsubscribeDisconnected,
@@ -266,7 +287,8 @@ function App() {
       unsubscribeStatus,
       unsubscribeMechanic,
       unsubscribeError,
-      unsubscribeSiblingData
+      unsubscribeSiblingData,
+      unsubscribeVoiceCommand
     ];
   };
 
@@ -326,6 +348,10 @@ function App() {
     setup.completeSetup();
     session.setProfiles(enrichedProfiles);
     connectToAI(setup.language, enrichedProfiles);
+
+    // Trigger setup-complete celebration confetti
+    setShowSetupCelebration(true);
+    setTimeout(() => setShowSetupCelebration(false), 2500);
   };
 
   const handleContinueStory = () => {
@@ -410,8 +436,16 @@ function App() {
 
   const handleSaveAndExit = async () => {
     setIsSaving(true);
+    let archived = false;
     try {
-      // End sibling session to get dynamics score + summary
+      // 1. Save session snapshot FIRST so backend has story data for archival
+      try {
+        await persistence.saveSnapshot();
+      } catch (snapErr) {
+        console.error("Failed to save snapshot (continuing to end session):", snapErr);
+      }
+
+      // 2. End sibling session to get dynamics score + summary + archival
       if (session.profiles?.c1_name && session.profiles?.c2_name) {
         try {
           const endResp = await fetch(`http://localhost:8000/api/sessions/${session.sessionId || 'current'}/end`, {
@@ -429,20 +463,30 @@ function App() {
             sibling.setSiblingScore(result.sibling_dynamics_score);
             sibling.setSessionSummary(result.summary);
             if (result.suggestion) sibling.setParentSuggestion(result.suggestion);
+            // 3. Check for archival confirmation
+            if (result.storybook_id) {
+              archived = true;
+              setArchivedToGallery(true);
+            }
           }
         } catch (err) {
           console.error("Failed to end sibling session:", err);
         }
       }
 
-      // Save session snapshot via persistence store
-      await persistence.saveSnapshot();
       playSuccess();
+
+      // 4. If archived, show brief toast before reset
+      if (archived) {
+        showFeedback('sparkle', 'Saved to gallery ✨', 1500);
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
     } catch (err) {
       console.error("Failed to save session:", err);
       playError();
     } finally {
       setIsSaving(false);
+      setArchivedToGallery(false);
       websocketService.disconnect();
       stopCapture();
       setShowExitModal(false);
@@ -451,6 +495,8 @@ function App() {
       story.reset();
       session.reset();
       sibling.reset();
+      useSceneAudioStore.getState().reset();
+      useGalleryStore.getState().reset();
     }
   };
 
@@ -463,6 +509,8 @@ function App() {
     story.reset();
     session.reset();
     sibling.reset();
+    useSceneAudioStore.getState().reset();
+    useGalleryStore.getState().reset();
   };
 
   const handlePrivacyAccept = () => {
@@ -478,6 +526,15 @@ function App() {
     story.reset();
     session.reset();
     sibling.reset();
+    useSceneAudioStore.getState().reset();
+    useGalleryStore.getState().reset();
+  };
+
+  const handleUnlockAudio = async () => {
+    const sceneAudio = useSceneAudioStore.getState();
+    sceneAudio.initAudio();
+    await sceneAudio.unlockAudio();
+    await sceneAudio.preloadAllSfx();
   };
 
   // ===========================================
@@ -508,6 +565,15 @@ function App() {
       stopSpeech();
     };
   }, [stopSpeech, stopCapture]);
+
+  // Track sceneAudioStore.audioUnlocked for the unlock prompt
+  useEffect(() => {
+    const unsub = useSceneAudioStore.subscribe(
+      (state) => state.audioUnlocked,
+      (unlocked) => setAudioUnlocked(unlocked)
+    );
+    return unsub;
+  }, []);
 
   // Check for existing session after privacy + language
   useEffect(() => {
@@ -628,6 +694,16 @@ function App() {
             {setup.isComplete && (
               <button
                 className="settings-btn"
+                onClick={() => setShowGallery(true)}
+                title="Story Gallery"
+                style={{ position: 'static' }}
+              >
+                📚
+              </button>
+            )}
+            {setup.isComplete && (
+              <button
+                className="settings-btn"
                 onClick={() => setShowWorldMap(true)}
                 title="My World"
                 style={{ position: 'static' }}
@@ -703,6 +779,18 @@ function App() {
           />
         )}
 
+        {/* Gallery overlay */}
+        {showGallery && (
+          <GalleryView
+            siblingPairId={
+              session.profiles?.c1_name && session.profiles?.c2_name
+                ? [session.profiles.c1_name, session.profiles.c2_name].sort().join(':')
+                : ''
+            }
+            onClose={() => setShowGallery(false)}
+          />
+        )}
+
         {/* ─── After Privacy ─────────────────────────── */}
         {setup.privacyAccepted && (
         <>
@@ -769,7 +857,7 @@ function App() {
 
               {/* Story display or loading */}
               {story.currentBeat ? (
-                <DualStoryDisplay
+                <TransitionEngine
                   storyBeat={story.currentBeat}
                   t={t}
                   profiles={session.profiles}
@@ -791,6 +879,17 @@ function App() {
                 <div className="glass-panel mechanic-overlay">
                   <p className="mechanic-overlay__text">{mechanics.prompt}</p>
                 </div>
+              )}
+
+              {/* Audio unlock prompt */}
+              {!audioUnlocked && (
+                <button
+                  className="audio-unlock-btn"
+                  onClick={handleUnlockAudio}
+                  aria-label="Enable scene audio"
+                >
+                  🔊 Tap to hear sounds
+                </button>
               )}
 
               {/* Floating mic button — always visible */}
@@ -834,6 +933,8 @@ function App() {
         onClose={() => setAlertMessage(null)}
       />
 
+      <VoiceCommandToast match={voiceCommandMatch} t={t} />
+
       {FeedbackComponent}
 
       {showExitModal && (
@@ -843,6 +944,10 @@ function App() {
           onClose={() => setShowExitModal(false)}
           isSaving={isSaving}
         />
+      )}
+
+      {showSetupCelebration && (
+        <CelebrationOverlay type="confetti" duration={2500} particleCount={60} />
       )}
     </AppContainer>
   );

@@ -4,6 +4,7 @@ import PhotoGallery from './PhotoGallery';
 import CharacterMapping from './CharacterMapping';
 import ParentApprovalScreen from './ParentApprovalScreen';
 import { usePhotoStore } from '../../../stores/photoStore';
+import CelebrationOverlay from '../../../shared/components/CelebrationOverlay';
 import './CharacterSetup.css';
 
 const stepLabels = {
@@ -39,6 +40,7 @@ export default function CharacterSetup({ t, onComplete }) {
   const [photoRefreshKey, setPhotoRefreshKey] = useState(0);
   const [transitionClass, setTransitionClass] = useState('animation-fade-in');
   const [nameError, setNameError] = useState('');
+  const [showSparkle, setShowSparkle] = useState(false);
   const nameRef = useRef(null);
   const stepHeadingRef = useRef(null);
 
@@ -48,6 +50,22 @@ export default function CharacterSetup({ t, onComplete }) {
 
   // Step ordering for directional transitions
   const stepOrder = ['name', 'gender', 'spirit', 'photos'];
+
+  // Progress indicator helper
+  const renderProgress = () => {
+    const curIdx = stepOrder.indexOf(wizardStep);
+    return (
+      <div className="wizard-progress" aria-label={`Step ${curIdx + 1} of ${stepOrder.length}`} role="progressbar" aria-valuenow={curIdx + 1} aria-valuemin={1} aria-valuemax={stepOrder.length}>
+        {stepOrder.map((step, i) => (
+          <span
+            key={step}
+            className={`wizard-progress__dot${i < curIdx ? ' wizard-progress__dot--completed' : ''}${i === curIdx ? ' wizard-progress__dot--current' : ''}`}
+            aria-hidden="true"
+          />
+        ))}
+      </div>
+    );
+  };
 
   const goToStep = (nextStep) => {
     const curIdx = stepOrder.indexOf(wizardStep);
@@ -103,11 +121,15 @@ export default function CharacterSetup({ t, onComplete }) {
 
   const handleGenderPick = (val) => {
     set(`${prefix}gender`, val);
+    setShowSparkle(true);
+    setTimeout(() => setShowSparkle(false), 800);
     setTimeout(() => goToStep('spirit'), 350);
   };
 
   const handleSpiritPick = (val) => {
     set(`${prefix}spirit_animal`, val);
+    setShowSparkle(true);
+    setTimeout(() => setShowSparkle(false), 800);
     setTimeout(() => {
       if (childNum === 1) {
         // Move to child 2 — reset to name step with fresh fade-in
@@ -126,6 +148,7 @@ export default function CharacterSetup({ t, onComplete }) {
   if (wizardStep === 'name') {
     return (
       <section aria-label={`Step: ${stepLabels.name}`}>
+        {renderProgress()}
         <div className={`wizard-container ${transitionClass}`} key={`name-${childNum}`}>
           <div className="wizard-child-badge" style={{ color: childColor }}>
             <span className="wizard-child-badge__emoji" aria-hidden="true">{childEmoji}</span>
@@ -182,6 +205,7 @@ export default function CharacterSetup({ t, onComplete }) {
   if (wizardStep === 'gender') {
     return (
       <section aria-label={`Step: ${stepLabels.gender}`}>
+        {renderProgress()}
         <div className={`wizard-container ${transitionClass}`} key={`gender-${childNum}`}>
           <div className="wizard-child-badge" style={{ color: childColor }}>
             <span className="wizard-child-badge__emoji" aria-hidden="true">{childEmoji}</span>
@@ -204,6 +228,7 @@ export default function CharacterSetup({ t, onComplete }) {
               </button>
             ))}
           </div>
+          {showSparkle && <CelebrationOverlay type="sparkle" duration={800} particleCount={10} />}
         </div>
       </section>
     );
@@ -213,6 +238,7 @@ export default function CharacterSetup({ t, onComplete }) {
   if (wizardStep === 'spirit') {
     return (
       <section aria-label={`Step: ${stepLabels.spirit}`}>
+        {renderProgress()}
         <div className={`wizard-container ${transitionClass}`} key={`spirit-${childNum}`}>
           <div className="wizard-child-badge" style={{ color: childColor }}>
             <span className="wizard-child-badge__emoji" aria-hidden="true">{childEmoji}</span>
@@ -236,6 +262,7 @@ export default function CharacterSetup({ t, onComplete }) {
               </button>
             ))}
           </div>
+          {showSparkle && <CelebrationOverlay type="sparkle" duration={800} particleCount={10} />}
         </div>
       </section>
     );
@@ -249,6 +276,7 @@ export default function CharacterSetup({ t, onComplete }) {
   if (wizardStep === 'photos') {
     return (
       <section aria-label={`Step: ${stepLabels.photos}`}>
+        {renderProgress()}
         <div className={`wizard-container ${transitionClass}`} key="photos">
           <h2 className="wizard-question" ref={stepHeadingRef} tabIndex={-1}>
             Add family photos?
@@ -281,7 +309,7 @@ export default function CharacterSetup({ t, onComplete }) {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button
-              className="wizard-card"
+              className="wizard-card wizard-review-slide-left"
               onClick={handleFinish}
               style={{ padding: '12px 24px', minWidth: '120px' }}
             >
@@ -289,7 +317,7 @@ export default function CharacterSetup({ t, onComplete }) {
               <span className="wizard-card__label">Skip</span>
             </button>
             <button
-              className="wizard-card wizard-card--spirit"
+              className="wizard-card wizard-card--spirit wizard-review-slide-right"
               onClick={handleFinish}
               style={{ padding: '12px 24px', minWidth: '120px', '--spirit-color': '#4ade80' }}
             >

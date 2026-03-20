@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Timer } from 'lucide-react';
+// Timer icon replaced with emoji for child-friendly design
 import { useParentControlsStore } from '../stores/parentControlsStore';
 import { websocketService } from '../features/session/services/websocketService';
 import { useAnnounce } from '../shared/hooks';
@@ -93,14 +93,14 @@ export default function SessionTimer({ onTimeUp }) {
   return (
     <>
       <div className={`session-timer ${isWarning ? 'session-timer--warning' : ''} ${isExpired ? 'session-timer--expired' : ''}`}>
-        <Timer size={18} />
+        <span className="session-timer__icon" aria-hidden="true">{isWarning ? '⏳' : '⏰'}</span>
         <span className="session-timer__time">{formatTime(secondsLeft)}</span>
       </div>
 
       {showWarning && secondsLeft > 0 && secondsLeft <= WARNING_THRESHOLD && (
         <div className="session-timer-warning-overlay">
           <div className="session-timer-warning-card">
-            <Timer size={28} />
+            <span aria-hidden="true" style={{ fontSize: '2rem' }}>⏳</span>
             <p>Only {Math.ceil(secondsLeft / 60)} minute{Math.ceil(secondsLeft / 60) !== 1 ? 's' : ''} left!</p>
             <button onClick={() => setShowWarning(false)}>OK</button>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldOff } from 'lucide-react';
+// Friendly emoji icon replaces ShieldOff for child-friendly design
 import './EmergencyStop.css';
 
 /**
@@ -46,7 +46,7 @@ export default function EmergencyStop({ sessionId, onStop }) {
       aria-label="Emergency stop — end session immediately"
       disabled={stopping}
     >
-      <ShieldOff size={22} />
+      <span aria-hidden="true">👋</span>
     </button>
   );
 }

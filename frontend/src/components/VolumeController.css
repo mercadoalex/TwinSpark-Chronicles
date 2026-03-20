@@ -1,0 +1,109 @@
+.volume-controller {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.volume-controller__slider-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.volume-controller__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary, #b0b0c0);
+  min-width: 90px;
+  white-space: nowrap;
+}
+
+.volume-controller__slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  min-height: 56px;
+  border-radius: 4px;
+  background: linear-gradient(to right, rgba(139, 92, 246, 0.3), rgba(139, 92, 246, 0.15));
+  outline: none;
+  cursor: pointer;
+  touch-action: none;
+  padding: 24px 0;
+  box-sizing: content-box;
+}
+
+.volume-controller__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.volume-controller__slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 12px rgba(124, 58, 237, 0.6);
+}
+
+.volume-controller__slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+  border: none;
+  cursor: pointer;
+}
+
+.volume-controller__slider:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+.volume-controller__slider:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.volume-controller__value {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #b0b0c0);
+  min-width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.volume-controller__mute {
+  align-self: flex-start;
+  padding: 8px 16px;
+  min-height: 44px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 8px;
+  background: rgba(139, 92, 246, 0.08);
+  color: var(--text-primary, #e0e0f0);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.volume-controller__mute:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.volume-controller__mute--active {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.volume-controller__mute:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}

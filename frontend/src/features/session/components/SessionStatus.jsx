@@ -1,14 +1,15 @@
 import React from 'react';
 import { useSessionStore } from '../../../stores/sessionStore';
+import './SessionStatus.css';
 
 export default function SessionStatus({ t }) {
   const { isConnected, connectionState, error } = useSessionStore();
 
-  const getStatusColor = () => {
-    if (error) return '#ef4444';
-    if (isConnected) return '#8b5cf6';
-    if (connectionState === 'CONNECTING') return '#f59e0b';
-    return 'rgba(255,255,255,0.7)';
+  const getStatusIcon = () => {
+    if (error) return { emoji: '⚠️', className: 'session-status__icon--error' };
+    if (isConnected) return { emoji: '✨', className: 'session-status__icon--connected' };
+    if (connectionState === 'CONNECTING') return { emoji: '💫', className: 'session-status__icon--connecting' };
+    return { emoji: '💤', className: 'session-status__icon--disconnected' };
   };
 
   const getStatusText = () => {
@@ -18,19 +19,26 @@ export default function SessionStatus({ t }) {
     return 'Disconnected';
   };
 
+  const getStatusColor = () => {
+    if (error) return '#ef4444';
+    if (isConnected) return '#8b5cf6';
+    if (connectionState === 'CONNECTING') return '#f59e0b';
+    return 'rgba(255,255,255,0.7)';
+  };
+
+  const { emoji, className } = getStatusIcon();
+
   return (
-    <p
+    <div
+      className="session-status"
       role="status"
       aria-live="assertive"
-      style={{
-        fontSize: '1.2rem',
-        color: getStatusColor(),
-        marginBottom: '30px',
-        textAlign: 'center',
-        fontWeight: 500
-      }}
+      style={{ color: getStatusColor() }}
     >
-      {getStatusText()}
-    </p>
+      <span className={`session-status__icon ${className}`} aria-hidden="true">
+        {emoji}
+      </span>
+      <span className="session-status__sr-only">{getStatusText()}</span>
+    </div>
   );
 }

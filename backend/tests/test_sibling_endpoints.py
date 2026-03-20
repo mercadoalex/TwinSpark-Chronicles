@@ -167,6 +167,61 @@ class TestEndSession:
 
         mock_end.assert_called_once_with("s1", "child1:child2")
 
+    def test_storybook_id_passes_through(self):
+        """storybook_id from orchestrator result is included in endpoint response (Req 1.4, 1.5)."""
+        import app.main as mod
+
+        result = {
+            "session_id": "s1",
+            "sibling_pair_id": "Ale:Sofi",
+            "sibling_dynamics_score": 0.8,
+            "summary": "Good session.",
+            "suggestion": None,
+            "storybook_id": "sb-123",
+        }
+        with patch.object(mod.orchestrator, "end_session", new_callable=AsyncMock, return_value=result):
+            resp = _run(mod.end_session("s1", {"characters": SIBLING_CHARACTERS}))
+
+        assert resp["storybook_id"] == "sb-123"
+
+    def test_storybook_id_null_passes_through(self):
+        """Null storybook_id (archival skipped/failed) is included in response (Req 1.5)."""
+        import app.main as mod
+
+        result = {
+            "session_id": "s1",
+            "sibling_pair_id": "Ale:Sofi",
+            "sibling_dynamics_score": 0.8,
+            "summary": "Good session.",
+            "suggestion": None,
+            "storybook_id": None,
+        }
+        with patch.object(mod.orchestrator, "end_session", new_callable=AsyncMock, return_value=result):
+            resp = _run(mod.end_session("s1", {"characters": SIBLING_CHARACTERS}))
+
+        assert resp["storybook_id"] is None
+
+    def test_storybook_id_cached_in_idempotent_result(self):
+        """Idempotent cache preserves storybook_id across repeated calls (Req 1.4)."""
+        import app.main as mod
+
+        result = {
+            "session_id": "s1",
+            "sibling_pair_id": "Ale:Sofi",
+            "sibling_dynamics_score": 0.8,
+            "summary": "Good session.",
+            "suggestion": None,
+            "storybook_id": "sb-456",
+        }
+        mock_end = AsyncMock(return_value=result)
+        with patch.object(mod.orchestrator, "end_session", mock_end):
+            resp1 = _run(mod.end_session("s1", {"characters": SIBLING_CHARACTERS}))
+            resp2 = _run(mod.end_session("s1", {"characters": SIBLING_CHARACTERS}))
+
+        assert resp1["storybook_id"] == "sb-456"
+        assert resp2["storybook_id"] == "sb-456"
+        mock_end.assert_called_once()
+
 
 # ============================================
 # Task 11.2: WebSocket sibling mode routing tests

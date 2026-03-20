@@ -1,6 +1,7 @@
 /* ============================================================
    SIBLING DASHBOARD — Living Storybook
    Parent-facing collapsible insights panel
+   Gradient fills on score bars, animated value transitions
    ============================================================ */
 
 .sibling-dashboard {
@@ -25,11 +26,13 @@
   font-family: var(--font-display);
   font-size: 0.9rem;
   font-weight: 600;
+  min-height: 48px;
 }
 
 .sibling-dashboard__toggle:hover {
   background: var(--color-glass-hover);
   color: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow-glow-violet);
 }
 
 .sibling-dashboard__toggle-label {
@@ -71,33 +74,64 @@
   margin-bottom: 10px;
 }
 
+/* ── Score bar — gradient fills with accent colors ── */
 .sibling-dashboard__score-bar {
   position: relative;
-  height: 10px;
+  height: 12px;
   background: rgba(255, 255, 255, 0.06);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   margin-bottom: 8px;
 }
 
 .sibling-dashboard__score-fill {
   height: 100%;
-  border-radius: 5px;
-  transition: width 0.8s var(--ease-smooth), background 0.8s var(--ease-smooth);
+  border-radius: var(--radius-sm);
+  transition: width 1s var(--ease-smooth), background 0.8s var(--ease-smooth);
+  position: relative;
 }
 
+/* Shimmer sweep on the fill bar */
+.sibling-dashboard__score-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  animation: sd-bar-shimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes sd-bar-shimmer {
+  0%   { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* High score: emerald → sky gradient */
 .sibling-dashboard__score-fill--high {
-  background: linear-gradient(90deg, var(--color-emerald), #6ee7b7);
+  background: linear-gradient(90deg, var(--color-emerald), var(--color-sky));
+  box-shadow: 0 0 12px var(--color-emerald-glow);
 }
 
+/* Mid score: amber → gold gradient */
 .sibling-dashboard__score-fill--mid {
   background: linear-gradient(90deg, var(--color-amber), var(--color-gold));
+  box-shadow: 0 0 12px var(--color-amber-glow);
 }
 
+/* Low score: coral → pink gradient */
 .sibling-dashboard__score-fill--low {
-  background: linear-gradient(90deg, var(--color-coral), var(--color-amber));
+  background: linear-gradient(90deg, var(--color-coral), var(--color-pink));
+  box-shadow: 0 0 12px var(--color-coral-glow);
 }
 
+/* ── Score value — animated number transition ─────── */
 .sibling-dashboard__score-value {
   font-family: var(--font-display);
   font-size: 1.5rem;
@@ -106,23 +140,34 @@
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  transition: all 0.6s var(--ease-smooth);
+  display: inline-block;
 }
 
 .sibling-dashboard__score-emoji {
   font-size: 1.2rem;
   margin-left: 6px;
+  display: inline-block;
+  transition: transform 0.4s var(--ease-bounce);
 }
 
-/* ── Summary ──────────────────────────────────────── */
+/* ── Summary — glassmorphism card ─────────────────── */
 .sibling-dashboard__summary {
   background: var(--color-glass);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--color-glass-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   padding: 14px 16px;
   margin-bottom: 12px;
   color: rgba(255, 255, 255, 0.75);
   font-size: 0.9rem;
   line-height: 1.6;
+  transition: background 0.3s var(--ease-smooth);
+}
+
+.sibling-dashboard__summary:hover {
+  background: var(--color-glass-hover);
 }
 
 .sibling-dashboard__summary-title {
@@ -139,7 +184,7 @@
 .sibling-dashboard__suggestion {
   background: rgba(251, 191, 36, 0.06);
   border: 1px solid rgba(251, 191, 36, 0.2);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   padding: 14px 16px;
   animation: fadeInUp 0.4s var(--ease-smooth);
 }
@@ -171,7 +216,36 @@
   font-size: 0.85rem;
 }
 
+/* ── Responsive ───────────────────────────────────── */
 @media (max-width: 767px) {
-  .sibling-dashboard__body { padding: 14px !important; }
-  .sibling-dashboard__score-value { font-size: 1.2rem; }
+  .sibling-dashboard__body {
+    padding: 14px !important;
+  }
+
+  .sibling-dashboard__score-value {
+    font-size: 1.2rem;
+  }
+
+  .sibling-dashboard__score-bar {
+    height: 10px;
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .sibling-dashboard__score-fill::after {
+    animation: none;
+  }
+
+  .sibling-dashboard__score-fill {
+    transition: width 0.2s, background 0.2s;
+  }
+
+  .sibling-dashboard__score-value {
+    transition: none;
+  }
+
+  .sibling-dashboard__score-emoji {
+    transition: none;
+  }
 }

@@ -18,31 +18,31 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Ensure generated models satisfy all Pydantic constraints
     - _Requirements: 10.1, 10.2_
 
-  - [ ]* 1.3 Write property tests for model invariants in `backend/tests/test_sibling_models.py`
+  - [x]* 1.3 Write property tests for model invariants in `backend/tests/test_sibling_models.py`
     - **Property 1: PersonalityProfile serialization round-trip**
     - **Validates: Requirements 10.1, 10.3, 10.5, 1.4**
 
-  - [ ]* 1.4 Write property test for RelationshipModel round-trip
+  - [x]* 1.4 Write property test for RelationshipModel round-trip
     - **Property 2: RelationshipModel serialization round-trip**
     - **Validates: Requirements 10.2, 10.4, 10.6**
 
-  - [ ]* 1.5 Write property test for model bounds invariant
+  - [x]* 1.5 Write property test for model bounds invariant
     - **Property 3: Model bounds invariant**
     - **Validates: Requirements 2.4, 3.2, 3.4**
 
-  - [ ]* 1.6 Write property test for emerging profile threshold
+  - [x]* 1.6 Write property test for emerging profile threshold
     - **Property 4: Emerging profile threshold**
     - **Validates: Requirements 2.5**
 
-  - [ ]* 1.7 Write property test for sibling dynamics score formula
+  - [x]* 1.7 Write property test for sibling dynamics score formula
     - **Property 22: Sibling dynamics score formula**
     - **Validates: Requirements 9.1**
 
-  - [ ]* 1.8 Write property test for leadership imbalance detection
+  - [x]* 1.8 Write property test for leadership imbalance detection
     - **Property 9: Leadership imbalance detection**
     - **Validates: Requirements 3.3**
 
-  - [ ]* 1.9 Write property test for complementary pair structure completeness
+  - [x]* 1.9 Write property test for complementary pair structure completeness
     - **Property 15: Complementary pair structure completeness**
     - **Validates: Requirements 4.5**
 
@@ -53,7 +53,7 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Create all tables per design: `personality_profiles`, `relationship_models`, `skill_maps`, `session_summaries`, `initial_profiles`
     - _Requirements: 1.4, 8.1, 8.5, 10.1, 10.2_
 
-  - [ ]* 2.2 Write unit tests for SiblingDB in `backend/tests/test_sibling_db.py`
+  - [x]* 2.2 Write unit tests for SiblingDB in `backend/tests/test_sibling_db.py`
     - Test save/load round-trips for profiles, relationships, skill maps, and session summaries
     - Test loading non-existent records returns `None`
     - Test `initialize()` creates tables idempotently
@@ -73,23 +73,23 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Discard emotion signals with confidence below 0.1
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3, 2.4, 2.5, 11.2, 11.3_
 
-  - [ ]* 4.2 Write property test for temporal decay weighting
+  - [x]* 4.2 Write property test for temporal decay weighting
     - **Property 5: Temporal decay weighting**
     - **Validates: Requirements 1.5**
 
-  - [ ]* 4.3 Write property test for profile independence
+  - [x]* 4.3 Write property test for profile independence
     - **Property 6: Profile independence**
     - **Validates: Requirements 1.3**
 
-  - [ ]* 4.4 Write property test for personality update from events
+  - [x]* 4.4 Write property test for personality update from events
     - **Property 7: Personality update from events**
     - **Validates: Requirements 1.1, 1.2, 11.2**
 
-  - [ ]* 4.5 Write property test for transcript analysis
+  - [x]* 4.5 Write property test for transcript analysis
     - **Property 24: Transcript analysis produces signals**
     - **Validates: Requirements 11.3**
 
-  - [ ]* 4.6 Write unit tests for PersonalityEngine in `backend/tests/test_personality_engine.py`
+  - [x]* 4.6 Write unit tests for PersonalityEngine in `backend/tests/test_personality_engine.py`
     - Test `update_from_event` with emotion data updates correct traits
     - Test `record_choice` updates preferred themes
     - Test emerging profile defaults when `total_interactions < 5`
@@ -110,27 +110,27 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - `generate_summary()`: 2-3 sentence plain-language summary; include suggestion if score drops > 0.2
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 8.3, 9.1, 9.2, 9.3, 9.4_
 
-  - [ ]* 5.2 Write property test for leadership balance shift
+  - [x]* 5.2 Write property test for leadership balance shift
     - **Property 8: Leadership balance shift from shared choices**
     - **Validates: Requirements 3.1**
 
-  - [ ]* 5.3 Write property test for conflict detection
+  - [x]* 5.3 Write property test for conflict detection
     - **Property 10: Conflict detection from consecutive disagreements**
     - **Validates: Requirements 3.5**
 
-  - [ ]* 5.4 Write property test for emotional synchrony
+  - [x]* 5.4 Write property test for emotional synchrony
     - **Property 11: Emotional synchrony from emotion pairs**
     - **Validates: Requirements 3.6**
 
-  - [ ]* 5.5 Write property test for cross-session metric decay
+  - [x]* 5.5 Write property test for cross-session metric decay
     - **Property 20: Cross-session metric decay**
     - **Validates: Requirements 8.3**
 
-  - [ ]* 5.6 Write property test for score drop suggestion trigger
+  - [x]* 5.6 Write property test for score drop suggestion trigger
     - **Property 23: Score drop suggestion trigger**
     - **Validates: Requirements 9.4**
 
-  - [ ]* 5.7 Write unit tests for RelationshipMapper in `backend/tests/test_relationship_mapper.py`
+  - [x]* 5.7 Write unit tests for RelationshipMapper in `backend/tests/test_relationship_mapper.py`
     - Test `record_shared_choice` updates leadership and cooperation
     - Test conflict event creation after two consecutive disagreements
     - Test `compute_session_score` formula
@@ -152,23 +152,23 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - `check_growth()`: compare current trait scores against initial profiles stored in `initial_profiles` table, return traits improved by >= 0.2
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 8.4_
 
-  - [ ]* 7.2 Write property test for skill map generation threshold
+  - [x]* 7.2 Write property test for skill map generation threshold
     - **Property 12: Skill map generation threshold**
     - **Validates: Requirements 4.1**
 
-  - [ ]* 7.3 Write property test for complementary pair identification
+  - [x]* 7.3 Write property test for complementary pair identification
     - **Property 13: Complementary pair identification**
     - **Validates: Requirements 4.2**
 
-  - [ ]* 7.4 Write property test for skill map re-evaluation interval
+  - [x]* 7.4 Write property test for skill map re-evaluation interval
     - **Property 14: Skill map re-evaluation interval**
     - **Validates: Requirements 4.4**
 
-  - [ ]* 7.5 Write property test for growth detection
+  - [x]* 7.5 Write property test for growth detection
     - **Property 21: Growth detection**
     - **Validates: Requirements 8.4**
 
-  - [ ]* 7.6 Write unit tests for ComplementarySkillsDiscoverer in `backend/tests/test_skills_discoverer.py`
+  - [x]* 7.6 Write unit tests for ComplementarySkillsDiscoverer in `backend/tests/test_skills_discoverer.py`
     - Test `evaluate()` returns `None` when profiles lack confidence
     - Test `_find_complementary_pairs()` with known trait values
     - Test re-evaluation skipped when interaction count delta < 10
@@ -192,23 +192,23 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Acknowledge both children's responses in prompt when both respond
     - _Requirements: 5.1, 5.5, 6.1, 6.2, 6.3, 6.4, 6.5, 7.1, 7.4_
 
-  - [ ]* 8.3 Write property test for narrative directives
+  - [x]* 8.3 Write property test for narrative directives
     - **Property 16: Narrative directives reflect active conditions**
     - **Validates: Requirements 5.2, 5.3, 5.4, 7.1, 7.2, 7.3**
 
-  - [ ]* 8.4 Write property test for protagonist alternation
+  - [x]* 8.4 Write property test for protagonist alternation
     - **Property 17: Protagonist alternation**
     - **Validates: Requirements 5.5**
 
-  - [ ]* 8.5 Write property test for dual-child prompt addressing
+  - [x]* 8.5 Write property test for dual-child prompt addressing
     - **Property 18: Dual-child prompt addressing with distinct roles**
     - **Validates: Requirements 6.1, 6.2**
 
-  - [ ]* 8.6 Write property test for neglected child featuring
+  - [x]* 8.6 Write property test for neglected child featuring
     - **Property 19: Neglected child featuring**
     - **Validates: Requirements 7.5**
 
-  - [ ]* 8.7 Write unit tests for narrative directives in `backend/tests/test_narrative_directives.py`
+  - [x]* 8.7 Write unit tests for narrative directives in `backend/tests/test_narrative_directives.py`
     - Test directive generation for each condition (imbalance, conflict, low cooperation, fears, sad/scared emotion)
     - Test protagonist alternation logic
     - Test neglected child detection after 3 moments
@@ -227,11 +227,11 @@ Build the 4-layer Sibling Dynamics Engine incrementally: data models first, then
     - Full pipeline must complete within 8 seconds of receiving a `MultimodalInputEvent`
     - _Requirements: 8.1, 9.1, 9.2, 9.3, 9.4, 11.1, 11.4, 11.5_
 
-  - [ ]* 10.2 Write property test for empty event skipping
+  - [x]* 10.2 Write property test for empty event skipping
     - **Property 25: Empty event skips pipeline**
     - **Validates: Requirements 11.4**
 
-  - [ ]* 10.3 Write unit tests for orchestrator integration in `backend/tests/test_orchestrator_sibling.py`
+  - [x]* 10.3 Write unit tests for orchestrator integration in `backend/tests/test_orchestrator_sibling.py`
     - Test `process_sibling_event` calls layers in correct order
     - Test empty event skips personality and relationship updates
     - Test `end_session` persists data and returns score + summary

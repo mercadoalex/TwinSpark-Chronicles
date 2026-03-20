@@ -81,3 +81,4 @@ temp/
 # Build output
 frontend/dist/
 docs/_build/
+backend/.hypothesis/
