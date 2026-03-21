@@ -217,6 +217,21 @@ FORMAT:
                     "Present both children as equally capable heroes (Req 7.4).\n\n"
                 )
 
+        # ── COLLABORATIVE DRAWING CONTEXT (Req 5.1, 5.2, 5.3) ─────────
+        drawing_context = context.get("drawing_context")
+        if drawing_context is not None:
+            drawing_prompt = drawing_context.get("prompt", "")
+            sibling_names = drawing_context.get("sibling_names", [])
+            names_str = " and ".join(sibling_names) if sibling_names else f"{c1['name']} and {c2['name']}"
+            base_prompt += "COLLABORATIVE DRAWING CONTEXT:\n"
+            base_prompt += (
+                f"{names_str} just finished a collaborative drawing together! "
+                f"The drawing prompt was: \"{drawing_prompt}\"\n"
+                f"In the next narration, reference this drawing activity and mention "
+                f"both {names_str} by name. Describe how their creative teamwork "
+                f"contributes to the adventure. Keep it magical and encouraging!\n\n"
+            )
+
         # ── Dual-child prompt instructions (Req 6.1, 6.3, 6.4, 6.5) ──
         base_prompt += (
             f"IMPORTANT: Address both {c1['name']} and {c2['name']} by name "

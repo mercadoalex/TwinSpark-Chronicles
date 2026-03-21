@@ -16,7 +16,7 @@ const LS_KEY = 'twinspark_session_snapshot';
 /**
  * Assemble a snapshot payload from the current store states.
  */
-function assembleSnapshot() {
+function assembleSnapshot(sessionDurationSeconds = 0) {
   const setup = useSetupStore.getState();
   const story = useStoryStore.getState();
 
@@ -45,7 +45,7 @@ function assembleSnapshot() {
         story.history.length > 0
           ? story.history[story.history.length - 1].choiceMade
           : null,
-      session_duration_seconds: 0,
+      session_duration_seconds: sessionDurationSeconds,
     },
   };
 }
@@ -70,10 +70,10 @@ export const useSessionPersistenceStore = create(
        * Save the current session snapshot to the server.
        * On failure: retry once after 2s, then fall back to localStorage.
        */
-      saveSnapshot: async () => {
+      saveSnapshot: async (sessionDurationSeconds) => {
         set({ saveStatus: 'saving', lastSaveError: null }, false, 'persistence/saveSnapshot/start');
 
-        const payload = assembleSnapshot();
+        const payload = assembleSnapshot(sessionDurationSeconds || 0);
 
         try {
           const resp = await fetch(`${API_BASE}/api/session/save`, {
@@ -188,6 +188,10 @@ export const useSessionPersistenceStore = create(
           const sessionStore = useSessionStore.getState();
           sessionStore.setProfiles(snap.character_profiles);
 
+          // Store previous duration so WebSocket reconnect can pass it to backend
+          const prevDuration = snap.session_metadata?.session_duration_seconds || 0;
+          useSessionStore.setState({ previousDurationSeconds: prevDuration });
+
           set({ isRestoring: false }, false, 'persistence/restoreSession/done');
         } catch (err) {
           console.error('Failed to restore session:', err);
@@ -213,9 +217,9 @@ export const useSessionPersistenceStore = create(
       /**
        * Save the current snapshot to localStorage as a fallback.
        */
-      saveToLocalStorage: () => {
+      saveToLocalStorage: (sessionDurationSeconds) => {
         try {
-          const payload = assembleSnapshot();
+          const payload = assembleSnapshot(sessionDurationSeconds || 0);
           localStorage.setItem(LS_KEY, JSON.stringify(payload));
         } catch (err) {
           console.error('Failed to save to localStorage:', err);

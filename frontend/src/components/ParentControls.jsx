@@ -3,6 +3,7 @@ import { X, Plus, Trash2, Camera } from 'lucide-react';
 import { useParentControlsStore, AVAILABLE_THEMES } from '../stores/parentControlsStore';
 import { usePhotoStore } from '../stores/photoStore';
 import { useSessionStore } from '../stores/sessionStore';
+import { websocketService } from '../features/session/services/websocketService';
 import { GalleryView } from '../features/gallery';
 import VolumeController from './VolumeController';
 import './ParentControls.css';
@@ -16,6 +17,7 @@ export default function ParentControls({ onClose, onReviewPhotos }) {
   const pendingCount = photos.filter((p) => p.status === 'review').length;
   const [newWord, setNewWord] = useState('');
   const [showGallery, setShowGallery] = useState(false);
+  const [isSessionActive, setIsSessionActive] = useState(websocketService.isConnected());
 
   const sessionProfiles = useSessionStore((s) => s.profiles);
   const siblingPairId = sessionProfiles?.c1_name && sessionProfiles?.c2_name
@@ -34,10 +36,28 @@ export default function ParentControls({ onClose, onReviewPhotos }) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // Track WebSocket connection state for "Add Time" visibility
+  useEffect(() => {
+    const unsubConnected = websocketService.on('connected', () => setIsSessionActive(true));
+    const unsubDisconnected = websocketService.on('disconnected', () => setIsSessionActive(false));
+    return () => {
+      unsubConnected();
+      unsubDisconnected();
+    };
+  }, []);
+
   const handleAddWord = () => {
     if (newWord.trim()) {
       store.addBlockedWord(newWord);
       setNewWord('');
+    }
+  };
+
+  const getReasonLabel = (reason) => {
+    switch (reason) {
+      case 'time_limit': return '⏰ Time limit reached';
+      case 'emergency_stop': return '🛑 Emergency stop';
+      default: return reason;
     }
   };
 
@@ -127,6 +147,18 @@ export default function ParentControls({ onClose, onReviewPhotos }) {
           </div>
         </section>
 
+        {/* Add Time — visible only during active session */}
+        {isSessionActive && (
+          <section className="pc-section">
+            <h3 className="pc-label">Add Time</h3>
+            <div className="pc-time-options">
+              <button className="pc-time-btn pc-time-btn--extend" onClick={() => store.sendTimeExtension(10)}>+10 min</button>
+              <button className="pc-time-btn pc-time-btn--extend" onClick={() => store.sendTimeExtension(15)}>+15 min</button>
+              <button className="pc-time-btn pc-time-btn--extend" onClick={() => store.sendTimeExtension(30)}>+30 min</button>
+            </div>
+          </section>
+        )}
+
         {/* Scene Audio */}
         <section className="pc-section">
           <h3 className="pc-label">Scene Audio</h3>
@@ -163,6 +195,17 @@ export default function ParentControls({ onClose, onReviewPhotos }) {
               : <span className="pc-review-secondary">No photos to review</span>}
           </button>
         </section>
+
+        {/* Last Session End Event */}
+        {store.lastSessionEndEvent && (
+          <section className="pc-section">
+            <h3 className="pc-label">Last Session</h3>
+            <div className="pc-session-end-info">
+              <span>{getReasonLabel(store.lastSessionEndEvent.reason)}</span>
+              <span>{new Date(store.lastSessionEndEvent.timestamp).toLocaleString()}</span>
+            </div>
+          </section>
+        )}
       </div>
       {showGallery && (
         <GalleryView

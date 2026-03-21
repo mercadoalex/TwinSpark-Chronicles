@@ -1,0 +1,59 @@
+.drawing-countdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+}
+
+.drawing-countdown-ring {
+  transform: rotate(-90deg);
+}
+
+.drawing-countdown-track {
+  stroke: rgba(255, 255, 255, 0.15);
+}
+
+.drawing-countdown-progress {
+  transition: stroke-dashoffset 1s linear, stroke 0.4s ease;
+}
+
+.drawing-countdown-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  transition: color 0.4s ease;
+}
+
+@keyframes pulse-glow-ring {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(229, 57, 53, 0.3)); }
+  50%      { filter: drop-shadow(0 0 12px rgba(229, 57, 53, 0.7)); }
+}
+
+.drawing-countdown--urgent .drawing-countdown-ring {
+  animation: pulse-glow-ring 1s ease-in-out infinite;
+}
+
+.drawing-countdown--urgent .drawing-countdown-text {
+  font-weight: 800;
+  transform: scale(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawing-countdown--urgent .drawing-countdown-ring {
+    animation: none;
+  }
+
+  .drawing-countdown--urgent .drawing-countdown-text {
+    transform: none;
+  }
+}

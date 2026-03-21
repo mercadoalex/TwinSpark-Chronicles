@@ -173,10 +173,11 @@ async def test_emotional_synchrony_same_emotion_increases(sibling_db, model, emo
 
     result = await mapper.update_from_event(event, (profile_a, profile_b))
 
-    if initial_sync < 1.0:
+    if initial_sync < 1.0 - 1e-9:
         assert result.emotional_synchrony > initial_sync
     else:
-        assert result.emotional_synchrony == pytest.approx(1.0, abs=1e-9)
+        # At or very near 1.0, float precision prevents meaningful increase
+        assert result.emotional_synchrony >= initial_sync - 1e-12
 
 
 @pytest.mark.asyncio

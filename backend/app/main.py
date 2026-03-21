@@ -43,12 +43,18 @@ from app.models.audio_theme import SceneThemeRequest, AudioThemeResult
 from app.services.scene_audio_mapper import SceneAudioMapper
 from app.services.story_archive_service import StoryArchiveService
 from app.models.storybook import StorybookSummary, StorybookDetail, DeleteStorybookResult
+from app.services.session_time_enforcer import SessionTimeEnforcer
+from app.services.drawing_sync_service import DrawingSyncService
+from app.services.drawing_persistence_service import DrawingPersistenceService
 
 # Track ended sessions for idempotent POST /api/sessions/{id}/end
 _ended_sessions: Dict[str, dict] = {}
 
 # Module-level CacheManager — initialized at startup (task 12.1)
 cache_manager: CacheManager | None = None
+
+# Module-level SessionTimeEnforcer — tracks per-session elapsed time server-side
+session_time_enforcer = SessionTimeEnforcer()
 
 # Load environment variables
 load_dotenv()
@@ -59,6 +65,9 @@ logger = logging.getLogger(__name__)
 face_detector = FaceDetector()
 emotion_detector = EmotionDetector()
 stt_service = STTService()
+
+# Drawing sync service — validates and serializes stroke messages
+drawing_sync_service = DrawingSyncService()
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -1007,6 +1016,10 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# Wire session_time_enforcer and ws_manager into the orchestrator (Req 1.2, 7.1, 7.2)
+orchestrator.session_time_enforcer = session_time_enforcer
+orchestrator.ws_manager = manager
+
 
 def _is_sibling_mode(session_id: str) -> bool:
     """Detect sibling mode from session context.
@@ -1032,10 +1045,32 @@ def _get_sibling_ids(session_id: str) -> tuple[str, str]:
     return child1_id, child2_id
 
 
+async def send_drawing_prompt(session_id: str, prompt: str, duration: int) -> None:
+    """Send a DRAWING_PROMPT message to the client for the given session."""
+    await manager.send_story(session_id, {
+        "type": "DRAWING_PROMPT",
+        "prompt": prompt,
+        "duration": duration,
+        "session_id": session_id,
+    })
+
+
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
     """WebSocket for real-time story generation with multimodal input."""
     await manager.connect(websocket, session_id)
+
+    # Start session time tracking (default 30 minutes)
+    time_limit_minutes = 30
+    try:
+        raw = websocket.query_params.get("time_limit_minutes")
+        if raw is not None:
+            parsed = int(raw)
+            if 1 <= parsed <= 120:
+                time_limit_minutes = parsed
+    except (ValueError, TypeError):
+        pass
+    session_time_enforcer.start_session(session_id, time_limit_minutes)
     
     # Send initial input status
     await manager.send_story(session_id, {
@@ -1065,6 +1100,141 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
                 )
                 manager.track_task(session_id, task)
 
+            elif msg_type == "TIME_EXTENSION":
+                additional_minutes = data.get("additional_minutes", 0)
+                if isinstance(additional_minutes, (int, float)) and additional_minutes > 0:
+                    new_limit = session_time_enforcer.extend_time(session_id, int(additional_minutes))
+                    await manager.send_story(session_id, {
+                        "type": "TIME_EXTENSION_CONFIRMED",
+                        "session_id": session_id,
+                        "new_limit_minutes": new_limit,
+                        "added_minutes": int(additional_minutes),
+                    })
+
+            elif msg_type == "WRAP_UP":
+                # Forward wrap-up signal to orchestrator for story conclusion
+                logger.info(
+                    "WRAP_UP received for session %s, reason=%s",
+                    session_id,
+                    data.get("reason", "unknown"),
+                )
+
+            elif msg_type == "DRAWING_STROKE":
+                stroke_data = data.get("stroke", data)
+                validated = drawing_sync_service.validate_stroke(stroke_data)
+                if validated is not None:
+                    await manager.send_story(session_id, {
+                        "type": "DRAWING_STROKE",
+                        "stroke": {
+                            "session_id": validated.session_id,
+                            "sibling_id": validated.sibling_id,
+                            "points": validated.points,
+                            "color": validated.color,
+                            "brush_size": validated.brush_size,
+                            "timestamp": validated.timestamp,
+                            "tool": validated.tool,
+                            "stamp_shape": validated.stamp_shape,
+                        },
+                    })
+                else:
+                    logger.warning(
+                        "Invalid DRAWING_STROKE message discarded for session %s",
+                        session_id,
+                    )
+
+            elif msg_type == "DRAWING_COMPLETE":
+                strokes = data.get("strokes", [])
+                complete_session_id = data.get("session_id", session_id)
+                drawing_prompt = data.get("prompt", "")
+                drawing_duration = data.get("duration", 0)
+                drawing_beat_index = data.get("beat_index", 0)
+
+                child1_id, child2_id = _get_sibling_ids(session_id)
+                sibling_pair_id = ":".join(sorted([child1_id, child2_id]))
+
+                async def _persist_and_continue(
+                    sid: str,
+                    pair_id: str,
+                    strokes_list: list,
+                    prompt: str,
+                    duration: int,
+                    beat_index: int,
+                    c1_name: str,
+                    c2_name: str,
+                ) -> None:
+                    """Persist drawing, then generate next story beat with drawing context."""
+                    try:
+                        await orchestrator._ensure_db_initialized()
+                        persistence_svc = DrawingPersistenceService(
+                            orchestrator._db_conn
+                        )
+                        record = await persistence_svc.save_drawing(
+                            session_id=sid,
+                            sibling_pair_id=pair_id,
+                            strokes=strokes_list,
+                            prompt=prompt,
+                            duration_seconds=duration,
+                            beat_index=beat_index,
+                        )
+
+                        # Build drawing_context for the next story beat (Req 5.1, 5.2, 5.3)
+                        drawing_context = {
+                            "prompt": prompt,
+                            "sibling_names": [c1_name, c2_name],
+                            "image_path": record.image_path,
+                        }
+
+                        # Retrieve session context for characters
+                        ctx = manager.get_session_context(sid) or {}
+                        characters = ctx.get("characters", {})
+                        language = ctx.get("language", "en")
+
+                        # Generate next story beat referencing the drawing
+                        result = await orchestrator.generate_rich_story_moment(
+                            session_id=sid,
+                            characters=characters,
+                            user_input="continue after drawing",
+                            language=language,
+                            drawing_context=drawing_context,
+                        )
+
+                        # Send the post-drawing story beat to the client
+                        await manager.send_story(sid, {
+                            "type": "story_segment",
+                            "data": result,
+                        })
+                    except Exception as exc:
+                        logger.error(
+                            "Failed to persist/continue drawing for session %s: %s",
+                            sid,
+                            exc,
+                        )
+
+                task = asyncio.create_task(
+                    _persist_and_continue(
+                        complete_session_id,
+                        sibling_pair_id,
+                        strokes,
+                        drawing_prompt,
+                        drawing_duration,
+                        drawing_beat_index,
+                        child1_id,
+                        child2_id,
+                    )
+                )
+                manager.track_task(session_id, task)
+
+                await manager.send_story(session_id, {
+                    "type": "DRAWING_END",
+                    "reason": "manual",
+                })
+
+            elif msg_type == "DRAWING_EARLY_END":
+                await manager.send_story(session_id, {
+                    "type": "DRAWING_END",
+                    "reason": "manual",
+                })
+
             else:
                 # Existing story generation flow for "user_input" / "context" messages
                 story_segment = await storyteller.generate_story_segment(
@@ -1086,7 +1256,12 @@ async def _cleanup_session(session_id: str, timeout: float = 5.0) -> None:
 
     Cancels all in-flight processing tasks for the session and waits up to
     ``timeout`` seconds for them to finish before forcibly moving on.
+    Also ends and removes session time tracking.
     """
+    # End session time tracking and clean up
+    session_time_enforcer.end_session(session_id)
+    session_time_enforcer.remove_session(session_id)
+
     tasks = manager._session_tasks.get(session_id, set()).copy()
     manager.disconnect(session_id)  # cancels tasks + removes input manager
 

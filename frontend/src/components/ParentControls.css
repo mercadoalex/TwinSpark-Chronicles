@@ -281,6 +281,40 @@
   box-shadow: 0 0 0 2px var(--color-emerald);
 }
 
+.pc-time-btn--extend {
+  background: linear-gradient(135deg, var(--color-emerald), #059669);
+  color: #fff;
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.pc-time-btn--extend:hover {
+  box-shadow: 0 0 0 2px var(--color-emerald);
+}
+
+/* ── Session end info ─────────────────────────────── */
+.pc-session-end-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pc-session-end-info span:first-child {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pc-session-end-info span:last-child {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
 /* ── Review Photos ────────────────────────────────── */
 .pc-review-btn {
   display: flex;

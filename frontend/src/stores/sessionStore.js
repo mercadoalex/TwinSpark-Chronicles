@@ -29,6 +29,7 @@ export const useSessionStore = create(
         error: null,
         isReconnecting: false,
         reconnectAttempts: 0,
+        previousDurationSeconds: 0,
 
         // Actions
         setConnected: (connected) => 
@@ -63,7 +64,8 @@ export const useSessionStore = create(
             sessionId: '',
             error: null,
             isReconnecting: false,
-            reconnectAttempts: 0
+            reconnectAttempts: 0,
+            previousDurationSeconds: 0
           }, false, 'session/reset'),
 
         // Selectors

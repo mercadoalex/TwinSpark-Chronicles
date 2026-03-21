@@ -23,6 +23,9 @@ import VoiceCommandToast from './features/story/components/VoiceCommandToast';
 import CameraPreview from './features/camera/components/CameraPreview.jsx';
 import MultimodalFeedback from './features/camera/components/MultimodalFeedback.jsx';
 
+// Drawing Feature
+import { DrawingCanvas } from './features/drawing';
+
 // Session Feature
 import { SessionStatus, MagicMirror, ContinueScreen } from './features/session';
 
@@ -75,6 +78,7 @@ import { useParentControlsStore } from './stores/parentControlsStore';
 import { useSessionPersistenceStore } from './stores/sessionPersistenceStore';
 import { useSceneAudioStore } from './stores/sceneAudioStore';
 import { useGalleryStore } from './stores/galleryStore';
+import { useDrawingStore } from './stores/drawingStore';
 
 // ==========================================
 // HOOKS
@@ -138,7 +142,10 @@ function App() {
   const [audioUnlocked, setAudioUnlocked] = React.useState(false);
   const [archivedToGallery, setArchivedToGallery] = React.useState(false);
 
+  const drawingStore = useDrawingStore();
+
   const unsubscribers = useRef([]);
+  const drawingTickRef = useRef(null);
   const mainRef = useRef(null);
   const prevSetupComplete = useRef(false);
   const t = setup.language ? translations[setup.language] : translations.en;
@@ -161,8 +168,15 @@ function App() {
       c2_gender: profiles.c2_gender,
       c2_personality: profiles.c2_personality || 'wise',
       c2_spirit: profiles.c2_spirit || 'Owl',
-      c2_toy: profiles.c2_toy || 'Book'
+      c2_toy: profiles.c2_toy || 'Book',
+      time_limit_minutes: useParentControlsStore.getState().sessionTimeLimitMinutes.toString(),
     };
+
+    // Include previous duration if resuming from a snapshot
+    const prevDuration = useSessionStore.getState().previousDurationSeconds;
+    if (prevDuration > 0) {
+      params.previous_duration_seconds = prevDuration.toString();
+    }
 
     websocketService.connect(params)
       .then(() => {
@@ -184,6 +198,11 @@ function App() {
       playSuccess();
       // Sync localStorage snapshot to server on reconnect
       useSessionPersistenceStore.getState().syncLocalToServer();
+      // Replay any drawing strokes queued during disconnect
+      const queued = useDrawingStore.getState().flushSyncQueue();
+      queued.forEach((stroke) => {
+        websocketService.send({ type: 'DRAWING_STROKE', stroke });
+      });
     });
 
     const unsubscribeDisconnected = websocketService.on('disconnected', ({ code, reason }) => {
@@ -279,6 +298,18 @@ function App() {
       }
     });
 
+    // Drawing session: start when orchestrator sends a drawing prompt
+    const unsubscribeDrawingPrompt = websocketService.on('DRAWING_PROMPT', (data) => {
+      console.log('🎨 Drawing prompt received:', data.prompt);
+      useDrawingStore.getState().startSession(data.prompt, data.duration || 60);
+    });
+
+    // Drawing session: end when server signals drawing is over
+    const unsubscribeDrawingEnd = websocketService.on('DRAWING_END', () => {
+      console.log('🎨 Drawing session ended');
+      useDrawingStore.getState().endSession();
+    });
+
     unsubscribers.current = [
       unsubscribeConnected,
       unsubscribeDisconnected,
@@ -288,7 +319,9 @@ function App() {
       unsubscribeMechanic,
       unsubscribeError,
       unsubscribeSiblingData,
-      unsubscribeVoiceCommand
+      unsubscribeVoiceCommand,
+      unsubscribeDrawingPrompt,
+      unsubscribeDrawingEnd
     ];
   };
 
@@ -497,6 +530,7 @@ function App() {
       sibling.reset();
       useSceneAudioStore.getState().reset();
       useGalleryStore.getState().reset();
+      useDrawingStore.getState().reset();
     }
   };
 
@@ -511,6 +545,7 @@ function App() {
     sibling.reset();
     useSceneAudioStore.getState().reset();
     useGalleryStore.getState().reset();
+    useDrawingStore.getState().reset();
   };
 
   const handlePrivacyAccept = () => {
@@ -528,6 +563,15 @@ function App() {
     sibling.reset();
     useSceneAudioStore.getState().reset();
     useGalleryStore.getState().reset();
+    useDrawingStore.getState().reset();
+  };
+
+  const handleDrawingComplete = (strokes) => {
+    websocketService.send({
+      type: 'DRAWING_COMPLETE',
+      strokes,
+    });
+    useDrawingStore.getState().endSession();
   };
 
   const handleUnlockAudio = async () => {
@@ -574,6 +618,26 @@ function App() {
     );
     return unsub;
   }, []);
+
+  // Drawing session tick — decrement countdown every second while active
+  useEffect(() => {
+    if (drawingStore.isActive) {
+      drawingTickRef.current = setInterval(() => {
+        useDrawingStore.getState().tick();
+      }, 1000);
+    } else {
+      if (drawingTickRef.current) {
+        clearInterval(drawingTickRef.current);
+        drawingTickRef.current = null;
+      }
+    }
+    return () => {
+      if (drawingTickRef.current) {
+        clearInterval(drawingTickRef.current);
+        drawingTickRef.current = null;
+      }
+    };
+  }, [drawingStore.isActive]);
 
   // Check for existing session after privacy + language
   useEffect(() => {
@@ -916,6 +980,17 @@ function App() {
                 }} title="Save issue">
                   <span style={{ fontSize: '24px' }} aria-hidden="true">☁️</span>
                 </div>
+              )}
+
+              {/* Drawing Canvas overlay */}
+              {drawingStore.isActive && (
+                <DrawingCanvas
+                  prompt={drawingStore.prompt}
+                  duration={drawingStore.duration}
+                  siblingId="child1"
+                  profiles={session.profiles}
+                  onComplete={handleDrawingComplete}
+                />
               )}
             </main>
           )}

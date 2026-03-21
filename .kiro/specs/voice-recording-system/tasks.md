@@ -60,11 +60,11 @@
 - [x] 8.7 Add i18n strings to `frontend/src/locales.js` for English and Spanish
 
 ## Task 9: Frontend Voice Library Component
-- [-] 9.1 Create `frontend/src/features/audio/components/VoiceLibrary.jsx`: list recordings grouped by recorder, inline MP3 preview, language badges (🇺🇸/🇪🇸), count/capacity display
-- [-] 9.2 Add filter controls for Message_Type and Family_Recorder
-- [-] 9.3 Add delete single recording with confirmation dialog (warns about trigger assignments)
-- [-] 9.4 Add delete all recordings with confirmation dialog
-- [-] 9.5 Gate management actions behind parent PIN using existing `ParentControls` component
+- [x] 9.1 Create `frontend/src/features/audio/components/VoiceLibrary.jsx`: list recordings grouped by recorder, inline MP3 preview, language badges (🇺🇸/🇪🇸), count/capacity display
+- [x] 9.2 Add filter controls for Message_Type and Family_Recorder
+- [x] 9.3 Add delete single recording with confirmation dialog (warns about trigger assignments)
+- [x] 9.4 Add delete all recordings with confirmation dialog
+- [x] 9.5 Gate management actions behind parent PIN using existing `ParentControls` component
 - [x] 9.6 Add i18n strings for Voice Library UI
 
 ## Task 10: Frontend Playback Integration

@@ -67,6 +67,10 @@ class AgentOrchestrator:
         # Track in-flight asyncio tasks per session for emergency stop (Req 6.2, 6.5)
         self._session_tasks: Dict[str, set[asyncio.Task]] = {}
 
+        # Session time enforcer and WebSocket manager references (set from main.py)
+        self.session_time_enforcer = None  # SessionTimeEnforcer instance
+        self.ws_manager = None  # ConnectionManager instance for sending WS messages
+
         # Persistent world state (cross-session)
         from app.services.world_db import WorldDB
         from app.services.world_state_extractor import WorldStateExtractor
@@ -190,6 +194,10 @@ class AgentOrchestrator:
 
         Requirements: 6.2, 6.5
         """
+        # End session time tracking before cancelling tasks
+        if self.session_time_enforcer is not None:
+            self.session_time_enforcer.end_session(session_id)
+
         tasks = self._session_tasks.pop(session_id, set())
         cancelled_count = 0
         for task in tasks:
@@ -213,14 +221,107 @@ class AgentOrchestrator:
             "status": "stopped",
         }
 
+    async def _drawing_time_watchdog(self, session_id: str, duration: int) -> None:
+        """Background task that checks session time during an active drawing.
+
+        Polls ``session_time_enforcer.check_time()`` every 5 seconds for up to
+        *duration* seconds.  If the session expires mid-drawing, sends a
+        ``DRAWING_END`` message with ``reason: "session_expired"`` and exits.
+
+        Requirements: 9.1, 9.2
+        """
+        _POLL_INTERVAL = 5  # seconds
+        elapsed = 0
+        try:
+            while elapsed < duration:
+                await asyncio.sleep(_POLL_INTERVAL)
+                elapsed += _POLL_INTERVAL
+
+                if self.session_time_enforcer is None:
+                    break
+
+                time_check = self.session_time_enforcer.check_time(session_id)
+                if time_check.is_expired:
+                    logger.info(
+                        "Drawing watchdog: session %s expired mid-drawing at %ds",
+                        session_id, elapsed,
+                    )
+                    if self.ws_manager is not None:
+                        await self.ws_manager.send_story(session_id, {
+                            "type": "DRAWING_END",
+                            "session_id": session_id,
+                            "reason": "session_expired",
+                        })
+                    return
+        except asyncio.CancelledError:
+            logger.debug("Drawing watchdog cancelled for session %s", session_id)
+        except Exception as e:
+            logger.warning("Drawing watchdog error for session %s: %s", session_id, e)
+
     async def generate_rich_story_moment(self, session_id: str, characters: Dict, user_input: Optional[str] = None, language: str = "en", **kwargs) -> Dict:
         """Generate a complete multimodal story moment with all agents."""
         print(f"\n🎬 Generating rich story moment for session {session_id}")
+
+        # Check session time before generation (Req 1.2, 1.3, 1.4)
+        if self.session_time_enforcer is not None:
+            time_check = self.session_time_enforcer.check_time(session_id)
+            if time_check.is_expired:
+                logger.info("Session %s time expired — skipping generation", session_id)
+                if self.ws_manager is not None:
+                    await self.ws_manager.send_story(session_id, {
+                        "type": "SESSION_TIME_EXPIRED",
+                        "session_id": session_id,
+                    })
+                return {
+                    "text": "",
+                    "image": None,
+                    "audio": {"narration": None, "character_voices": []},
+                    "interactive": {},
+                    "timestamp": None,
+                    "memories_used": 0,
+                    "voice_recordings": [],
+                    "agents_used": {
+                        "storyteller": False,
+                        "visual": False,
+                        "voice": False,
+                        "memory": False,
+                    },
+                    "session_time_expired": True,
+                }
+
+        # Signal generation pause start (Req 7.1, 7.7)
+        if self.session_time_enforcer is not None:
+            self.session_time_enforcer.start_generation_pause(session_id)
+        if self.ws_manager is not None:
+            await self.ws_manager.send_story(session_id, {
+                "type": "GENERATION_STARTED",
+                "session_id": session_id,
+            })
+
+        try:
+            return await self._do_generate_rich_story_moment(
+                session_id, characters, user_input, language, **kwargs
+            )
+        finally:
+            # Signal generation pause end (Req 7.2, 7.7)
+            if self.session_time_enforcer is not None:
+                self.session_time_enforcer.end_generation_pause(session_id)
+            if self.ws_manager is not None:
+                await self.ws_manager.send_story(session_id, {
+                    "type": "GENERATION_COMPLETED",
+                    "session_id": session_id,
+                })
+
+    async def _do_generate_rich_story_moment(self, session_id: str, characters: Dict, user_input: Optional[str] = None, language: str = "en", **kwargs) -> Dict:
+        """Internal implementation of rich story moment generation."""
 
         # Extract parent preference fields from kwargs
         allowed_themes = kwargs.pop("allowed_themes", None)
         complexity_level = kwargs.pop("complexity_level", None)
         custom_blocked_words = kwargs.pop("custom_blocked_words", None)
+
+        # Extract drawing context injected after a completed drawing (Req 5.1, 5.2, 5.3)
+        drawing_context = kwargs.pop("drawing_context", None)
 
         # STEP 1: Get relevant memories
         memories = []
@@ -269,6 +370,10 @@ class AgentOrchestrator:
         if complexity_level is not None:
             story_context["complexity_level"] = complexity_level
 
+        # Inject drawing context so the storyteller references the drawing (Req 5.1, 5.2, 5.3)
+        if drawing_context is not None:
+            story_context["drawing_context"] = drawing_context
+
         try:
             story_segment = await self._generate_safe_story_segment(
                 story_context=story_context,
@@ -284,6 +389,61 @@ class AgentOrchestrator:
             story_segment = self.storyteller._fallback_story(story_context)
 
         print(f"📖 Story text generated: {len(story_segment['text'])} chars")
+
+        # STEP 2a: Drawing prompt injection (Req 5.1, 9.1, 9.2, 9.3)
+        # If the storyteller included a drawing_prompt, send it to clients
+        drawing_prompt = story_segment.get("drawing_prompt")
+        if drawing_prompt and self.ws_manager is not None:
+            try:
+                from app.services.drawing_sync_service import DrawingSyncService
+
+                # Compute effective duration clamped to remaining session time
+                requested_duration = story_segment.get("drawing_duration", 60)
+                remaining_seconds: int | None = None
+                if self.session_time_enforcer is not None:
+                    time_check = self.session_time_enforcer.check_time(session_id)
+                    if time_check.is_expired:
+                        # Session already expired — skip drawing, send expiry
+                        await self.ws_manager.send_story(session_id, {
+                            "type": "DRAWING_END",
+                            "session_id": session_id,
+                            "reason": "session_expired",
+                        })
+                        logger.info("Session %s expired — skipping drawing prompt", session_id)
+                    else:
+                        remaining_seconds = int(time_check.remaining_seconds)
+                        effective_duration = DrawingSyncService.clamp_duration(
+                            requested_duration, remaining_seconds
+                        )
+                        await self.ws_manager.send_story(session_id, {
+                            "type": "DRAWING_PROMPT",
+                            "prompt": drawing_prompt,
+                            "duration": effective_duration,
+                            "session_id": session_id,
+                        })
+                        logger.info(
+                            "Drawing prompt sent: session=%s duration=%d prompt=%s",
+                            session_id, effective_duration, drawing_prompt[:80],
+                        )
+                        # Start background watchdog to expire drawing if session time runs out (Req 9.1, 9.2)
+                        asyncio.create_task(
+                            self._drawing_time_watchdog(session_id, effective_duration)
+                        )
+                else:
+                    # No time enforcer — send with default clamped duration
+                    effective_duration = DrawingSyncService.clamp_duration(requested_duration)
+                    await self.ws_manager.send_story(session_id, {
+                        "type": "DRAWING_PROMPT",
+                        "prompt": drawing_prompt,
+                        "duration": effective_duration,
+                        "session_id": session_id,
+                    })
+                    logger.info(
+                        "Drawing prompt sent (no time enforcer): session=%s duration=%d",
+                        session_id, effective_duration,
+                    )
+            except Exception as e:
+                logger.warning("Drawing prompt injection failed: %s", e)
 
         # STEP 2b: Filter story choices and perspective text (Req 8.2)
         interactive = story_segment.get("interactive", {})
@@ -500,7 +660,7 @@ class AgentOrchestrator:
                 print(f"⚠️  Memory storage skipped: {e}")
 
         # STEP 7: Return complete multimodal experience
-        return {
+        result = {
             "text": story_segment['text'],
             "image": scene_image,
             "audio": {
@@ -518,6 +678,12 @@ class AgentOrchestrator:
                 "memory": len(memories) > 0
             }
         }
+
+        # STEP 7a: Associate drawing image with story beat (Req 4.5, 5.1)
+        if drawing_context is not None:
+            result["drawing_image_path"] = drawing_context.get("image_path", "")
+
+        return result
 
     async def process_multimodal_event(
         self,

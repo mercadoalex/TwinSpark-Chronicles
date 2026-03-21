@@ -1,0 +1,236 @@
+/* ============================================================
+   WindDownScreen — Magical Goodbye Overlay
+   CSS-only animations reusing CelebrationOverlay star pattern.
+   ============================================================ */
+
+/* ── Full-screen overlay ──────────────────────────── */
+.wind-down {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* Block all interaction beneath */
+  pointer-events: all;
+  /* Start with night-sky gradient */
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 40%,
+    rgba(15, 22, 41, 0.92) 0%,
+    rgba(7, 11, 26, 0.97) 100%
+  );
+  transition: background var(--wd-duration, 8000ms) ease-in;
+}
+
+/* ── Phase: stars (initial) ───────────────────────── */
+.wind-down--stars {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 40%,
+    rgba(15, 22, 41, 0.92) 0%,
+    rgba(7, 11, 26, 0.97) 100%
+  );
+}
+
+/* ── Phase: farewell (message fully visible) ──────── */
+.wind-down--farewell {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 40%,
+    rgba(10, 14, 30, 0.96) 0%,
+    rgba(4, 6, 16, 0.99) 100%
+  );
+}
+
+/* ── Phase: dark (fade to black) ──────────────────── */
+.wind-down--dark {
+  background: #000;
+}
+
+/* ── Star-trail particles ─────────────────────────── */
+.wind-down__star {
+  position: absolute;
+  display: block;
+  width: 12px;
+  height: 12px;
+  pointer-events: none;
+  will-change: transform, opacity;
+  /* Reuse CelebrationOverlay's star clip-path */
+  clip-path: polygon(
+    50% 0%, 61% 35%, 98% 35%, 68% 57%,
+    79% 91%, 50% 70%, 21% 91%, 32% 57%,
+    2% 35%, 39% 35%
+  );
+  background: var(--color, #fbbf24);
+  left: calc(var(--x) * 1%);
+  top: -24px;
+  transform: scale(var(--scale, 1));
+  opacity: 0;
+  animation: wd-star-trail var(--star-dur, 2000ms) ease-in var(--delay, 0ms) forwards;
+}
+
+/* Star-trail: gentle fall with slight drift and fade */
+@keyframes wd-star-trail {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg) scale(var(--scale, 1));
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  60% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(110vh) translateX(30px) rotate(180deg) scale(0.2);
+    opacity: 0;
+  }
+}
+
+/* ── Goodbye message ──────────────────────────────── */
+.wind-down__message {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 32px;
+  max-width: 520px;
+  opacity: 0;
+  animation: wd-message-in calc(var(--wd-duration, 8000ms) * 0.3) ease-out
+    calc(var(--wd-duration, 8000ms) * 0.15) forwards;
+}
+
+@keyframes wd-message-in {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Moon emoji ───────────────────────────────────── */
+.wind-down__emoji {
+  font-size: 3.5rem;
+  display: block;
+  animation: wd-moon-float 3s ease-in-out infinite alternate;
+}
+
+@keyframes wd-moon-float {
+  0% {
+    transform: translateY(0) rotate(-3deg);
+  }
+  100% {
+    transform: translateY(-8px) rotate(3deg);
+  }
+}
+
+/* ── Title ────────────────────────────────────────── */
+.wind-down__title {
+  font-family: var(--font-display, 'Fredoka', sans-serif);
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 700;
+  background: linear-gradient(
+    135deg,
+    var(--color-gold, #fbbf24) 0%,
+    var(--color-coral, #fb7185) 50%,
+    var(--color-violet, #a78bfa) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.3;
+}
+
+/* ── Adventure summary ────────────────────────────── */
+.wind-down__summary {
+  font-family: var(--font-body, 'Quicksand', sans-serif);
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.6;
+  max-width: 400px;
+}
+
+/* ── Farewell line ────────────────────────────────── */
+.wind-down__farewell {
+  font-family: var(--font-body, 'Quicksand', sans-serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 8px;
+}
+
+/* ── Fade message out in dark phase ───────────────── */
+.wind-down--dark .wind-down__message {
+  animation: wd-message-out calc(var(--wd-duration, 8000ms) * 0.15) ease-in forwards;
+}
+
+@keyframes wd-message-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.wind-down--dark .wind-down__star {
+  animation: none;
+  opacity: 0;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  .wind-down__star {
+    animation: none !important;
+    display: none !important;
+  }
+
+  .wind-down__emoji {
+    animation: none !important;
+  }
+
+  .wind-down__message {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .wind-down--dark .wind-down__message {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+
+  .wind-down {
+    transition-duration: 200ms !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 767px) {
+  .wind-down__emoji {
+    font-size: 2.5rem;
+  }
+
+  .wind-down__message {
+    padding: 20px;
+    gap: 8px;
+  }
+
+  .wind-down__summary {
+    font-size: 1rem;
+  }
+
+  .wind-down__farewell {
+    font-size: 1.05rem;
+  }
+}

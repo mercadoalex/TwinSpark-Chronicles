@@ -6,6 +6,7 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
+import { websocketService } from '../features/session/services/websocketService';
 
 const AVAILABLE_THEMES = [
   'friendship', 'nature', 'space', 'animals',
@@ -21,6 +22,12 @@ export const useParentControlsStore = create(
         complexityLevel: 'simple',
         customBlockedWords: [],
         sessionTimeLimitMinutes: 30,
+        lastSessionEndEvent: (() => {
+          try {
+            const raw = localStorage.getItem('twinspark_last_session_end');
+            return raw ? JSON.parse(raw) : null;
+          } catch (_) { return null; }
+        })(),
 
         // Actions
         setAllowedThemes: (themes) =>
@@ -53,6 +60,16 @@ export const useParentControlsStore = create(
 
         setSessionTimeLimit: (minutes) =>
           set({ sessionTimeLimitMinutes: minutes }, false, 'parentControls/setSessionTimeLimit'),
+
+        sendTimeExtension: (minutes) => {
+          websocketService.send({ type: 'TIME_EXTENSION', additional_minutes: minutes });
+        },
+
+        recordSessionEnd: (reason, childNames) => {
+          const event = { reason, timestamp: new Date().toISOString(), child_names: childNames };
+          try { localStorage.setItem('twinspark_last_session_end', JSON.stringify(event)); } catch (_) {}
+          set({ lastSessionEndEvent: event }, false, 'parentControls/recordSessionEnd');
+        },
 
         // Selectors
         getPreferencesPayload: () => {

@@ -21,6 +21,8 @@
   -webkit-tap-highlight-color: transparent;
   font-size: 1.6rem;
   line-height: 1;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .emergency-stop:hover {
@@ -34,11 +36,57 @@
   transform: scale(0.92);
 }
 
+/* ── Holding state — progress ring via conic-gradient ── */
+.emergency-stop--holding {
+  background: conic-gradient(
+    rgba(239, 68, 68, 0.8) calc(var(--hold-progress, 0) * 360deg),
+    rgba(239, 68, 68, 0.2) calc(var(--hold-progress, 0) * 360deg)
+  );
+  border-color: rgba(239, 68, 68, 0.7);
+  transform: scale(1.12);
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.4);
+}
+
+.emergency-stop--holding .emergency-stop__icon {
+  animation: pulse-arrow 0.6s ease-in-out infinite;
+}
+
+/* ── Active / stopping state ─────────────────────── */
 .emergency-stop--active {
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.6), rgba(220, 38, 38, 0.5));
   color: #fff;
   pointer-events: none;
   animation: pulse-ring-gentle 1.5s infinite;
+}
+
+/* ── Icon container ──────────────────────────────── */
+.emergency-stop__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+/* ── Pulsing arrow animation during hold ─────────── */
+@keyframes pulse-arrow {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(3px);
+    opacity: 0.6;
+  }
+}
+
+/* ── Gentle pulse ring for active/stopping state ─── */
+@keyframes pulse-ring-gentle {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+  }
 }
 
 /* ── Responsive ───────────────────────────────────── */
@@ -49,5 +97,16 @@
     width: 56px;
     height: 56px;
     font-size: 1.4rem;
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .emergency-stop--holding .emergency-stop__icon {
+    animation: none;
+  }
+
+  .emergency-stop--active {
+    animation: none;
   }
 }

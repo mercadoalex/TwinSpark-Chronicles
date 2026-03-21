@@ -36,8 +36,49 @@
   color: #f87171;
 }
 
+.session-timer--paused {
+  animation: session-timer-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes session-timer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
 .session-timer__time {
   font-variant-numeric: tabular-nums;
+}
+
+/* ── Sparkle animation (time extension feedback) ── */
+.session-timer--sparkle {
+  animation: session-timer-sparkle 1.5s ease-out;
+  border-color: rgba(168, 130, 255, 0.6);
+  box-shadow: 0 0 18px rgba(168, 130, 255, 0.5), 0 0 40px rgba(251, 191, 36, 0.25);
+}
+
+@keyframes session-timer-sparkle {
+  0% {
+    box-shadow: 0 0 6px rgba(168, 130, 255, 0.3);
+    transform: scale(1);
+  }
+  25% {
+    box-shadow: 0 0 24px rgba(168, 130, 255, 0.7), 0 0 48px rgba(251, 191, 36, 0.4);
+    transform: scale(1.08);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(168, 130, 255, 0.5), 0 0 36px rgba(251, 191, 36, 0.3);
+    transform: scale(1.04);
+  }
+  100% {
+    box-shadow: 0 0 6px rgba(168, 130, 255, 0.1);
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-timer--sparkle {
+    animation: none;
+  }
 }
 
 /* ── Warning overlay ─────────────────────────────── */

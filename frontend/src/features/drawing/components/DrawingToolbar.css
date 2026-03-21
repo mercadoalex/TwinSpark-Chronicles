@@ -1,0 +1,286 @@
+/* ============================================================
+   DRAWING TOOLBAR — Color, Brush, Eraser, Undo, Stamps
+   ============================================================ */
+
+.drawing-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-glass-border);
+  min-width: 80px;
+  overflow-y: auto;
+}
+
+/* ── Section ──────────────────────────────────────── */
+
+.drawing-toolbar__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.drawing-toolbar__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-body);
+}
+
+/* ── Color Palette ────────────────────────────────── */
+
+.drawing-toolbar__colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.drawing-toolbar__color-swatch {
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.drawing-toolbar__color-swatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 16px var(--swatch-color, rgba(167, 139, 250, 0.4));
+}
+
+.drawing-toolbar__color-swatch:focus-visible {
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.5);
+}
+
+.drawing-toolbar__color-swatch--selected {
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow: var(--shadow-glow-violet);
+  animation: bounce-select 0.4s var(--ease-bounce) forwards;
+}
+
+/* ── Brush Size ───────────────────────────────────── */
+
+.drawing-toolbar__brushes {
+  display: flex;
+  gap: 6px;
+}
+
+.drawing-toolbar__brush-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  border: 2px solid var(--color-glass-border);
+  border-radius: 8px;
+  background: var(--color-glass);
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.drawing-toolbar__brush-btn:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-glass-hover);
+}
+
+.drawing-toolbar__brush-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.5);
+}
+
+.drawing-toolbar__brush-btn--selected {
+  border-color: #667eea;
+  background: #eef0ff;
+  animation: bounce-select 0.4s var(--ease-bounce) forwards;
+}
+
+.drawing-toolbar__brush-dot {
+  display: block;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Tool Buttons (eraser, undo, stamp toggle) ────── */
+
+.drawing-toolbar__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.drawing-toolbar__tool-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 6px 8px;
+  border: 2px solid var(--color-glass-border);
+  border-radius: 8px;
+  background: var(--color-glass);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+
+.drawing-toolbar__tool-btn:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-glass-hover);
+}
+
+.drawing-toolbar__tool-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.5);
+}
+
+.drawing-toolbar__tool-btn:active {
+  transform: scale(0.88);
+}
+
+.drawing-toolbar__tool-btn--active {
+  border-color: #667eea;
+  background: #eef0ff;
+}
+
+.drawing-toolbar__tool-btn--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.drawing-toolbar__tool-btn--disabled:hover {
+  border-color: var(--color-glass-border);
+  background: var(--color-glass);
+}
+
+.drawing-toolbar__tool-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.drawing-toolbar__tool-text {
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ── Stamp Shape Buttons ──────────────────────────── */
+
+.drawing-toolbar__stamps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.drawing-toolbar__stamp-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  min-width: 56px;
+  min-height: 56px;
+  border: 2px solid var(--color-glass-border);
+  border-radius: 8px;
+  background: var(--color-glass);
+  cursor: pointer;
+  padding: 0;
+  font-size: 1.4rem;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.drawing-toolbar__stamp-btn:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--color-glass-hover);
+  transform: scale(1.08);
+}
+
+.drawing-toolbar__stamp-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.5);
+}
+
+.drawing-toolbar__stamp-btn--selected {
+  border-color: #667eea;
+  background: #eef0ff;
+  animation: bounce-select 0.4s var(--ease-bounce) forwards;
+}
+
+/* ── Bounce-Select Animation ──────────────────────── */
+
+@keyframes bounce-select {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.25); }
+  70%  { transform: scale(0.92); }
+  100% { transform: scale(1.1); }
+}
+
+/* ============================================================
+   RESPONSIVE — Toolbar stacks horizontally below canvas
+   ============================================================ */
+
+@media (max-width: 767px) {
+  .drawing-toolbar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-left: none;
+    border-top: 1px solid var(--color-glass-border);
+    padding: 8px;
+    gap: 8px;
+    min-width: unset;
+    overflow-x: auto;
+  }
+
+  .drawing-toolbar__section {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .drawing-toolbar__label {
+    writing-mode: horizontal-tb;
+    min-width: max-content;
+  }
+}
+
+/* ============================================================
+   ACCESSIBILITY — Reduced Motion
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .drawing-toolbar__color-swatch,
+  .drawing-toolbar__stamp-btn,
+  .drawing-toolbar__brush-btn,
+  .drawing-toolbar__tool-btn {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .drawing-toolbar__color-swatch--selected,
+  .drawing-toolbar__stamp-btn--selected,
+  .drawing-toolbar__brush-btn--selected {
+    transform: none !important;
+    animation: none !important;
+  }
+
+  .drawing-toolbar__tool-btn:active {
+    transform: none !important;
+  }
+}
