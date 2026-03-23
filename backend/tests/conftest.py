@@ -2,6 +2,18 @@
 
 import sys
 from unittest.mock import MagicMock
+import pytest
+
+
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line("markers", "e2e: end-to-end tests requiring real Gemini API key")
+
+
+def pytest_addoption(parser):
+    """Add e2e-specific CLI flags."""
+    parser.addoption("--e2e-no-cache", action="store_true", default=False, help="Bypass e2e response cache")
+    parser.addoption("--e2e-max-calls", type=int, default=20, help="Max live API calls for e2e tests")
 
 # ---------------------------------------------------------------------------
 # Pre-populate sys.modules with mocks for packages that may not be installed

@@ -51,6 +51,7 @@ node_modules/
 .coverage
 htmlcov/
 *.cover
+backend/tests/e2e_cache/
 
 # Logs
 *.log
