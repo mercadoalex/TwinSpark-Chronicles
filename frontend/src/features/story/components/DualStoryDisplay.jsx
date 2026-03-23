@@ -7,6 +7,42 @@ import { useSceneAudioStore } from '../../../stores/sceneAudioStore';
 
 const choiceIcons = ['🌙', '⚡', '🌿', '🔮', '🌊', '🦋'];
 
+const presetToyEmojis = {
+  teddy: '🧸',
+  robot: '🤖',
+  bunny: '🐰',
+  dino: '🦕',
+  kitty: '🐱',
+  puppy: '🐶',
+};
+
+/** Companion avatar with graceful degradation — broken photo URLs fall back to 🧸 (Req 5.6) */
+function CompanionAvatar({ toyType, toyImage, childClass, small }) {
+  const [broken, setBroken] = React.useState(false);
+  const sizeClass = small ? 'companion-avatar--sm' : '';
+
+  if (!toyType || !toyImage) return null;
+
+  if (toyType === 'photo' && !broken) {
+    return (
+      <img
+        className={`companion-avatar ${sizeClass} ${childClass}`}
+        src={toyImage}
+        alt="toy companion"
+        onError={() => setBroken(true)}
+      />
+    );
+  }
+
+  // Preset emoji or broken-photo fallback to generic 🧸
+  const emoji = toyType === 'photo' ? '🧸' : (presetToyEmojis[toyImage] || '🧸');
+  return (
+    <span className={`companion-avatar ${sizeClass} ${childClass}`} aria-hidden="true">
+      {emoji}
+    </span>
+  );
+}
+
 function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [showPerspectives, setShowPerspectives] = useState(false);
@@ -103,10 +139,12 @@ function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
             <div className="story-scene__avatar story-scene__avatar--c1">
               <span aria-hidden="true">🌟</span>
               <span className="story-scene__avatar-name">{profiles?.c1_name}</span>
+              <CompanionAvatar toyType={profiles?.c1_toy_type} toyImage={profiles?.c1_toy_image} childClass="companion-avatar--c1" />
             </div>
             <div className="story-scene__avatar story-scene__avatar--c2">
               <span aria-hidden="true">⭐</span>
               <span className="story-scene__avatar-name">{profiles?.c2_name}</span>
+              <CompanionAvatar toyType={profiles?.c2_toy_type} toyImage={profiles?.c2_toy_image} childClass="companion-avatar--c2" />
             </div>
           </div>
         </div>
@@ -147,6 +185,7 @@ function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
             <span className="story-card__name story-card__name--child1">
               {profiles?.c1_name}
             </span>
+            <CompanionAvatar toyType={profiles?.c1_toy_type} toyImage={profiles?.c1_toy_image} childClass="companion-avatar--c1" small />
             <p className="story-card__text">
               {storyBeat?.child1_perspective}
             </p>
@@ -156,6 +195,7 @@ function DualStoryDisplay({ storyBeat, t, profiles, onChoice }) {
             <span className="story-card__name story-card__name--child2">
               {profiles?.c2_name}
             </span>
+            <CompanionAvatar toyType={profiles?.c2_toy_type} toyImage={profiles?.c2_toy_image} childClass="companion-avatar--c2" small />
             <p className="story-card__text">
               {storyBeat?.child2_perspective}
             </p>

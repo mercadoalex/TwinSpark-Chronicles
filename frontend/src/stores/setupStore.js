@@ -19,14 +19,20 @@ export const useSetupStore = create(
           gender: '',
           personality: '',
           spirit: '',
-          toy: ''
+          costume: '',
+          toy: '',
+          toyType: '',
+          toyImage: ''
         },
         child2: {
           name: '',
           gender: '',
           personality: '',
           spirit: '',
-          toy: ''
+          costume: '',
+          toy: '',
+          toyType: '',
+          toyImage: ''
         },
         isComplete: false,
 
@@ -67,8 +73,8 @@ export const useSetupStore = create(
             currentStep: 'privacy',
             privacyAccepted: false,
             language: 'en',
-            child1: { name: '', gender: '', personality: '', spirit: '', toy: '' },
-            child2: { name: '', gender: '', personality: '', spirit: '', toy: '' },
+            child1: { name: '', gender: '', personality: '', spirit: '', costume: '', toy: '', toyType: '', toyImage: '' },
+            child2: { name: '', gender: '', personality: '', spirit: '', costume: '', toy: '', toyType: '', toyImage: '' },
             isComplete: false
           }, false, 'setup/reset'),
 
@@ -81,12 +87,18 @@ export const useSetupStore = create(
             c1_gender: child1.gender,
             c1_personality: child1.personality,
             c1_spirit: child1.spirit,
+            c1_costume: child1.costume,
             c1_toy: child1.toy,
             c2_name: child2.name,
             c2_gender: child2.gender,
             c2_personality: child2.personality,
             c2_spirit: child2.spirit,
-            c2_toy: child2.toy
+            c2_costume: child2.costume,
+            c2_toy: child2.toy,
+            c1_toy_type: child1.toyType,
+            c1_toy_image: child1.toyImage,
+            c2_toy_type: child2.toyType,
+            c2_toy_image: child2.toyImage
           };
         },
 

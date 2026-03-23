@@ -1,0 +1,120 @@
+/* ─── Error Boundary Fallback UI ──────────────────────────────────────────── */
+
+.error-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 3rem 2rem;
+  min-height: 200px;
+  text-align: center;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+.error-fallback__emoji {
+  font-size: 4rem;
+  line-height: 1;
+  animation: error-bounce 2s ease-in-out infinite;
+}
+
+.error-fallback__message {
+  font-family: var(--font-display, 'Baloo 2', cursive);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  max-width: 320px;
+}
+
+.error-fallback__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  border: none;
+  border-radius: 2rem;
+  font-family: var(--font-display, 'Baloo 2', cursive);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: error-pulse 3s ease-in-out infinite;
+}
+
+.error-fallback__button:hover,
+.error-fallback__button:focus-visible {
+  transform: scale(1.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.error-fallback__button:active {
+  transform: scale(0.96);
+}
+
+.error-fallback__button-emoji {
+  font-size: 1.25rem;
+}
+
+/* ─── Variant: Story (purple) ────────────────────────────────────────────── */
+
+.error-fallback--story {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(168, 85, 247, 0.1));
+  border: 2px solid rgba(139, 92, 246, 0.3);
+}
+
+.error-fallback--story .error-fallback__button {
+  background: linear-gradient(135deg, #8b5cf6, #a855f7);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+}
+
+/* ─── Variant: Drawing (green) ───────────────────────────────────────────── */
+
+.error-fallback--drawing {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(16, 185, 129, 0.1));
+  border: 2px solid rgba(34, 197, 94, 0.3);
+}
+
+.error-fallback--drawing .error-fallback__button {
+  background: linear-gradient(135deg, #22c55e, #10b981);
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+}
+
+/* ─── Variant: Setup (gold) ──────────────────────────────────────────────── */
+
+.error-fallback--setup {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(234, 179, 8, 0.1));
+  border: 2px solid rgba(245, 158, 11, 0.3);
+}
+
+.error-fallback--setup .error-fallback__button {
+  background: linear-gradient(135deg, #f59e0b, #eab308);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}
+
+/* ─── Variant: Default ───────────────────────────────────────────────────── */
+
+.error-fallback--default {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(129, 140, 248, 0.1));
+  border: 2px solid rgba(99, 102, 241, 0.3);
+}
+
+.error-fallback--default .error-fallback__button {
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+}
+
+/* ─── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes error-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes error-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.85; }
+}

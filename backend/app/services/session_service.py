@@ -1,8 +1,8 @@
 """Async persistence for session snapshots.
 
 Stores and retrieves session snapshots per sibling pair so that
-siblings can resume their story where they left off. Uses the
-DatabaseConnection abstraction (same pattern as WorldDB).
+siblings can resume their story where they left off. Delegates all
+SQL to SessionRepository.
 
 Requirements: 1.1-1.5, 8.1-8.4
 """
@@ -15,15 +15,17 @@ from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 from app.db.connection import DatabaseConnection
+from app.db.session_repository import SessionRepository
 
 logger = logging.getLogger(__name__)
 
 
 class SessionService:
-    """CRUD for session snapshots using DatabaseConnection."""
+    """CRUD for session snapshots using SessionRepository."""
 
-    def __init__(self, db: DatabaseConnection) -> None:
+    def __init__(self, db: DatabaseConnection, session_repo: SessionRepository | None = None) -> None:
         self._db = db
+        self._repo = session_repo or SessionRepository(db)
 
     async def save_snapshot(self, snapshot: dict) -> dict:
         """Upsert a session snapshot. Returns ``{id, updated_at}``."""
@@ -36,35 +38,23 @@ class SessionService:
         session_metadata = json.dumps(snapshot["session_metadata"])
         sibling_pair_id = snapshot["sibling_pair_id"]
 
-        await self._db.execute(
-            """INSERT INTO session_snapshots
-                (id, sibling_pair_id, character_profiles, story_history,
-                 current_beat, session_metadata, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(sibling_pair_id) DO UPDATE SET
-                character_profiles = excluded.character_profiles,
-                story_history = excluded.story_history,
-                current_beat = excluded.current_beat,
-                session_metadata = excluded.session_metadata,
-                updated_at = excluded.updated_at""",
-            (snap_id, sibling_pair_id, character_profiles, story_history,
-             current_beat, session_metadata, now, now),
-        )
+        await self._repo.save({
+            "id": snap_id,
+            "sibling_pair_id": sibling_pair_id,
+            "character_profiles": character_profiles,
+            "story_history": story_history,
+            "current_beat": current_beat,
+            "session_metadata": session_metadata,
+            "created_at": now,
+            "updated_at": now,
+        })
 
-        row = await self._db.fetch_one(
-            "SELECT id, updated_at FROM session_snapshots WHERE sibling_pair_id = ?",
-            (sibling_pair_id,),
-        )
+        row = await self._repo.find_id_by_pair(sibling_pair_id)
         return {"id": row["id"], "updated_at": row["updated_at"]} if row else {"id": snap_id, "updated_at": now}
 
     async def load_snapshot(self, sibling_pair_id: str) -> dict | None:
         """Load the active snapshot for a sibling pair, or ``None``."""
-        row = await self._db.fetch_one(
-            """SELECT id, sibling_pair_id, character_profiles, story_history,
-                      current_beat, session_metadata, created_at, updated_at
-            FROM session_snapshots WHERE sibling_pair_id = ?""",
-            (sibling_pair_id,),
-        )
+        row = await self._repo.find_by_pair_id(sibling_pair_id)
         if row is None:
             return None
 
@@ -84,42 +74,17 @@ class SessionService:
                 "Corrupted JSON in session snapshot for pair %s — deleting row",
                 sibling_pair_id,
             )
-            await self._db.execute(
-                "DELETE FROM session_snapshots WHERE sibling_pair_id = ?",
-                (sibling_pair_id,),
-            )
+            await self._repo.delete_by_pair_id(sibling_pair_id)
             return None
 
     async def delete_snapshot(self, sibling_pair_id: str) -> bool:
         """Delete the active snapshot. Returns ``True`` if a row was deleted."""
-        row = await self._db.fetch_one(
-            "SELECT id FROM session_snapshots WHERE sibling_pair_id = ?",
-            (sibling_pair_id,),
-        )
-        if row is None:
-            return False
-
-        await self._db.execute(
-            "DELETE FROM session_snapshots WHERE sibling_pair_id = ?",
-            (sibling_pair_id,),
-        )
-        return True
+        return await self._repo.delete_by_pair_id(sibling_pair_id)
 
     async def cleanup_stale(self, max_age_days: int = 30) -> int:
         """Delete snapshots older than *max_age_days*. Returns count deleted."""
         threshold = (datetime.now(timezone.utc) - timedelta(days=max_age_days)).isoformat()
-
-        stale = await self._db.fetch_all(
-            "SELECT id FROM session_snapshots WHERE updated_at < ?",
-            (threshold,),
-        )
-        count = len(stale)
-
+        count = await self._repo.delete_stale(threshold)
         if count > 0:
-            await self._db.execute(
-                "DELETE FROM session_snapshots WHERE updated_at < ?",
-                (threshold,),
-            )
             logger.info("Cleaned up %d stale session snapshot(s) older than %d days", count, max_age_days)
-
         return count

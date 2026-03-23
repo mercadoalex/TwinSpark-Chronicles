@@ -46,6 +46,7 @@ from app.models.storybook import StorybookSummary, StorybookDetail, DeleteStoryb
 from app.services.session_time_enforcer import SessionTimeEnforcer
 from app.services.drawing_sync_service import DrawingSyncService
 from app.services.drawing_persistence_service import DrawingPersistenceService
+from app.data.costume_catalog import is_valid_costume, get_costume_prompt, COSTUME_CATALOG
 
 # Track ended sessions for idempotent POST /api/sessions/{id}/end
 _ended_sessions: Dict[str, dict] = {}
@@ -151,6 +152,10 @@ class StoryRequest(BaseModel):
     allowed_themes: Optional[list[str]] = None
     complexity_level: Optional[str] = None
     custom_blocked_words: Optional[list[str]] = None
+
+
+class CostumeUpdateRequest(BaseModel):
+    costume: str
 
 
 # ============================================
@@ -400,6 +405,65 @@ async def dashboard_leadership_chart():
 
 
 # ============================================
+# COSTUME UPDATE ENDPOINT
+# ============================================
+
+@app.put("/api/costume/{sibling_pair_id}/{child_num}")
+async def update_costume(sibling_pair_id: str, child_num: int, body: CostumeUpdateRequest):
+    """Update a sibling's costume in the session snapshot.
+
+    Validates the costume ID against the catalog, updates character_profiles
+    JSON, evicts the style transfer cache, and returns the new costume info.
+
+    Requirements: 9.3, 9.4
+    """
+    # Validate costume ID
+    if not is_valid_costume(body.costume):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "invalid_costume",
+                "valid_options": list(COSTUME_CATALOG.keys()),
+            },
+        )
+
+    # Validate child_num
+    if child_num not in (1, 2):
+        raise HTTPException(status_code=422, detail="child_num must be 1 or 2")
+
+    # Load the session snapshot
+    svc = await _get_session_service()
+    snapshot = await svc.load_snapshot(sibling_pair_id)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Update the costume field in character_profiles
+    profiles = snapshot["character_profiles"]
+    costume_key = f"c{child_num}_costume"
+    profiles[costume_key] = body.costume
+
+    # Save the updated snapshot
+    snapshot["character_profiles"] = profiles
+    try:
+        await svc.save_snapshot(snapshot)
+    except Exception as e:
+        logger.error("Failed to save costume update for pair=%s: %s", sibling_pair_id, e)
+        raise HTTPException(status_code=500, detail="Failed to save costume update")
+
+    # Evict style transfer cache for the affected sibling
+    try:
+        style_transfer = orchestrator.media._style_transfer
+        cache = getattr(style_transfer, "_style_transfer_cache", None)
+        if cache is not None:
+            cache.evict(sibling_pair_id)
+    except Exception:
+        logger.warning("Style transfer cache eviction failed for pair=%s", sibling_pair_id)
+
+    costume_prompt = get_costume_prompt(body.costume)
+    return {"ok": True, "costume": body.costume, "costume_prompt": costume_prompt}
+
+
+# ============================================
 # EMERGENCY STOP ENDPOINT
 # ============================================
 
@@ -531,14 +595,17 @@ async def _get_photo_service() -> PhotoService:
     if _photo_service is None:
         await orchestrator._ensure_db_initialized()
         from app.services.content_filter import ContentFilter
+        from app.db.photo_repository import PhotoRepository
 
         content_filter = ContentFilter()
         scanner = ContentScanner(content_filter)
         extractor = FaceExtractor(face_detector)
+        photo_repo = PhotoRepository(orchestrator._db_conn)
         _photo_service = PhotoService(
             db=orchestrator._db_conn,
             content_scanner=scanner,
             face_extractor=extractor,
+            photo_repo=photo_repo,
         )
     return _photo_service
 
@@ -646,6 +713,62 @@ async def get_storage_stats(sibling_pair_id: str):
 
 
 # ============================================
+# TOY PHOTO API ENDPOINTS
+# ============================================
+
+# Lazy-initialized ToyPhotoService singleton (follows _photo_service pattern)
+_toy_photo_service: "ToyPhotoService | None" = None
+
+
+async def _get_toy_photo_service():
+    """Return (and lazily create) the shared ToyPhotoService instance."""
+    global _toy_photo_service
+    if _toy_photo_service is None:
+        from app.services.toy_photo_service import ToyPhotoService
+
+        _toy_photo_service = ToyPhotoService()
+    return _toy_photo_service
+
+
+@app.post("/api/toy-photo/{sibling_pair_id}/{child_number}")
+async def upload_toy_photo(
+    sibling_pair_id: str,
+    child_number: int,
+    file: fastapi.UploadFile = fastapi.File(...),
+):
+    """Upload a toy companion photo for a child. Validates, resizes, stores."""
+    if child_number not in (1, 2):
+        raise HTTPException(status_code=422, detail="Child number must be 1 or 2")
+    svc = await _get_toy_photo_service()
+    image_bytes = await file.read()
+    try:
+        result = await svc.upload_toy_photo(
+            sibling_pair_id=sibling_pair_id,
+            child_number=child_number,
+            image_bytes=image_bytes,
+            filename=file.filename or "toy.jpg",
+        )
+        return result.model_dump()
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error("Toy photo upload failed: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to save photo")
+
+
+@app.get("/api/toy-photo/{sibling_pair_id}/{child_number}")
+async def get_toy_photo(sibling_pair_id: str, child_number: int):
+    """Get toy photo metadata and URL for a child."""
+    if child_number not in (1, 2):
+        raise HTTPException(status_code=422, detail="Child number must be 1 or 2")
+    svc = await _get_toy_photo_service()
+    metadata = await svc.get_toy_photo(sibling_pair_id, child_number)
+    if metadata is None:
+        raise HTTPException(status_code=404, detail="No toy photo found")
+    return metadata.model_dump()
+
+
+# ============================================
 # VOICE RECORDING API ENDPOINTS
 # ============================================
 
@@ -658,10 +781,14 @@ async def _get_voice_recording_service() -> VoiceRecordingService:
     global _voice_recording_service
     if _voice_recording_service is None:
         await orchestrator._ensure_db_initialized()
+        from app.db.voice_recording_repository import VoiceRecordingRepository
+
         normalizer = AudioNormalizer()
+        voice_repo = VoiceRecordingRepository(orchestrator._db_conn)
         _voice_recording_service = VoiceRecordingService(
             db=orchestrator._db_conn,
             audio_normalizer=normalizer,
+            voice_repo=voice_repo,
         )
     return _voice_recording_service
 
@@ -888,7 +1015,10 @@ async def _get_session_service() -> SessionService:
     global _session_service
     if _session_service is None:
         await orchestrator._ensure_db_initialized()
-        _session_service = SessionService(orchestrator._db_conn)
+        from app.db.session_repository import SessionRepository
+
+        session_repo = SessionRepository(orchestrator._db_conn)
+        _session_service = SessionService(orchestrator._db_conn, session_repo=session_repo)
     return _session_service
 
 

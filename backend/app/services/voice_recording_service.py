@@ -17,6 +17,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from app.db.connection import DatabaseConnection
+from app.db.voice_recording_repository import VoiceRecordingRepository
 from app.models.voice_recording import (
     CloneStatus,
     DeleteRecordingResult,
@@ -55,8 +56,10 @@ class VoiceRecordingService:
         db: DatabaseConnection,
         audio_normalizer: AudioNormalizer,
         storage_root: str = "voice_recordings",
+        voice_repo: VoiceRecordingRepository | None = None,
     ) -> None:
         self._db = db
+        self._repo = voice_repo or VoiceRecordingRepository(db)
         self._normalizer = audio_normalizer
         self._storage_root = storage_root
         os.makedirs(self._storage_root, exist_ok=True)
@@ -133,12 +136,9 @@ class VoiceRecordingService:
 
         # 3. Check voice command capacity (10 max)
         if metadata.message_type == MessageType.VOICE_COMMAND:
-            cmd_row = await self._db.fetch_one(
-                "SELECT COUNT(*) AS cnt FROM voice_recordings "
-                "WHERE sibling_pair_id = ? AND message_type = ?",
-                (sibling_pair_id, MessageType.VOICE_COMMAND.value),
+            cmd_count = await self._repo.count_by_type(
+                sibling_pair_id, MessageType.VOICE_COMMAND.value
             )
-            cmd_count = cmd_row["cnt"] if cmd_row else 0
             if cmd_count >= MAX_VOICE_COMMANDS_PER_PAIR:
                 raise VoiceRecordingCapacityError(
                     "Maximum of 10 voice commands reached."
@@ -169,28 +169,21 @@ class VoiceRecordingService:
 
         # 7. Insert DB row
         now = datetime.utcnow().isoformat()
-        await self._db.execute(
-            "INSERT INTO voice_recordings "
-            "(recording_id, sibling_pair_id, recorder_name, relationship, "
-            "message_type, language, duration_seconds, wav_path, mp3_path, "
-            "sample_path, command_phrase, command_action, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                recording_id,
-                sibling_pair_id,
-                metadata.recorder_name,
-                metadata.relationship,
-                metadata.message_type.value,
-                metadata.language,
-                normalized.duration_seconds,
-                wav_path,
-                mp3_path,
-                sample_path if normalized.sample_bytes else None,
-                metadata.command_phrase,
-                metadata.command_action,
-                now,
-            ),
-        )
+        await self._repo.save({
+            "recording_id": recording_id,
+            "sibling_pair_id": sibling_pair_id,
+            "recorder_name": metadata.recorder_name,
+            "relationship": metadata.relationship,
+            "message_type": metadata.message_type.value,
+            "language": metadata.language,
+            "duration_seconds": normalized.duration_seconds,
+            "wav_path": wav_path,
+            "mp3_path": mp3_path,
+            "sample_path": sample_path if normalized.sample_bytes else None,
+            "command_phrase": metadata.command_phrase,
+            "command_action": metadata.command_action,
+            "created_at": now,
+        })
 
         # 8. Log creation event
         await self.log_event(sibling_pair_id, "created", recording_id)
@@ -217,28 +210,16 @@ class VoiceRecordingService:
         Results are grouped by recorder_name and sorted by created_at
         within each group.
         """
-        sql = "SELECT * FROM voice_recordings WHERE sibling_pair_id = ?"
-        params: list = [sibling_pair_id]
-
-        if message_type is not None:
-            sql += " AND message_type = ?"
-            params.append(message_type)
-
-        if recorder_name is not None:
-            sql += " AND recorder_name = ?"
-            params.append(recorder_name)
-
-        sql += " ORDER BY recorder_name ASC, created_at ASC"
-
-        rows = await self._db.fetch_all(sql, tuple(params))
+        rows = await self._repo.find_all(
+            sibling_pair_id=sibling_pair_id,
+            message_type=message_type,
+            recorder_name=recorder_name,
+        )
         return [self._row_to_record(row) for row in rows]
 
     async def get_recording(self, recording_id: str) -> VoiceRecordingRecord | None:
         """Fetch a single recording by ID."""
-        row = await self._db.fetch_one(
-            "SELECT * FROM voice_recordings WHERE recording_id = ?",
-            (recording_id,),
-        )
+        row = await self._repo.find_by_id(recording_id)
         if not row:
             return None
         return self._row_to_record(row)
@@ -287,10 +268,7 @@ class VoiceRecordingService:
             affected_triggers.append(f"voice_command:{record.command_phrase}")
 
         # Delete DB row
-        await self._db.execute(
-            "DELETE FROM voice_recordings WHERE recording_id = ?",
-            (recording_id,),
-        )
+        await self._repo.delete(recording_id)
 
         # Log deletion event
         await self.log_event(record.sibling_pair_id, "deleted", recording_id)
@@ -317,10 +295,7 @@ class VoiceRecordingService:
                 self._safe_delete_file(rec.sample_path)
 
         # Delete all DB rows
-        await self._db.execute(
-            "DELETE FROM voice_recordings WHERE sibling_pair_id = ?",
-            (sibling_pair_id,),
-        )
+        await self._repo.delete_all_by_pair(sibling_pair_id)
 
         # Clean up the pair directory
         pair_dir = os.path.join(self._storage_root, sibling_pair_id)
@@ -341,11 +316,7 @@ class VoiceRecordingService:
 
     async def get_recording_count(self, sibling_pair_id: str) -> int:
         """Return the total number of recordings for a sibling pair."""
-        row = await self._db.fetch_one(
-            "SELECT COUNT(*) AS cnt FROM voice_recordings WHERE sibling_pair_id = ?",
-            (sibling_pair_id,),
-        )
-        return row["cnt"] if row else 0
+        return await self._repo.count_by_pair(sibling_pair_id)
 
     async def find_matching_recording(
         self,
@@ -358,26 +329,9 @@ class VoiceRecordingService:
         Prefers recordings in the requested language; falls back to any
         recording of the same message type if no language match exists.
         """
-        # Try exact language match first
-        row = await self._db.fetch_one(
-            "SELECT * FROM voice_recordings "
-            "WHERE sibling_pair_id = ? AND message_type = ? AND language = ? "
-            "ORDER BY created_at DESC LIMIT 1",
-            (sibling_pair_id, message_type, language),
-        )
+        row = await self._repo.find_matching(sibling_pair_id, message_type, language)
         if row:
             return self._row_to_record(row)
-
-        # Fallback: any recording of this message type
-        row = await self._db.fetch_one(
-            "SELECT * FROM voice_recordings "
-            "WHERE sibling_pair_id = ? AND message_type = ? "
-            "ORDER BY created_at DESC LIMIT 1",
-            (sibling_pair_id, message_type),
-        )
-        if row:
-            return self._row_to_record(row)
-
         return None
 
     # ------------------------------------------------------------------
@@ -388,14 +342,7 @@ class VoiceRecordingService:
         self, sibling_pair_id: str
     ) -> list[VoiceCommandRecord]:
         """List all voice command recordings for a sibling pair."""
-        rows = await self._db.fetch_all(
-            "SELECT recording_id, command_phrase, command_action, "
-            "recorder_name, language FROM voice_recordings "
-            "WHERE sibling_pair_id = ? AND message_type = ? "
-            "AND command_phrase IS NOT NULL AND command_action IS NOT NULL "
-            "ORDER BY created_at ASC",
-            (sibling_pair_id, MessageType.VOICE_COMMAND.value),
-        )
+        rows = await self._repo.get_voice_commands(sibling_pair_id)
         return [
             VoiceCommandRecord(
                 recording_id=r["recording_id"],
@@ -414,13 +361,7 @@ class VoiceRecordingService:
 
         A recorder is cloning-ready when they have 5+ voice samples.
         """
-        rows = await self._db.fetch_all(
-            "SELECT recorder_name, COUNT(*) AS sample_count "
-            "FROM voice_recordings "
-            "WHERE sibling_pair_id = ? AND sample_path IS NOT NULL "
-            "GROUP BY recorder_name",
-            (sibling_pair_id,),
-        )
+        rows = await self._repo.get_cloning_stats(sibling_pair_id)
         return {
             r["recorder_name"]: CloneStatus(
                 recorder_name=r["recorder_name"],
@@ -443,12 +384,13 @@ class VoiceRecordingService:
         """Log a voice recording event for audit trail."""
         event_id = str(uuid4())
         now = datetime.utcnow().isoformat()
-        await self._db.execute(
-            "INSERT INTO voice_recording_events "
-            "(event_id, sibling_pair_id, recording_id, event_type, created_at) "
-            "VALUES (?, ?, ?, ?, ?)",
-            (event_id, sibling_pair_id, recording_id, event_type, now),
-        )
+        await self._repo.save_event({
+            "event_id": event_id,
+            "sibling_pair_id": sibling_pair_id,
+            "recording_id": recording_id,
+            "event_type": event_type,
+            "created_at": now,
+        })
 
     # ------------------------------------------------------------------
     # Helpers

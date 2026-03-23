@@ -350,3 +350,58 @@
   50%  { transform: scale(1.2); }
   to   { opacity: 1; transform: scale(1); }
 }
+
+/* ── Toy Companion Step ───────────────────────────── */
+
+/* Selected preset card glow (childColor set via --spirit-color) */
+.wizard-card--toy-selected {
+  border-color: var(--spirit-color, var(--color-gold));
+  box-shadow: 0 0 20px color-mix(in srgb, var(--spirit-color, var(--color-gold)) 40%, transparent);
+}
+
+/* Photo capture button */
+.toy-photo-btn {
+  padding: 16px 32px;
+  min-width: 200px;
+  margin-top: 8px;
+}
+
+/* Circular thumbnail preview */
+.toy-photo-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--spirit-color, var(--color-gold));
+  box-shadow: 0 0 16px color-mix(in srgb, var(--spirit-color, var(--color-gold)) 40%, transparent);
+}
+
+.toy-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Toy step focus-visible (gamepad navigation) ──── */
+.wizard-card:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 3px;
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.35);
+}
+
+.toy-photo-btn:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 3px;
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.35);
+}
+
+.wizard-name-input:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.wizard-next-btn:focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 3px;
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.35);
+}

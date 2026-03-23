@@ -2,7 +2,7 @@
 
 AI-powered interactive storytelling for siblings. Models children as a relationship system to create dual-perspective narratives that strengthen sibling bonds.
 
-Built for Ale & Sofi.
+Built for Ale & Sofi, my lovely pumpkins.
 
 ## Architecture
 

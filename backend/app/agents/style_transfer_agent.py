@@ -121,10 +121,13 @@ class StyleTransferAgent:
 
         # --- Generate via Imagen 3 ------------------------------------------
         try:
+            costume_prompt = character_context.get("costume_prompt", "")
             prompt = (
                 f"{_STYLE_PROMPT} "
                 f"This character is the {role} in a children's story."
             )
+            if costume_prompt:
+                prompt += f" The character is {costume_prompt}."
 
             response = self._model.generate_images(
                 prompt=prompt,

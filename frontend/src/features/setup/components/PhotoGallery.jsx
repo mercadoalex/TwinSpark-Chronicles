@@ -87,7 +87,7 @@ export default function PhotoGallery({ siblingPairId, refreshKey }) {
           <path d="M112 20l2-5 2 5-5-2 5-2z" fill="#f472b6" opacity="0.7" />
           <path d="M125 65l1.5-4 1.5 4-4-1.5 4-1.5z" fill="#4ade80" opacity="0.7" />
         </svg>
-        <p style={styles.emptyPrompt}>Snap some family photos to get started! 📸</p>
+        <p style={styles.emptyPrompt}>Your faces will appear in the story! Add a photo to begin 📸</p>
       </div>
     );
   }

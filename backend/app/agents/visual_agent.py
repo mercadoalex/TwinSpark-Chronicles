@@ -101,8 +101,8 @@ Whimsical children's book illustration in Pixar/Disney animation style:
 SCENE: {scene_description}
 
 CHARACTERS:
-- {c1.get('name', 'Child 1')}: A {c1.get('gender', 'child')} character with {c1.get('spirit_animal', 'magical')} features (ears, tail, colors), wearing adventure clothes, holding {c1.get('toy_name', 'a magical item')}
-- {c2.get('name', 'Child 2')}: A {c2.get('gender', 'child')} character with {c2.get('spirit_animal', 'enchanted')} features (wings, patterns, colors), wearing explorer outfit, carrying {c2.get('toy_name', 'a special tool')}
+- {c1.get('name', 'Child 1')}: A {c1.get('gender', 'child')} character with {c1.get('spirit_animal', 'magical')} features (ears, tail, colors), {c1.get('costume_prompt', 'wearing adventure clothes')}, holding {c1.get('toy_name', 'a magical item')}
+- {c2.get('name', 'Child 2')}: A {c2.get('gender', 'child')} character with {c2.get('spirit_animal', 'enchanted')} features (wings, patterns, colors), {c2.get('costume_prompt', 'wearing explorer outfit')}, carrying {c2.get('toy_name', 'a special tool')}
 
 STYLE REQUIREMENTS:
 - Bright, saturated colors (RGB: vibrant)

@@ -12,3 +12,5 @@ export { default as PhotoUploader } from './components/PhotoUploader';
 export { default as PhotoGallery } from './components/PhotoGallery';
 export { default as CharacterMapping } from './components/CharacterMapping';
 export { default as ParentApprovalScreen } from './components/ParentApprovalScreen';
+
+export { default as SetupScreen } from './components/SetupScreen';

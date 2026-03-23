@@ -7,6 +7,8 @@ class CharacterData(BaseModel):
     gender: str
     spirit_animal: str
     toy_name: Optional[str] = None
+    toy_type: Optional[str] = None       # 'preset' | 'photo'
+    toy_image_url: Optional[str] = None  # URL or preset key
     avatar_base64: Optional[str] = None
 
 class TwinCharacters(BaseModel):

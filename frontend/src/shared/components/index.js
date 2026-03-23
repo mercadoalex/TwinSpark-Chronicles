@@ -9,3 +9,4 @@ export * from './Feedback';
 export * from './Layout';
 export { default as SkipLink } from './SkipLink';
 export { default as CelebrationOverlay } from './CelebrationOverlay';
+export * from './ErrorBoundary';

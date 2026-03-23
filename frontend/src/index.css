@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&display=swap');
 
 /* ============================================================
    TWINSPARK CHRONICLES — "Living Storybook" Design System
@@ -34,7 +34,7 @@
   --color-glass-strong: rgba(255, 255, 255, 0.12);
 
   /* ── Typography ─────────────────────────────────── */
-  --font-display: 'Fredoka', sans-serif;
+  --font-display: 'Baloo 2', cursive;
   --font-body:    'Quicksand', sans-serif;
 
   /* ── Sizing ─────────────────────────────────────── */
@@ -608,6 +608,23 @@ body::after {
   100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
 }
 
+/* ============================================================
+   GAMEPAD FOCUS HIGHLIGHT
+   ============================================================ */
+
+.gamepad-focus {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 3px;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+  border-radius: 8px;
+  animation: gamepad-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes gamepad-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.7; }
+}
+
 /* ── Reduced motion: disable celebration & micro-interaction animations ── */
 @media (prefers-reduced-motion: reduce) {
   .celebration-particle,
@@ -651,5 +668,10 @@ body::after {
   .pulse-ring-gentle,
   [class*="pulse-ring-gentle"] {
     animation: none !important;
+  }
+
+  .gamepad-focus {
+    animation: none !important;
+    opacity: 1;
   }
 }

@@ -10,3 +10,12 @@ export { useSetupStore } from './setupStore';
 export { useMultimodalStore } from './multimodalStore';
 export { useVoiceRecordingStore } from './voiceRecordingStore';
 export { useSceneAudioStore } from './sceneAudioStore';
+
+// Composition hooks
+export {
+  useStorySession,
+  useChildProfiles,
+  useSessionControls,
+  useDrawingSession,
+  useMediaCapture
+} from './compositionHooks';

@@ -137,12 +137,15 @@ FORMAT:
         c1 = context["characters"]["child1"]
         c2 = context["characters"]["child2"]
 
+        c1_costume = c1.get("costume_prompt", "wearing adventure clothes")
+        c2_costume = c2.get("costume_prompt", "wearing adventure clothes")
+
         base_prompt = f"""
     {self.system_prompt}
 
     CHARACTER INFO:
-    - {c1["name"]} ({c1["gender"]}): Spirit Animal is {c1["spirit_animal"]}, loves {c1.get("toy_name", "adventures")}
-    - {c2["name"]} ({c2["gender"]}): Spirit Animal is {c2["spirit_animal"]}, loves {c2.get("toy_name", "exploring")}
+    - {c1["name"]} ({c1["gender"]}): Spirit Animal is {c1["spirit_animal"]}, loves {c1.get("toy_name", "adventures")}, {c1_costume}
+    - {c2["name"]} ({c2["gender"]}): Spirit Animal is {c2["spirit_animal"]}, loves {c2.get("toy_name", "exploring")}, {c2_costume}
 
     """
 
