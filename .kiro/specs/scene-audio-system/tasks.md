@@ -37,7 +37,7 @@ Implement an immersive scene audio system spanning backend (keyword-based scene-
     - **Property 4: Theme-to-track round-trip consistency** — generate arbitrary non-empty strings, verify `result.ambient_track == THEME_TRACKS[result.theme]`
     - **Validates: Requirements 8.5**
 
-- [ ] 2. Backend API endpoint
+- [x] 2. Backend API endpoint
   - [x] 2.1 Add `POST /api/audio/scene-theme` endpoint to `backend/app/main.py`: accept `SceneThemeRequest` body, instantiate `SceneAudioMapper`, call `map_scene`, return `AudioThemeResult` as JSON
     - Return 422 with `{"detail": "scene_description is required and must be non-empty"}` for missing/empty description
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
@@ -116,7 +116,7 @@ Implement an immersive scene audio system spanning backend (keyword-based scene-
   - [x] 6.2 Create `frontend/public/audio/sfx/` directory with placeholder `.mp3` files for choice_select, page_turn, celebration
     - _Requirements: 3.4_
 
-- [ ] 7. Frontend property tests
+- [x] 7. Frontend property tests
   - [ ]* 7.1 Write property test in `frontend/src/stores/__tests__/sceneAudioStore.property.test.js` using fast-check (numRuns: 20)
     - **Property 5: Crossfade gain sum does not exceed configured volume** — generate volume (0–100) and progress t (0–1), verify `outGain + inGain <= volume`
     - **Validates: Requirements 4.3**

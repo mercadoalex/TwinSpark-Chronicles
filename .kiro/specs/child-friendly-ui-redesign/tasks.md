@@ -128,7 +128,7 @@ CSS-first visual overhaul of TwinSpark Chronicles. Starts with design system tok
     - Ensure all child-facing `:active` states apply `transform: scale(0.92)` with ≤250ms transition
     - _Requirements: 9.1, 9.2, 9.3, 3.2_
 
-- [ ] 11. Property-based tests
+- [x] 11. Property-based tests
   - [ ]* 11.1 Write property test: touch target minimum dimensions
     - **Property 1: Touch target minimum dimensions by category**
     - Generate random element categories, render components, query computed min-width/min-height
