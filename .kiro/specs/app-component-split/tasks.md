@@ -8,7 +8,7 @@ Extract WebSocket connection logic from App.jsx into a reusable hook.
 - [x] 1.3 Move all 11 WebSocket event subscriptions (`connected`, `disconnected`, `CREATIVE_ASSET`, `STORY_COMPLETE`, `STATUS`, `MECHANIC_WARNING`, `error`, `story_segment`, `VOICE_COMMAND_MATCH`, `DRAWING_PROMPT`, `DRAWING_END`) into the hook [Requirement 4.4, 4.5, 4.6, 4.7, 4.8]
 - [x] 1.4 Add cleanup effect that unsubscribes all listeners on unmount [Requirement 4.9]
 - [x] 1.5 Export hook from `frontend/src/features/session/index.js` barrel file [Requirement 4.10]
-- [ ] *1.6 Write property test: for any valid profiles input, `connectToAI` registers exactly 11 subscriptions and returns 11 unsubscribe functions [Requirement 4.4]
+- [x] *1.6 Write property test: for any valid profiles input, `connectToAI` registers exactly 11 subscriptions and returns 11 unsubscribe functions [Requirement 4.4]
 
 ## Task 2: Create SetupScreen container
 Build the setup flow container that owns privacy→language→character setup.
@@ -20,7 +20,7 @@ Build the setup flow container that owns privacy→language→character setup.
 - [x] 2.5 Move session existence check effect (`setup.privacyAccepted && setup.language && currentStep === 'characters'`) into SetupScreen [Requirement 2.9]
 - [x] 2.6 Render LanguageSelector, ContinueScreen, CharacterSetup, and title heading based on `setup.currentStep` [Requirement 2.1, 2.2, 2.3, 2.8]
 - [x] 2.7 Export SetupScreen from `frontend/src/features/setup/index.js` barrel file [Requirement 2.10]
-- [ ] *2.8 Write property test: for any valid profile input, `enrichProfiles` always produces output with all required fields populated [Requirement 2.5]
+- [-] *2.8 Write property test: for any valid profile input, `enrichProfiles` always produces output with all required fields populated [Requirement 2.5]
 
 ## Task 3: Create StoryScreen container
 Build the story experience container that owns WebSocket subscriptions, story rendering, and overlays.

@@ -132,60 +132,60 @@ Incrementally build the caching layer, frontend lazy loading, parallel processin
 - [x] 13. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ]* 14. Property-based tests (optional)
-  - [ ]* 14.1 Property 11 — Content hash correctness
+- [x]* 14. Property-based tests (optional)
+  - [x]* 14.1 Property 11 — Content hash correctness
     - Generate random byte sequences with Hypothesis; verify `compute_content_hash` returns `hashlib.sha256(input).hexdigest()`
     - **Validates: Requirements 8.1, 8.2**
 
-  - [ ]* 14.2 Property 1 — Style transfer cache round trip
+  - [x]* 14.2 Property 1 — Style transfer cache round trip
     - Generate random face hashes, roles, and portrait bytes; verify put then get returns identical bytes
     - **Validates: Requirements 1.1, 1.2**
 
-  - [ ]* 14.3 Property 2 — Composite cache key distinctness
+  - [x]* 14.3 Property 2 — Composite cache key distinctness
     - Generate a face hash and two distinct roles with different portrait bytes; verify each `(hash, role)` retrieves its own distinct portrait
     - **Validates: Requirements 1.3**
 
-  - [ ]* 14.4 Property 8 — TTL eviction
+  - [x]* 14.4 Property 8 — TTL eviction
     - Insert entries, artificially age them past TTL, verify `get` returns None and `cleanup_expired` removes them
     - **Validates: Requirements 7.1**
 
-  - [ ]* 14.5 Property 9 — Style transfer cache disk size limit
+  - [x]* 14.5 Property 9 — Style transfer cache disk size limit
     - Insert entries exceeding max disk size; verify total disk usage never exceeds limit and LRU entries are evicted first
     - **Validates: Requirements 7.2**
 
-  - [ ]* 14.6 Property 12 — Style transfer keyed by content hash not face ID
+  - [x]* 14.6 Property 12 — Style transfer keyed by content hash not face ID
     - Generate two different face IDs with identical content hashes; verify cache hit for one serves the other
     - **Validates: Requirements 8.3**
 
-  - [ ]* 14.7 Property 3 — Face crop cache round trip
+  - [x]* 14.7 Property 3 — Face crop cache round trip
     - Generate random photo content hashes and face crop lists; verify put then get returns identical data
     - **Validates: Requirements 2.1, 2.2, 8.4**
 
-  - [ ]* 14.8 Property 10 — Face crop cache entry count limit
+  - [x]* 14.8 Property 10 — Face crop cache entry count limit
     - Insert entries exceeding max count; verify entry count never exceeds limit and LRU entries are evicted first
     - **Validates: Requirements 7.3**
 
-  - [ ]* 14.9 Property 13 — Cache invalidation cascade on photo deletion
+  - [x]* 14.9 Property 13 — Cache invalidation cascade on photo deletion
     - Populate both caches for a photo and its faces; call `invalidate_photo`; verify both caches are clean
     - **Validates: Requirements 2.3, 9.1, 9.2**
 
-  - [ ]* 14.10 Property 14 — Cache invalidation on face deletion
+  - [x]* 14.10 Property 14 — Cache invalidation on face deletion
     - Populate StyleTransferCache with entries across multiple roles for a face hash; call `invalidate_face`; verify no entries remain
     - **Validates: Requirements 9.3**
 
-  - [ ]* 14.11 Property 4 — Concurrent portrait generation preserves results
+  - [x]* 14.11 Property 4 — Concurrent portrait generation preserves results
     - Generate random character mapping sets; mock Imagen 3; verify concurrent generation produces same results as sequential
     - **Validates: Requirements 5.1**
 
-  - [ ]* 14.12 Property 5 — Fault isolation in concurrent generation
+  - [x]* 14.12 Property 5 — Fault isolation in concurrent generation
     - Generate mappings where a subset fail; verify failed roles get default avatar bytes and successful roles get valid portraits
     - **Validates: Requirements 5.2**
 
-  - [ ]* 14.13 Property 6 — Concurrency limit enforcement
+  - [x]* 14.13 Property 6 — Concurrency limit enforcement
     - Generate N mappings exceeding concurrency limit; track simultaneous in-flight calls; verify max never exceeds configured limit
     - **Validates: Requirements 5.3**
 
-  - [ ]* 14.14 Property 7 — NumPy compositor equivalence
+  - [x]* 14.14 Property 7 — NumPy compositor equivalence
     - Generate random RGBA images and scene color tuples with Hypothesis; compare NumPy output to original per-pixel loop output within ±1 per channel tolerance
     - **Validates: Requirements 6.1, 6.2**
 

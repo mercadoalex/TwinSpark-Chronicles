@@ -58,11 +58,11 @@
 ## Task 8: Write property-based tests for wizardReducer (optional)
 > Requirement(s): 2.1, 2.2, 2.3
 
-- [ ] *8.1 Install fast-check as dev dependency if not present
-- [ ] *8.2 Create `frontend/src/features/setup/reducers/__tests__/wizardReducer.property.test.js`
-- [ ] *8.3 Property: for any sequence of valid actions, `wizardStep` is always in `STEP_ORDER`
-- [ ] *8.4 Property: for any sequence of valid actions, `childNum` is always 1 or 2
-- [ ] *8.5 Property: reducer never mutates input state (deep-freeze + arbitrary action sequences)
+- [x] *8.1 Install fast-check as dev dependency if not present
+- [x] *8.2 Create `frontend/src/features/setup/reducers/__tests__/wizardReducer.property.test.js`
+- [x] *8.3 Property: for any sequence of valid actions, `wizardStep` is always in `STEP_ORDER`
+- [x] *8.4 Property: for any sequence of valid actions, `childNum` is always 1 or 2
+- [x] *8.5 Property: reducer never mutates input state (deep-freeze + arbitrary action sequences)
 
 ## Task 9: Build verification
 > Requirement(s): 7.5

@@ -89,68 +89,68 @@ Bottom-up implementation: CSS theming and animations first, then JSX wiring for 
   - Verify all CSS files parse correctly and no missing custom properties
   - _Requirements: all_
 
-- [ ]* 6. Property-based tests for drawing UX polish
-  - [ ]* 6.1 Write property test: Bounce animation on selectable toolbar items
+- [x]* 6. Property-based tests for drawing UX polish
+  - [x]* 6.1 Write property test: Bounce animation on selectable toolbar items
     - **Property 1: Bounce animation on selectable toolbar items**
     - Use fast-check to generate random selections from color palette / brush sizes / stamp shapes
     - Verify the `bounce-select` animation class is applied on selected items
     - **Validates: Requirements 3.1, 3.2, 3.3**
 
-  - [ ]* 6.2 Write property test: Color selection triggers snap sound and haptic
+  - [x]* 6.2 Write property test: Color selection triggers snap sound and haptic
     - **Property 2: Color selection triggers snap sound and haptic**
     - Use fast-check to generate random color from PALETTE_COLORS, simulate selection
     - Verify `playSnap()` called once and `haptic(30)` called once
     - **Validates: Requirements 4.1, 5.1**
 
-  - [ ]* 6.3 Write property test: Stamp placement triggers chime sound and haptic
+  - [x]* 6.3 Write property test: Stamp placement triggers chime sound and haptic
     - **Property 3: Stamp placement triggers chime sound and haptic**
     - Use fast-check to generate random stamp shape + random canvas position
     - Verify `playChime()` called once and `haptic(50)` called once
     - **Validates: Requirements 4.2, 5.2**
 
-  - [ ]* 6.4 Write property test: Audio suppression when feedback is disabled
+  - [x]* 6.4 Write property test: Audio suppression when feedback is disabled
     - **Property 4: Audio suppression when feedback is disabled**
     - Use fast-check to generate random interaction types with `audioFeedbackEnabled=false`
     - Verify no sound methods produce output
     - **Validates: Requirements 4.5**
 
-  - [ ]* 6.5 Write property test: Session end triggers celebration, chime, and haptic
+  - [x]* 6.5 Write property test: Session end triggers celebration, chime, and haptic
     - **Property 5: Session end triggers celebration, chime, and haptic**
     - Use fast-check to generate random end trigger (timer vs button)
     - Verify CelebrationOverlay rendered, `playChime()` called, `hapticPattern()` called
     - **Validates: Requirements 6.1, 6.2, 6.3**
 
-  - [ ]* 6.6 Write property test: Countdown urgent state under 10 seconds
+  - [x]* 6.6 Write property test: Countdown urgent state under 10 seconds
     - **Property 6: Countdown urgent state under 10 seconds**
     - Use fast-check to generate random `remainingTime` (0–120)
     - Verify `drawing-countdown--urgent` class present iff `0 < remainingTime < 10`
     - **Validates: Requirements 8.3, 8.4**
 
-  - [ ]* 6.7 Write property test: Canvas painting surface remains white
+  - [x]* 6.7 Write property test: Canvas painting surface remains white
     - **Property 7: Canvas painting surface remains white**
     - Use fast-check to generate random tool/color/session states
     - Verify canvas fill is `#FFFFFF`
     - **Validates: Requirements 10.4**
 
-  - [ ]* 6.8 Write property test: All interactive elements meet 56px minimum touch target
+  - [x]* 6.8 Write property test: All interactive elements meet 56px minimum touch target
     - **Property 8: All interactive elements meet 56px minimum touch target**
     - Use fast-check to generate random toolbar configurations (stamp mode on/off)
     - Verify all interactive elements have `min-width` and `min-height` >= 56px
     - **Validates: Requirements 7.5, 11.1, 11.2, 11.3, 11.4, 11.5**
 
-  - [ ]* 6.9 Write property test: Selected swatch glow contrast ratio
+  - [x]* 6.9 Write property test: Selected swatch glow contrast ratio
     - **Property 9: Selected swatch glow contrast ratio**
     - For each of the 8 PALETTE_COLORS, compute luminance contrast of glow against dark background
     - Verify >= 3:1 contrast ratio
     - **Validates: Requirements 11.6**
 
-  - [ ]* 6.10 Write property test: Reduced motion suppresses all decorative animations
+  - [x]* 6.10 Write property test: Reduced motion suppresses all decorative animations
     - **Property 10: Reduced motion suppresses all decorative animations**
     - Use fast-check to generate random interactions with `prefers-reduced-motion` active
     - Verify no decorative `animation-name` (`bounce-select`, `magicalEntrance`, `pulse-glow-ring`) is applied
     - **Validates: Requirements 3.6, 8.5, 11.8**
 
-  - [ ]* 6.11 Write property test: ARIA live region announces tool changes
+  - [x]* 6.11 Write property test: ARIA live region announces tool changes
     - **Property 11: ARIA live region announces tool changes**
     - Use fast-check to generate random tool change sequences
     - Verify ARIA live region text updates after each change

@@ -56,25 +56,25 @@ Implement a persistent storybook gallery spanning backend (SQLite schema, StoryA
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 3.1, 4.1, 4.4_
 
 
-  - [ ]* 2.6 Write property test for storybook round-trip preservation in `backend/tests/test_story_archive_properties.py`
+  - [x]* 2.6 Write property test for storybook round-trip preservation in `backend/tests/test_story_archive_properties.py`
     - **Property 1: Storybook round-trip preservation**
     - Generate random beat lists (1–10 beats) with random narration, perspectives, image URLs, choices; archive then retrieve via get_storybook; assert all fields match input
     - Use Hypothesis with `@settings(max_examples=20)`
     - **Validates: Requirements 1.1, 1.2, 3.1, 3.2, 11.1, 11.2**
 
-  - [ ]* 2.7 Write property test for archive metadata invariants in `backend/tests/test_story_archive_properties.py`
+  - [x]* 2.7 Write property test for archive metadata invariants in `backend/tests/test_story_archive_properties.py`
     - **Property 2: Archive metadata invariants**
     - Generate random beat lists and duration values; archive; assert beat_count == len(beats), duration_seconds matches input, cover_image_url == first beat's scene_image_url
     - Use Hypothesis with `@settings(max_examples=20)`
     - **Validates: Requirements 1.3, 1.4**
 
-  - [ ]* 2.8 Write property test for gallery listing order in `backend/tests/test_story_archive_properties.py`
+  - [x]* 2.8 Write property test for gallery listing order in `backend/tests/test_story_archive_properties.py`
     - **Property 3: Gallery listing order**
     - Archive multiple storybooks with random timestamps for the same sibling pair; list them; assert descending order by completed_at and all storybooks present
     - Use Hypothesis with `@settings(max_examples=20)`
     - **Validates: Requirements 2.1, 2.2**
 
-  - [ ]* 2.9 Write property test for deletion completeness in `backend/tests/test_story_archive_properties.py`
+  - [x]* 2.9 Write property test for deletion completeness in `backend/tests/test_story_archive_properties.py`
     - **Property 4: Deletion completeness**
     - Archive random storybooks, delete one, verify get_storybook returns None and no beats remain; for bulk delete, verify count matches and list returns empty
     - Use Hypothesis with `@settings(max_examples=20)`
@@ -112,7 +112,7 @@ Implement a persistent storybook gallery spanning backend (SQLite schema, StoryA
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
 
 
-  - [ ]* 5.2 Write property test for local store deletion consistency
+  - [x]* 5.2 Write property test for local store deletion consistency
     - **Property 6: Local store deletion consistency**
     - Generate random storybook summary lists (1–10 items), pick a random ID to remove via `removeStorybookLocally`; assert list shrinks by exactly 1 and the removed ID is no longer present
     - Use fast-check with `numRuns: 20`
@@ -172,7 +172,7 @@ Implement a persistent storybook gallery spanning backend (SQLite schema, StoryA
     - `prefers-reduced-motion` media query: disable transitions
     - _Requirements: 6.1, 6.3, 6.4, 6.7_
 
-  - [ ]* 7.3 Write property test for page indicator correctness
+  - [x]* 7.3 Write property test for page indicator correctness
     - **Property 5: Page indicator correctness**
     - Generate random beat counts (1–20) and current indices (0 to N-1); assert indicator text matches `"${i+1} / ${N}"`
     - Use fast-check with `numRuns: 20`

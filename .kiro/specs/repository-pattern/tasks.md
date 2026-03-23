@@ -3,27 +3,27 @@
 ## Task 1: Create BaseRepository ABC
 - [x] 1.1 Create `backend/app/db/base_repository.py` with `BaseRepository` abstract class defining `find_by_id`, `find_all`, `save`, `delete` abstract methods and `__init__(self, db: DatabaseConnection)` constructor [requirement 1.1, 1.2, 1.3]
 - [x] 1.2 Write unit tests in `backend/tests/test_base_repository.py` verifying that `BaseRepository` cannot be instantiated directly and that a concrete subclass missing methods raises `TypeError` [requirement 1.3]
-- [ ] *1.3 Write property-based test (Hypothesis, max_examples=20) verifying that any subclass implementing all four methods can be instantiated with a mock `DatabaseConnection` [requirement 1.3]
+- [x] *1.3 Write property-based test (Hypothesis, max_examples=20) verifying that any subclass implementing all four methods can be instantiated with a mock `DatabaseConnection` [requirement 1.3]
 
 ## Task 2: Create PhotoRepository
 - [x] 2.1 Create `backend/app/db/photo_repository.py` with `PhotoRepository(BaseRepository)` implementing all photo, face_portrait, character_mapping, and style_transferred_portrait SQL methods extracted from `PhotoService` [requirement 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7]
 - [x] 2.2 Write unit tests in `backend/tests/test_photo_repository.py` verifying each method delegates correct SQL and params to `DatabaseConnection` [requirement 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7]
-- [ ] *2.3 Write property-based test (Hypothesis, max_examples=20) verifying round-trip: `save(photo)` then `find_by_id(photo_id)` returns equivalent data using an in-memory SQLite database [requirement 2.1, 2.3]
+- [x] *2.3 Write property-based test (Hypothesis, max_examples=20) verifying round-trip: `save(photo)` then `find_by_id(photo_id)` returns equivalent data using an in-memory SQLite database [requirement 2.1, 2.3]
 
 ## Task 3: Create VoiceRecordingRepository
 - [x] 3.1 Create `backend/app/db/voice_recording_repository.py` with `VoiceRecordingRepository(BaseRepository)` implementing all voice_recordings and voice_recording_events SQL methods extracted from `VoiceRecordingService` [requirement 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7]
 - [x] 3.2 Write unit tests in `backend/tests/test_voice_recording_repository.py` verifying each method delegates correct SQL and params [requirement 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7]
-- [ ] *3.3 Write property-based test (Hypothesis, max_examples=20) verifying filter consistency: `find_all(message_type=t)` results all have `message_type == t` [requirement 3.2]
+- [x] *3.3 Write property-based test (Hypothesis, max_examples=20) verifying filter consistency: `find_all(message_type=t)` results all have `message_type == t` [requirement 3.2]
 
 ## Task 4: Create WorldRepository
 - [x] 4.1 Create `backend/app/db/world_repository.py` with `WorldRepository(BaseRepository)` implementing all location, NPC, and item SQL methods extracted from `WorldDB` [requirement 4.1, 4.2, 4.3, 4.4]
 - [x] 4.2 Write unit tests in `backend/tests/test_world_repository.py` verifying each method delegates correct SQL and params [requirement 4.1, 4.2, 4.3, 4.4]
-- [ ] *4.3 Write property-based test (Hypothesis, max_examples=20) verifying round-trip for locations: `save_location` then `find_all` includes the saved location [requirement 4.1]
+- [x] *4.3 Write property-based test (Hypothesis, max_examples=20) verifying round-trip for locations: `save_location` then `find_all` includes the saved location [requirement 4.1]
 
 ## Task 5: Create SessionRepository
 - [x] 5.1 Create `backend/app/db/session_repository.py` with `SessionRepository(BaseRepository)` implementing all session_snapshots SQL methods extracted from `SessionService` [requirement 5.1, 5.2, 5.3, 5.4]
 - [x] 5.2 Write unit tests in `backend/tests/test_session_repository.py` verifying each method delegates correct SQL and params [requirement 5.1, 5.2, 5.3, 5.4]
-- [ ] *5.3 Write property-based test (Hypothesis, max_examples=20) verifying delete idempotency: `delete_by_pair_id` then `delete_by_pair_id` returns `False` [requirement 5.3]
+- [x] *5.3 Write property-based test (Hypothesis, max_examples=20) verifying delete idempotency: `delete_by_pair_id` then `delete_by_pair_id` returns `False` [requirement 5.3]
 
 ## Task 6: Refactor PhotoService to use PhotoRepository
 - [x] 6.1 Update `PhotoService.__init__` to accept `PhotoRepository` parameter and replace all direct `self._db.fetch_all/fetch_one/execute` calls with `PhotoRepository` method calls [requirement 6.1, 6.5]
