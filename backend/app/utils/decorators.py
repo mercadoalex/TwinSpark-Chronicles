@@ -202,3 +202,60 @@ def validate_session(
         return async_wrapper if asyncio.iscoroutinefunction(fn) else sync_wrapper
 
     return decorator
+
+
+def _get_global_metrics():
+    """Lazy import to avoid circular dependency at module load time."""
+    from app.monitoring.service import get_monitoring_service
+    svc = get_monitoring_service()
+    return svc.metrics if svc else None
+
+
+def monitor(
+    metrics_collector=None,
+) -> Callable:
+    """Track call count, error count, and duration for a function.
+
+    If metrics_collector is None, uses the global monitoring service instance.
+    """
+
+    def decorator(fn: Callable) -> Callable:
+        name = f"{fn.__module__}.{fn.__qualname__}"
+
+        @functools.wraps(fn)
+        async def async_wrapper(*args, **kwargs):
+            mc = metrics_collector or _get_global_metrics()
+            if mc:
+                mc.increment(f"{name}.calls")
+            start = time.perf_counter()
+            try:
+                return await fn(*args, **kwargs)
+            except Exception:
+                if mc:
+                    mc.increment(f"{name}.errors")
+                raise
+            finally:
+                elapsed_ms = (time.perf_counter() - start) * 1000
+                if mc:
+                    mc.record(f"{name}.duration_ms", elapsed_ms)
+
+        @functools.wraps(fn)
+        def sync_wrapper(*args, **kwargs):
+            mc = metrics_collector or _get_global_metrics()
+            if mc:
+                mc.increment(f"{name}.calls")
+            start = time.perf_counter()
+            try:
+                return fn(*args, **kwargs)
+            except Exception:
+                if mc:
+                    mc.increment(f"{name}.errors")
+                raise
+            finally:
+                elapsed_ms = (time.perf_counter() - start) * 1000
+                if mc:
+                    mc.record(f"{name}.duration_ms", elapsed_ms)
+
+        return async_wrapper if asyncio.iscoroutinefunction(fn) else sync_wrapper
+
+    return decorator

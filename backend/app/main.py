@@ -47,12 +47,19 @@ from app.services.session_time_enforcer import SessionTimeEnforcer
 from app.services.drawing_sync_service import DrawingSyncService
 from app.services.drawing_persistence_service import DrawingPersistenceService
 from app.data.costume_catalog import is_valid_costume, get_costume_prompt, COSTUME_CATALOG
+from app.monitoring.service import MonitoringService
+from app.monitoring.middleware import TraceIDMiddleware, MonitoringMiddleware
+from app.monitoring.routes import router as monitoring_router
+from app.monitoring.log_formatter import StructuredLogFormatter
 
 # Track ended sessions for idempotent POST /api/sessions/{id}/end
 _ended_sessions: Dict[str, dict] = {}
 
 # Module-level CacheManager — initialized at startup (task 12.1)
 cache_manager: CacheManager | None = None
+
+# Module-level MonitoringService — initialized at startup
+monitoring_service = MonitoringService()
 
 # Module-level SessionTimeEnforcer — tracks per-session elapsed time server-side
 session_time_enforcer = SessionTimeEnforcer()
@@ -92,10 +99,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Monitoring middleware (order matters: TraceID runs first, then Monitoring)
+app.add_middleware(MonitoringMiddleware, monitoring_service=monitoring_service)
+app.add_middleware(TraceIDMiddleware)
+
+# Include monitoring API routes
+app.include_router(monitoring_router)
+
 
 @app.on_event("startup")
 async def startup_event():
     global cache_manager
+
+    # Configure structured JSON logging on root logger
+    formatter = StructuredLogFormatter()
+    root = logging.getLogger()
+    for handler in root.handlers:
+        handler.setFormatter(formatter)
+    if not root.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(formatter)
+        root.addHandler(handler)
+
+    # Start monitoring service
+    await monitoring_service.start()
 
     # Initialize caches
     style_transfer_cache = StyleTransferCache(
@@ -119,6 +146,7 @@ async def shutdown_event():
     if cache_manager is not None:
         await cache_manager.stop_cleanup_loop()
         logger.info("CacheManager cleanup loop stopped")
+    await monitoring_service.stop()
 
 
 # ============================================
