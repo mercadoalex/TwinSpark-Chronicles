@@ -39,7 +39,7 @@ async def story_loop_websocket(websocket: WebSocket, session_id: str):
     """WebSocket endpoint for the voice-first story loop.
 
     Manages a SessionState per connection and routes incoming messages
-    to the appropriate handler (voice_input or card_selection).
+    to the appropriate handler (voice_input, card_selection, or start_session).
     """
     await websocket.accept()
 
@@ -65,7 +65,9 @@ async def story_loop_websocket(websocket: WebSocket, session_id: str):
 
             msg_type = message.get("type")
 
-            if msg_type == "voice_input":
+            if msg_type == "start_session":
+                await _handle_start_session(websocket, message, session_state)
+            elif msg_type == "voice_input":
                 await _handle_voice_input(websocket, message, session_state)
             elif msg_type == "card_selection":
                 await _handle_card_selection(websocket, message, session_state)
@@ -82,6 +84,33 @@ async def story_loop_websocket(websocket: WebSocket, session_id: str):
             session_id,
             e,
         )
+
+
+async def _handle_start_session(
+    websocket: WebSocket,
+    message: dict,
+    session_state: SessionState,
+) -> None:
+    """Handle start_session message: set theme and generate the opening story beat.
+
+    Message format:
+        {"type": "start_session", "theme": "enchanted-forest", "twin_names": {"twin1": "Ale", "twin2": "Sofi"}}
+    """
+    theme = message.get("theme", "a magical adventure")
+    twin_names = message.get("twin_names", {})
+
+    # Update session state with theme
+    session_state.theme = theme
+    session_state.story_context["theme"] = theme
+    session_state.story_context["twin_names"] = twin_names
+
+    # Generate the opening story beat
+    await _generate_and_send_beat(
+        websocket=websocket,
+        input_text=f"Start a new {theme.replace('-', ' ')} adventure!",
+        active_twin=session_state.active_twin,
+        session_state=session_state,
+    )
 
 
 async def _handle_voice_input(

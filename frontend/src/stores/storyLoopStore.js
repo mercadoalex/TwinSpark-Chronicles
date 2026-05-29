@@ -34,7 +34,7 @@ import { devtools } from 'zustand/middleware';
 
 const initialState = {
   // Story loop state machine
-  phase: 'narrating',
+  phase: 'processing', // Start in processing — waiting for first beat from backend
   activeTwin: 'twin1',
 
   // Current beat data

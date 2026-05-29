@@ -48,7 +48,7 @@ class TTSService {
       const utterance = new SpeechSynthesisUtterance(text);
       
       // Apply settings
-      utterance.lang = LANGUAGE_VOICES[language] || LANGUAGE_VOICES.en;
+      utterance.lang = (LANGUAGE_VOICES[language] || LANGUAGE_VOICES.en).lang || 'en-US';
       utterance.rate = options.rate || TTS_SETTINGS.rate;
       utterance.pitch = options.pitch || TTS_SETTINGS.pitch;
       utterance.volume = options.volume || TTS_SETTINGS.volume;

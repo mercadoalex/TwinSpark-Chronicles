@@ -3,6 +3,32 @@ import SpiritAnimalPicker from './SpiritAnimalPicker';
 import { useSetupStore } from '../../../stores/setupStore';
 import './SimpleSetup.css';
 
+// Inline translations for the setup flow (language is selected in step 1)
+const SETUP_TEXT = {
+  en: {
+    pickLanguage: '🌍 Pick your language',
+    enterNames: "✏️ Enter your children's names",
+    child1Label: 'Child 1',
+    child2Label: 'Child 2',
+    placeholder1: "First child's name",
+    placeholder2: "Second child's name",
+    next: 'Next →',
+    readyTitle: '🎉 Ready to pick spirit animals!',
+    letsGo: "Let's go! 🚀",
+  },
+  es: {
+    pickLanguage: '🌍 Elige tu idioma',
+    enterNames: '✏️ Escribe los nombres de tus hijos',
+    child1Label: 'Niño/a 1',
+    child2Label: 'Niño/a 2',
+    placeholder1: 'Nombre del primer niño/a',
+    placeholder2: 'Nombre del segundo niño/a',
+    next: 'Siguiente →',
+    readyTitle: '🎉 ¡A elegir animal espiritual!',
+    letsGo: '¡Vamos! 🚀',
+  },
+};
+
 /**
  * Simplified parent setup flow for the new interaction model.
  *
@@ -28,6 +54,9 @@ function SimpleSetup({ onComplete }) {
   const [child1Spirit, setChild1Spirit] = useState('');
 
   const setupStore = useSetupStore;
+
+  // Get text for current language (defaults to English before selection)
+  const txt = SETUP_TEXT[language] || SETUP_TEXT.en;
 
   // Step 1: Language selection
   const handleLanguageSelect = useCallback((lang) => {
@@ -108,11 +137,11 @@ function SimpleSetup({ onComplete }) {
     return (
       <div className="simple-setup" aria-label="Setup">
         <div className="simple-setup__screen simple-setup__screen--names">
-          <h1 className="simple-setup__title">✏️ Enter your children&apos;s names</h1>
+          <h1 className="simple-setup__title">{txt.enterNames}</h1>
           <form className="simple-setup__names-form" onSubmit={handleNamesSubmit}>
             <div className="simple-setup__input-group">
               <label className="simple-setup__label" htmlFor="child1-name">
-                Child 1
+                {txt.child1Label}
               </label>
               <input
                 id="child1-name"
@@ -120,14 +149,14 @@ function SimpleSetup({ onComplete }) {
                 type="text"
                 value={child1Name}
                 onChange={(e) => setChild1Name(e.target.value)}
-                placeholder="First child's name"
+                placeholder={txt.placeholder1}
                 autoComplete="off"
                 maxLength={20}
               />
             </div>
             <div className="simple-setup__input-group">
               <label className="simple-setup__label" htmlFor="child2-name">
-                Child 2
+                {txt.child2Label}
               </label>
               <input
                 id="child2-name"
@@ -135,7 +164,7 @@ function SimpleSetup({ onComplete }) {
                 type="text"
                 value={child2Name}
                 onChange={(e) => setChild2Name(e.target.value)}
-                placeholder="Second child's name"
+                placeholder={txt.placeholder2}
                 autoComplete="off"
                 maxLength={20}
               />
@@ -145,7 +174,7 @@ function SimpleSetup({ onComplete }) {
               type="submit"
               disabled={!child1Name.trim() || !child2Name.trim()}
             >
-              Next →
+              {txt.next}
             </button>
           </form>
         </div>
@@ -157,7 +186,7 @@ function SimpleSetup({ onComplete }) {
     return (
       <div className="simple-setup" aria-label="Setup">
         <div className="simple-setup__screen simple-setup__screen--confirm">
-          <h1 className="simple-setup__title">🎉 Ready to pick spirit animals!</h1>
+          <h1 className="simple-setup__title">{txt.readyTitle}</h1>
           <div className="simple-setup__confirm-names">
             <p className="simple-setup__confirm-name">
               <span className="simple-setup__confirm-emoji" aria-hidden="true">⭐</span>
@@ -172,7 +201,7 @@ function SimpleSetup({ onComplete }) {
             className="simple-setup__next-btn simple-setup__next-btn--big"
             onClick={handleConfirm}
           >
-            Let&apos;s go! 🚀
+            {txt.letsGo}
           </button>
         </div>
       </div>
@@ -183,7 +212,9 @@ function SimpleSetup({ onComplete }) {
     return (
       <div className="simple-setup" aria-label="Setup">
         <SpiritAnimalPicker
+          key="spirit-picker-child1"
           childName={child1Name.trim()}
+          language={language}
           onSelect={handleSpirit1Select}
         />
       </div>
@@ -194,7 +225,9 @@ function SimpleSetup({ onComplete }) {
     return (
       <div className="simple-setup" aria-label="Setup">
         <SpiritAnimalPicker
+          key="spirit-picker-child2"
           childName={child2Name.trim()}
+          language={language}
           onSelect={handleSpirit2Select}
         />
       </div>

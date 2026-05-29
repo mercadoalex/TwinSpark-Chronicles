@@ -20,6 +20,19 @@ const SPIRIT_ANIMALS = [
 /** TTS rate for child comprehension */
 const TTS_RATE = 0.9;
 
+const PICKER_TEXT = {
+  en: {
+    title: (name) => `Pick your spirit animal, ${name}!`,
+    hint: '← Swipe to explore →',
+    tapHint: 'Tap me!',
+  },
+  es: {
+    title: (name) => `¡Elige tu animal espiritual, ${name}!`,
+    hint: '← Desliza para explorar →',
+    tapHint: '¡Tócame!',
+  },
+};
+
 /**
  * Speak a text string using the Web Speech API.
  * @param {string} text - Text to speak
@@ -47,7 +60,7 @@ function speakText(text) {
  * @param {string} props.childName - The child's name, displayed in the prompt
  * @param {(animalId: string) => void} props.onSelect - Callback when an animal is confirmed
  */
-function SpiritAnimalPicker({ childName, onSelect }) {
+function SpiritAnimalPicker({ childName, language = 'en', onSelect }) {
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [confirmed, setConfirmed] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -55,6 +68,8 @@ function SpiritAnimalPicker({ childName, onSelect }) {
   const observerRef = useRef(null);
   const cardRefs = useRef([]);
   const lastSpokenRef = useRef(-1);
+
+  const txt = PICKER_TEXT[language] || PICKER_TEXT.en;
 
   // Speak the animal name when a new card comes into focus
   useEffect(() => {
@@ -131,12 +146,12 @@ function SpiritAnimalPicker({ childName, onSelect }) {
       {/* Title — spoken by TTS automatically */}
       <h2 className="spirit-animal-picker__title">
         <span className="spirit-animal-picker__title-emoji" aria-hidden="true">✨</span>
-        Pick your spirit animal, {childName}!
+        {txt.title(childName)}
         <span className="spirit-animal-picker__title-emoji" aria-hidden="true">✨</span>
       </h2>
 
       <p className="spirit-animal-picker__hint" aria-hidden="true">
-        ← Swipe to explore →
+        {txt.hint}
       </p>
 
       {/* Horizontally scrollable gallery with CSS scroll-snap */}
@@ -169,7 +184,7 @@ function SpiritAnimalPicker({ childName, onSelect }) {
             </span>
             {focusedIndex === index && !confirmed && (
               <span className="spirit-animal-picker__card-tap-hint" aria-hidden="true">
-                Tap me!
+                {txt.tapHint}
               </span>
             )}
           </button>

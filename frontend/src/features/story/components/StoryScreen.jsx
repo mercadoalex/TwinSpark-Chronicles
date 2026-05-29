@@ -35,7 +35,7 @@ import { ttsService } from '../../audio/services/ttsService';
  *
  * Requirements: 10.4, 11.1, 11.2, 11.3, 11.4
  */
-export default function StoryScreen({ t, onAlert, onVoiceCommand }) {
+export default function StoryScreen() {
   // Story loop state machine
   const phase = useStoryLoopStore((s) => s.phase);
   const activeTwin = useStoryLoopStore((s) => s.activeTwin);
@@ -102,7 +102,7 @@ export default function StoryScreen({ t, onAlert, onVoiceCommand }) {
     if (!sessionData?.sessionId) return;
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host || 'localhost:8000';
+    const host = 'localhost:8000'; // Backend server
     const wsUrl = `${protocol}//${host}/ws/story-loop/${sessionData.sessionId}`;
 
     try {
@@ -111,6 +111,15 @@ export default function StoryScreen({ t, onAlert, onVoiceCommand }) {
 
       ws.onopen = () => {
         console.log('🔌 Story loop WebSocket connected');
+        // Send start_session to trigger the opening story beat
+        ws.send(JSON.stringify({
+          type: 'start_session',
+          theme: sessionData?.theme || 'a magical adventure',
+          twin_names: {
+            twin1: twinConfig.twin1?.name || 'Twin 1',
+            twin2: twinConfig.twin2?.name || 'Twin 2',
+          },
+        }));
       };
 
       ws.onmessage = (event) => {
