@@ -1,8 +1,7 @@
-"""Async persistence for archived storybooks and their beats.
+"""Async persistence for archived storybooks.
 
-Archives completed stories so siblings can revisit past adventures
-in the gallery. Uses the DatabaseConnection abstraction (same pattern
-as SessionService).
+Stores completed stories and their beats in SQLite so children can
+revisit past adventures in the Storybook Gallery.
 
 Requirements: 1.1–1.6, 2.1–2.3, 3.1–3.3, 4.1, 4.4
 """
@@ -11,8 +10,8 @@ from __future__ import annotations
 
 import json
 import logging
-import uuid
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from app.db.connection import DatabaseConnection
 from app.models.storybook import (
@@ -31,6 +30,46 @@ class StoryArchiveService:
     def __init__(self, db: DatabaseConnection) -> None:
         self._db = db
 
+    async def _ensure_tables(self) -> None:
+        """Create storybooks and story_beats tables if they don't exist."""
+        await self._db.execute(
+            """CREATE TABLE IF NOT EXISTS storybooks (
+                storybook_id TEXT PRIMARY KEY,
+                sibling_pair_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                language TEXT NOT NULL DEFAULT 'en',
+                cover_image_url TEXT,
+                beat_count INTEGER NOT NULL DEFAULT 0,
+                duration_seconds INTEGER NOT NULL DEFAULT 0,
+                completed_at TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )"""
+        )
+        await self._db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_storybooks_pair "
+            "ON storybooks(sibling_pair_id, completed_at DESC)"
+        )
+        await self._db.execute(
+            """CREATE TABLE IF NOT EXISTS story_beats (
+                beat_id TEXT PRIMARY KEY,
+                storybook_id TEXT NOT NULL REFERENCES storybooks(storybook_id) ON DELETE CASCADE,
+                beat_index INTEGER NOT NULL,
+                narration TEXT NOT NULL,
+                child1_perspective TEXT,
+                child2_perspective TEXT,
+                scene_image_url TEXT,
+                choice_made TEXT,
+                available_choices TEXT,
+                created_at TEXT NOT NULL
+            )"""
+        )
+        await self._db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_beats_storybook "
+            "ON story_beats(storybook_id, beat_index ASC)"
+        )
+
+    # ── archive ───────────────────────────────────────────────────
+
     async def archive_story(
         self,
         sibling_pair_id: str,
@@ -41,19 +80,18 @@ class StoryArchiveService:
     ) -> StorybookRecord | None:
         """Archive a completed story with all beats in a single transaction.
 
-        Returns None and logs a warning if the beats list is empty.
+        Returns ``None`` and logs a warning if *beats* is empty.
         """
         if not beats:
             logger.warning(
-                "Skipping archival for pair %s — no beats provided",
+                "Skipping archival for pair %s — no beats to archive",
                 sibling_pair_id,
             )
             return None
 
-        storybook_id = uuid.uuid4().hex[:12]
         now = datetime.now(timezone.utc).isoformat()
+        storybook_id = uuid4().hex[:12]
         cover_image_url = beats[0].get("scene_image_url")
-        beat_count = len(beats)
 
         async with self._db.transaction():
             await self._db.execute(
@@ -63,26 +101,32 @@ class StoryArchiveService:
                      completed_at, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    storybook_id, sibling_pair_id, title, language,
-                    cover_image_url, beat_count, duration_seconds,
-                    now, now,
+                    storybook_id,
+                    sibling_pair_id,
+                    title,
+                    language,
+                    cover_image_url,
+                    len(beats),
+                    duration_seconds,
+                    now,
+                    now,
                 ),
             )
 
             for idx, beat in enumerate(beats):
-                beat_id = uuid.uuid4().hex[:12]
-                available_choices = json.dumps(
-                    beat.get("available_choices", [])
-                )
+                beat_id = uuid4().hex[:12]
+                available_choices = json.dumps(beat.get("available_choices", []))
                 await self._db.execute(
                     """INSERT INTO story_beats
                         (beat_id, storybook_id, beat_index, narration,
                          child1_perspective, child2_perspective,
-                         scene_image_url, choice_made,
-                         available_choices, created_at)
+                         scene_image_url, choice_made, available_choices,
+                         created_at)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
-                        beat_id, storybook_id, idx,
+                        beat_id,
+                        storybook_id,
+                        idx,
                         beat.get("narration", ""),
                         beat.get("child1_perspective"),
                         beat.get("child2_perspective"),
@@ -97,13 +141,13 @@ class StoryArchiveService:
             storybook_id=storybook_id,
             sibling_pair_id=sibling_pair_id,
             title=title,
-            beat_count=beat_count,
+            beat_count=len(beats),
             completed_at=now,
         )
 
-    async def list_storybooks(
-        self, sibling_pair_id: str
-    ) -> list[StorybookSummary]:
+    # ── listing ───────────────────────────────────────────────────
+
+    async def list_storybooks(self, sibling_pair_id: str) -> list[StorybookSummary]:
         """Return storybook summaries sorted by completed_at DESC."""
         rows = await self._db.fetch_all(
             """SELECT storybook_id, title, cover_image_url, beat_count,
@@ -115,18 +159,18 @@ class StoryArchiveService:
         )
         return [StorybookSummary(**row) for row in rows]
 
-    async def get_storybook(
-        self, storybook_id: str
-    ) -> StorybookDetail | None:
+    # ── detail ────────────────────────────────────────────────────
+
+    async def get_storybook(self, storybook_id: str) -> StorybookDetail | None:
         """Return full storybook with all beats in order."""
-        book_row = await self._db.fetch_one(
+        row = await self._db.fetch_one(
             """SELECT storybook_id, sibling_pair_id, title, language,
                       cover_image_url, beat_count, duration_seconds,
                       completed_at
             FROM storybooks WHERE storybook_id = ?""",
             (storybook_id,),
         )
-        if book_row is None:
+        if row is None:
             return None
 
         beat_rows = await self._db.fetch_all(
@@ -139,33 +183,51 @@ class StoryArchiveService:
             (storybook_id,),
         )
 
-        beats = [
-            StoryBeatRecord(
-                beat_id=row["beat_id"],
-                beat_index=row["beat_index"],
-                narration=row["narration"],
-                child1_perspective=row["child1_perspective"],
-                child2_perspective=row["child2_perspective"],
-                scene_image_url=row["scene_image_url"],
-                choice_made=row["choice_made"],
-                available_choices=json.loads(row["available_choices"])
-                if row["available_choices"]
-                else [],
+        beats = []
+        for br in beat_rows:
+            choices_raw = br.get("available_choices", "[]")
+            try:
+                choices = json.loads(choices_raw) if choices_raw else []
+            except (json.JSONDecodeError, TypeError):
+                choices = []
+            beats.append(
+                StoryBeatRecord(
+                    beat_id=br["beat_id"],
+                    beat_index=br["beat_index"],
+                    narration=br["narration"],
+                    child1_perspective=br.get("child1_perspective"),
+                    child2_perspective=br.get("child2_perspective"),
+                    scene_image_url=br.get("scene_image_url"),
+                    choice_made=br.get("choice_made"),
+                    available_choices=choices,
+                )
             )
-            for row in beat_rows
-        ]
 
-        return StorybookDetail(**book_row, beats=beats)
+        return StorybookDetail(
+            storybook_id=row["storybook_id"],
+            sibling_pair_id=row["sibling_pair_id"],
+            title=row["title"],
+            language=row["language"],
+            cover_image_url=row.get("cover_image_url"),
+            beat_count=row["beat_count"],
+            duration_seconds=row["duration_seconds"],
+            completed_at=row["completed_at"],
+            beats=beats,
+        )
+
+    # ── deletion ──────────────────────────────────────────────────
 
     async def delete_storybook(self, storybook_id: str) -> bool:
-        """Delete a storybook and its beats (CASCADE). Returns True if found."""
-        row = await self._db.fetch_one(
+        """Delete a storybook and its beats. Returns True if found."""
+        existing = await self._db.fetch_one(
             "SELECT storybook_id FROM storybooks WHERE storybook_id = ?",
             (storybook_id,),
         )
-        if row is None:
+        if existing is None:
             return False
 
+        # Enable foreign key CASCADE for SQLite
+        await self._db.execute("PRAGMA foreign_keys = ON")
         await self._db.execute(
             "DELETE FROM storybooks WHERE storybook_id = ?",
             (storybook_id,),
@@ -174,13 +236,15 @@ class StoryArchiveService:
 
     async def delete_all_storybooks(self, sibling_pair_id: str) -> int:
         """Bulk delete all storybooks for a sibling pair. Returns count."""
-        rows = await self._db.fetch_all(
-            "SELECT storybook_id FROM storybooks WHERE sibling_pair_id = ?",
+        row = await self._db.fetch_one(
+            "SELECT COUNT(*) as cnt FROM storybooks WHERE sibling_pair_id = ?",
             (sibling_pair_id,),
         )
-        count = len(rows)
+        count = row["cnt"] if row else 0
 
         if count > 0:
+            # Enable foreign key CASCADE for SQLite
+            await self._db.execute("PRAGMA foreign_keys = ON")
             await self._db.execute(
                 "DELETE FROM storybooks WHERE sibling_pair_id = ?",
                 (sibling_pair_id,),

@@ -1,0 +1,298 @@
+/* ============================================================
+   THEME PICKER — Adventure theme selection cards
+   "Choose your adventure" — exciting, inviting, no reading required.
+   Requirements: 7.3, 7.4, 7.5, 8.1, 8.2, 8.7, 8.8
+   ============================================================ */
+
+.theme-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 24px 16px;
+  width: 100%;
+  min-height: 100%;
+}
+
+/* ── Header — visual sparkle title ───────────────── */
+.theme-picker__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: headerFadeIn 600ms ease-out both;
+}
+
+.theme-picker__title-icon {
+  font-size: 1.6rem;
+  animation: sparkle-twinkle 2s ease-in-out infinite;
+}
+
+.theme-picker__title-text {
+  font-family: var(--font-heading, 'Fredoka One', 'Quicksand', sans-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+/* ── Cards container — vertical stack in portrait ── */
+.theme-picker__cards {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  max-width: 360px;
+}
+
+/* ── Individual theme card ───────────────────────── */
+.theme-picker__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  /* Minimum 120px height (Req 7.4), aim for 160-180px for inviting feel */
+  min-height: 160px;
+  padding: 20px 16px;
+  /* Warm rounded card style (Req 8.2) */
+  background: var(--theme-bg, linear-gradient(145deg, #333, #555));
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  /* Interaction */
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  /* Smooth transitions */
+  transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease;
+  /* Entrance animation */
+  animation: cardSlideUp 500ms ease-out both;
+}
+
+.theme-picker__card:nth-child(1) {
+  animation-delay: 100ms;
+}
+
+.theme-picker__card:nth-child(2) {
+  animation-delay: 250ms;
+}
+
+.theme-picker__card:nth-child(3) {
+  animation-delay: 400ms;
+}
+
+/* ── Tap feedback ────────────────────────────────── */
+.theme-picker__card:not(:disabled):active {
+  transform: scale(0.95);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* ── Selected state — glow + scale up ────────────── */
+.theme-picker__card--selected {
+  transform: scale(1.03);
+  border-color: rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 0 20px rgba(255, 255, 255, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: selectedPulse 800ms ease-in-out infinite alternate;
+}
+
+/* ── Dimmed state — other cards fade when one is selected ── */
+.theme-picker__card--dimmed {
+  opacity: 0.4;
+  transform: scale(0.95);
+  pointer-events: none;
+}
+
+.theme-picker__card:disabled {
+  cursor: default;
+}
+
+/* ── Big emoji — primary visual ──────────────────── */
+.theme-picker__emoji {
+  font-size: 3.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+  transition: transform 200ms ease;
+}
+
+.theme-picker__card:not(:disabled):active .theme-picker__emoji {
+  transform: scale(1.1);
+}
+
+/* ── Theme name — secondary text ─────────────────── */
+.theme-picker__name {
+  font-family: var(--font-body, 'Quicksand', sans-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Keyframe Animations ─────────────────────────── */
+
+@keyframes headerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cardSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sparkle-twinkle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes selectedPulse {
+  from {
+    box-shadow:
+      0 0 20px rgba(255, 255, 255, 0.3),
+      0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  to {
+    box-shadow:
+      0 0 30px rgba(255, 255, 255, 0.5),
+      0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ── Reduced Motion (Req 8.7) ────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .theme-picker__header {
+    animation: none;
+    opacity: 1;
+  }
+
+  .theme-picker__title-icon {
+    animation: none;
+  }
+
+  .theme-picker__card {
+    animation: none;
+    opacity: 1;
+    transition: opacity 200ms ease;
+  }
+
+  .theme-picker__card:not(:disabled):active {
+    transform: none;
+    opacity: 0.7;
+  }
+
+  .theme-picker__card--selected {
+    animation: none;
+    transform: none;
+    border-color: rgba(255, 255, 255, 0.6);
+  }
+
+  .theme-picker__card--dimmed {
+    transform: none;
+  }
+
+  .theme-picker__emoji {
+    transition: none;
+  }
+
+  .theme-picker__card:not(:disabled):active .theme-picker__emoji {
+    transform: none;
+  }
+}
+
+/* ── High Contrast Mode (Req 8.8) ────────────────── */
+@media (prefers-contrast: more) {
+  .theme-picker__card {
+    border-width: 4px;
+    border-color: rgba(255, 255, 255, 0.7);
+  }
+
+  .theme-picker__name {
+    color: #fff;
+    font-weight: 800;
+    text-shadow: none;
+  }
+
+  .theme-picker__title-text {
+    color: #fff;
+  }
+
+  .theme-picker__card--selected {
+    border-color: #fff;
+  }
+}
+
+/* ── Portrait iPad optimization ──────────────────── */
+@media (max-width: 1024px) and (orientation: portrait) {
+  .theme-picker {
+    gap: 20px;
+    padding: 20px 20px;
+  }
+
+  .theme-picker__cards {
+    max-width: 340px;
+  }
+
+  .theme-picker__card {
+    min-height: 150px;
+  }
+}
+
+/* ── Smaller phones ──────────────────────────────── */
+@media (max-width: 480px) {
+  .theme-picker {
+    gap: 16px;
+    padding: 16px 12px;
+  }
+
+  .theme-picker__cards {
+    gap: 12px;
+  }
+
+  .theme-picker__card {
+    min-height: 130px;
+    padding: 16px 12px;
+    border-radius: 20px;
+  }
+
+  .theme-picker__emoji {
+    font-size: 2.8rem;
+  }
+
+  .theme-picker__name {
+    font-size: 16px;
+  }
+
+  .theme-picker__title-text {
+    font-size: 18px;
+  }
+}

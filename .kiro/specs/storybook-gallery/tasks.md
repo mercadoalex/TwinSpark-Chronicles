@@ -80,8 +80,8 @@ Implement a persistent storybook gallery spanning backend (SQLite schema, StoryA
     - Use Hypothesis with `@settings(max_examples=20)`
     - **Validates: Requirements 4.1, 4.4**
 
-- [x] 3. Backend Gallery API endpoints
-  - [x] 3.1 Add Gallery API endpoints to `backend/app/main.py`
+- [-] 3. Backend Gallery API endpoints
+  - [-] 3.1 Add Gallery API endpoints to `backend/app/main.py`
     - `GET /api/gallery/{sibling_pair_id}` → list storybook summaries (200 with JSON array)
     - `GET /api/gallery/detail/{storybook_id}` → full storybook detail (200 or 404)
     - `DELETE /api/gallery/{storybook_id}` with `X-Parent-Pin` header → delete single (200, 401, or 404)
