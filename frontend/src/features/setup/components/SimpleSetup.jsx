@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import SpiritAnimalPicker from './SpiritAnimalPicker';
+import AvatarCreator from './AvatarCreator';
 import { useSetupStore } from '../../../stores/setupStore';
 import './SimpleSetup.css';
 
@@ -80,16 +80,16 @@ function SimpleSetup({ onComplete }) {
     setStep('spirit1');
   }, []);
 
-  // Step 4: Child 1 picks spirit animal
-  const handleSpirit1Select = useCallback((animalId) => {
-    setChild1Spirit(animalId);
-    setupStore.getState().setChild1({ spirit: animalId });
+  // Step 4: Child 1 creates avatar
+  const handleSpirit1Select = useCallback(({ description }) => {
+    setChild1Spirit(description);
+    setupStore.getState().setChild1({ spirit: description });
     setStep('spirit2');
   }, [setupStore]);
 
-  // Step 5: Child 2 picks spirit animal → complete
-  const handleSpirit2Select = useCallback((animalId) => {
-    setupStore.getState().setChild2({ spirit: animalId });
+  // Step 5: Child 2 creates avatar → complete
+  const handleSpirit2Select = useCallback(({ description }) => {
+    setupStore.getState().setChild2({ spirit: description });
     setupStore.getState().completeSetup();
 
     if (onComplete) {
@@ -98,7 +98,7 @@ function SimpleSetup({ onComplete }) {
         child1Name: child1Name.trim(),
         child2Name: child2Name.trim(),
         child1Spirit,
-        child2Spirit: animalId,
+        child2Spirit: description,
       });
     }
   }, [onComplete, language, child1Name, child2Name, child1Spirit, setupStore]);
@@ -211,11 +211,11 @@ function SimpleSetup({ onComplete }) {
   if (step === 'spirit1') {
     return (
       <div className="simple-setup" aria-label="Setup">
-        <SpiritAnimalPicker
-          key="spirit-picker-child1"
+        <AvatarCreator
+          key="avatar-creator-child1"
           childName={child1Name.trim()}
           language={language}
-          onSelect={handleSpirit1Select}
+          onComplete={handleSpirit1Select}
         />
       </div>
     );
@@ -224,11 +224,11 @@ function SimpleSetup({ onComplete }) {
   if (step === 'spirit2') {
     return (
       <div className="simple-setup" aria-label="Setup">
-        <SpiritAnimalPicker
-          key="spirit-picker-child2"
+        <AvatarCreator
+          key="avatar-creator-child2"
           childName={child2Name.trim()}
           language={language}
-          onSelect={handleSpirit2Select}
+          onComplete={handleSpirit2Select}
         />
       </div>
     );

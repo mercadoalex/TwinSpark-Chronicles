@@ -1,0 +1,395 @@
+/**
+ * AvatarCreator.css
+ * Voice-guided avatar creation flow for kids.
+ * Bubbly theme: white cards, purple accents, colored shadows, dark text.
+ * Big animated emojis "ask" each question. Pulsing mic button invites speech.
+ * Requirements: 6.3, 6.4, 8.1, 8.2
+ */
+
+.avatar-creator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100dvh;
+  padding: 24px 16px;
+  gap: 24px;
+  background: linear-gradient(160deg, #ede9fe 0%, #e0f2fe 40%, #fce7f3 70%, #f5f3ff 100%);
+  overflow: hidden;
+  position: relative;
+  font-family: var(--font-body, 'Quicksand', sans-serif);
+}
+
+/* ─── Question Card ─────────────────────────────── */
+
+.avatar-creator__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 32px;
+  border: 3px solid rgba(139, 92, 246, 0.15);
+  box-shadow:
+    0 8px 32px rgba(139, 92, 246, 0.12),
+    0 4px 16px rgba(244, 114, 182, 0.08);
+  animation: avatarCardEnter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes avatarCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ─── Animated Emoji ─────────────────────────────── */
+
+.avatar-creator__emoji {
+  font-size: clamp(3.5rem, 12vw, 5rem);
+  line-height: 1;
+  display: block;
+  animation: avatarEmojiBounce 1.8s ease-in-out infinite;
+}
+
+@keyframes avatarEmojiBounce {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-6px) rotate(-3deg); }
+  50% { transform: translateY(-10px) rotate(0deg); }
+  75% { transform: translateY(-6px) rotate(3deg); }
+}
+
+/* ─── Question Text ─────────────────────────────── */
+
+.avatar-creator__question {
+  font-family: var(--font-heading, 'Baloo 2', cursive);
+  font-size: clamp(1.1rem, 4vw, 1.4rem);
+  color: #2d1b69;
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+  padding: 0 8px;
+}
+
+/* ─── Input Area ─────────────────────────────────── */
+
+.avatar-creator__input-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+/* ─── Mic Button ─────────────────────────────────── */
+
+.avatar-creator__mic-btn {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  box-shadow:
+    0 4px 20px rgba(139, 92, 246, 0.35),
+    0 0 0 0 rgba(139, 92, 246, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  animation: avatarMicPulse 2s ease-in-out infinite;
+  position: relative;
+}
+
+.avatar-creator__mic-btn:hover {
+  transform: scale(1.08);
+  box-shadow:
+    0 6px 28px rgba(139, 92, 246, 0.45),
+    0 0 0 8px rgba(139, 92, 246, 0.15);
+}
+
+.avatar-creator__mic-btn:active {
+  transform: scale(0.92);
+}
+
+.avatar-creator__mic-btn--recording {
+  background: linear-gradient(135deg, #ef4444 0%, #f87171 100%);
+  box-shadow:
+    0 4px 20px rgba(239, 68, 68, 0.35),
+    0 0 0 0 rgba(239, 68, 68, 0.4);
+  animation: avatarMicRecording 1s ease-in-out infinite;
+}
+
+@keyframes avatarMicPulse {
+  0%, 100% {
+    box-shadow:
+      0 4px 20px rgba(139, 92, 246, 0.35),
+      0 0 0 0 rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow:
+      0 4px 20px rgba(139, 92, 246, 0.35),
+      0 0 0 12px rgba(139, 92, 246, 0);
+  }
+}
+
+@keyframes avatarMicRecording {
+  0%, 100% {
+    box-shadow:
+      0 4px 20px rgba(239, 68, 68, 0.35),
+      0 0 0 0 rgba(239, 68, 68, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 4px 20px rgba(239, 68, 68, 0.35),
+      0 0 0 14px rgba(239, 68, 68, 0);
+    transform: scale(1.05);
+  }
+}
+
+.avatar-creator__mic-label {
+  font-size: 0.8rem;
+  color: #6d28d9;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+/* ─── Text Fallback Input ────────────────────────── */
+
+.avatar-creator__fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.avatar-creator__fallback-label {
+  font-size: 0.85rem;
+  color: #6d28d9;
+  opacity: 0.6;
+}
+
+.avatar-creator__text-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d1b69;
+  background: #ffffff;
+  border: 2px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+  outline: none;
+  text-align: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.avatar-creator__text-input:focus {
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.12);
+}
+
+.avatar-creator__text-input::placeholder {
+  color: rgba(109, 40, 217, 0.35);
+  font-weight: 500;
+}
+
+.avatar-creator__text-submit {
+  min-height: 40px;
+  padding: 8px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.avatar-creator__text-submit:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.avatar-creator__text-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Progress Dots ──────────────────────────────── */
+
+.avatar-creator__progress {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 0;
+}
+
+.avatar-creator__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.2);
+  transition: background 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.avatar-creator__dot--active {
+  background: #8b5cf6;
+  transform: scale(1.4);
+}
+
+.avatar-creator__dot--done {
+  background: #10b981;
+  transform: scale(1.2);
+}
+
+/* ─── Summary Screen ─────────────────────────────── */
+
+.avatar-creator__summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 32px;
+  border: 3px solid rgba(16, 185, 129, 0.3);
+  box-shadow:
+    0 8px 32px rgba(16, 185, 129, 0.15),
+    0 4px 16px rgba(139, 92, 246, 0.08);
+  animation: avatarCardEnter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.avatar-creator__summary-emoji {
+  font-size: clamp(4rem, 14vw, 6rem);
+  line-height: 1;
+  animation: avatarSummaryBounce 2s ease-in-out infinite;
+}
+
+@keyframes avatarSummaryBounce {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.1) rotate(5deg); }
+}
+
+.avatar-creator__summary-text {
+  font-family: var(--font-heading, 'Baloo 2', cursive);
+  font-size: clamp(1rem, 3.5vw, 1.25rem);
+  color: #2d1b69;
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+  padding: 0 8px;
+}
+
+.avatar-creator__confirm-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  padding: 16px 36px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow:
+    0 4px 16px rgba(16, 185, 129, 0.3),
+    0 2px 8px rgba(16, 185, 129, 0.2);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.avatar-creator__confirm-btn:hover {
+  transform: scale(1.06);
+  box-shadow:
+    0 8px 24px rgba(16, 185, 129, 0.4),
+    0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.avatar-creator__confirm-btn:active {
+  transform: scale(0.95);
+}
+
+/* ─── Reduced Motion ─────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-creator__card {
+    animation: none;
+  }
+
+  .avatar-creator__emoji {
+    animation: none;
+  }
+
+  .avatar-creator__mic-btn {
+    animation: none;
+  }
+
+  .avatar-creator__mic-btn--recording {
+    animation: none;
+  }
+
+  .avatar-creator__summary {
+    animation: none;
+  }
+
+  .avatar-creator__summary-emoji {
+    animation: none;
+  }
+
+  .avatar-creator__mic-btn:hover {
+    transform: none;
+  }
+
+  .avatar-creator__confirm-btn:hover {
+    transform: none;
+  }
+
+  .avatar-creator__dot--active {
+    transform: none;
+  }
+
+  .avatar-creator__dot--done {
+    transform: none;
+  }
+}
+
+/* ─── High Contrast ──────────────────────────────── */
+
+@media (forced-colors: active) {
+  .avatar-creator__card {
+    border: 3px solid CanvasText;
+  }
+
+  .avatar-creator__mic-btn {
+    border: 3px solid ButtonText;
+  }
+
+  .avatar-creator__text-input {
+    border: 3px solid CanvasText;
+  }
+
+  .avatar-creator__confirm-btn {
+    border: 3px solid ButtonText;
+  }
+
+  .avatar-creator__summary {
+    border: 3px solid CanvasText;
+  }
+}
