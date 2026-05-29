@@ -1,6 +1,6 @@
 /* ============================================================
    TURN INDICATOR — Shows whose turn it is with avatar + glow
-   Voice-first storytelling for 6-8yo twins on iPad
+   Bubbly storybook feel for 6-8yo twins on iPad
    Requirements: 1.4, 8.1, 8.3, 11.5, 12.4
    ============================================================ */
 
@@ -15,15 +15,17 @@
   /* Positioned at top of screen, visible to both children (Req 11.5) */
   position: relative;
   z-index: 10;
-  /* Warm, playful background (Req 8.2) */
-  background: rgba(15, 10, 30, 0.6);
+  /* Warm, bubbly background (Req 8.2) */
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border-radius: 0 0 var(--radius-lg, 24px) var(--radius-lg, 24px);
+  border-radius: 0 0 24px 24px;
+  border-bottom: 3px solid rgba(139, 92, 246, 0.12);
+  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.08);
   /* Entry animation */
   opacity: 0;
   transform: translateY(-20px);
-  transition: opacity 300ms ease-out, transform 300ms ease-out;
+  transition: opacity 300ms ease-out, transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: none;
 }
 
@@ -43,11 +45,11 @@
   align-items: center;
   justify-content: center;
   font-size: 1.8rem;
-  border: 3px solid var(--twin-color, #fff);
-  background: rgba(0, 0, 0, 0.3);
+  border: 3px solid var(--twin-color, #8b5cf6);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow:
-    0 0 12px var(--twin-color, rgba(255, 255, 255, 0.4)),
-    0 0 24px var(--twin-color, rgba(255, 255, 255, 0.2));
+    0 4px 12px color-mix(in srgb, var(--twin-color, #8b5cf6) 25%, transparent),
+    0 2px 8px rgba(139, 92, 246, 0.1);
   animation: turnPulseGlow 1.8s ease-in-out infinite;
   overflow: hidden;
   flex-shrink: 0;
@@ -65,9 +67,7 @@
   font-family: var(--font-body, 'Quicksand', sans-serif);
   font-size: 18px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  /* Name is displayed but visual cues are primary (Req 12.4) */
+  color: #2d1b69;
 }
 
 /* ── Pulsing glow dot — extra visual cue ─────────── */
@@ -75,8 +75,8 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--twin-color, #fff);
-  box-shadow: 0 0 8px var(--twin-color, #fff);
+  background: var(--twin-color, #8b5cf6);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--twin-color, #8b5cf6) 40%, transparent);
   animation: dotPulse 1.2s ease-in-out infinite;
   flex-shrink: 0;
 }
@@ -85,16 +85,15 @@
 @keyframes turnPulseGlow {
   0%, 100% {
     box-shadow:
-      0 0 12px var(--twin-color, rgba(255, 255, 255, 0.4)),
-      0 0 24px var(--twin-color, rgba(255, 255, 255, 0.2));
-    border-color: var(--twin-color, #fff);
+      0 4px 12px color-mix(in srgb, var(--twin-color, #8b5cf6) 25%, transparent),
+      0 2px 8px rgba(139, 92, 246, 0.1);
+    border-color: var(--twin-color, #8b5cf6);
   }
   50% {
     box-shadow:
-      0 0 20px var(--twin-color, rgba(255, 255, 255, 0.6)),
-      0 0 40px var(--twin-color, rgba(255, 255, 255, 0.3)),
-      0 0 60px var(--twin-color, rgba(255, 255, 255, 0.1));
-    border-color: var(--twin-color, #fff);
+      0 4px 20px color-mix(in srgb, var(--twin-color, #8b5cf6) 35%, transparent),
+      0 2px 12px color-mix(in srgb, var(--twin-color, #8b5cf6) 20%, transparent);
+    border-color: var(--twin-color, #8b5cf6);
   }
 }
 
@@ -119,8 +118,8 @@
   .turn-indicator__avatar {
     animation: none;
     box-shadow:
-      0 0 12px var(--twin-color, rgba(255, 255, 255, 0.4)),
-      0 0 24px var(--twin-color, rgba(255, 255, 255, 0.2));
+      0 4px 12px color-mix(in srgb, var(--twin-color, #8b5cf6) 25%, transparent),
+      0 2px 8px rgba(139, 92, 246, 0.1);
   }
 
   .turn-indicator__pulse-dot {
@@ -133,27 +132,24 @@
 /* ── High Contrast Mode (Req 8.8) ────────────────── */
 @media (prefers-contrast: more) {
   .turn-indicator {
-    background: rgba(0, 0, 0, 0.85);
-    border-bottom: 3px solid var(--twin-color, #fff);
+    background: #ffffff;
+    border-bottom: 3px solid var(--twin-color, #8b5cf6);
   }
 
   .turn-indicator__avatar {
     border-width: 4px;
     box-shadow:
-      0 0 16px var(--twin-color, rgba(255, 255, 255, 0.6)),
-      0 0 32px var(--twin-color, rgba(255, 255, 255, 0.3));
+      0 4px 16px color-mix(in srgb, var(--twin-color, #8b5cf6) 40%, transparent);
   }
 
   .turn-indicator__name {
-    color: #fff;
+    color: #1e1b4b;
     font-weight: 800;
-    text-shadow: none;
   }
 
   .turn-indicator__pulse-dot {
     width: 14px;
     height: 14px;
-    box-shadow: 0 0 12px var(--twin-color, #fff);
   }
 }
 

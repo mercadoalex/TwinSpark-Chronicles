@@ -1,7 +1,7 @@
 /* SpiritAnimalPicker.css
  * Horizontally swipeable spirit animal gallery for child setup.
  * Uses CSS scroll-snap for smooth card-by-card swiping.
- * Warm, rounded, playful aesthetic — no glassmorphism or adult styles.
+ * Warm, bubbly, magical aesthetic — like choosing a storybook character.
  * Requirements: 6.3, 6.4, 6.5, 6.6, 6.7, 8.2, 8.7
  */
 
@@ -14,16 +14,16 @@
   min-height: 100dvh;
   padding: 24px 0;
   gap: 20px;
-  background: linear-gradient(180deg, #1a1033 0%, #2d1b69 50%, #1a1033 100%);
+  background: linear-gradient(160deg, #ede9fe 0%, #e0f2fe 40%, #fce7f3 70%, #f5f3ff 100%);
   overflow: hidden;
   position: relative;
 }
 
 /* Title */
 .spirit-animal-picker__title {
-  font-family: var(--font-heading, 'Fredoka One', cursive);
+  font-family: var(--font-heading, 'Baloo 2', cursive);
   font-size: clamp(1.4rem, 5vw, 2rem);
-  color: #fff;
+  color: #2d1b69;
   text-align: center;
   margin: 0;
   padding: 0 16px;
@@ -37,9 +37,9 @@
 
 /* Swipe hint */
 .spirit-animal-picker__hint {
-  font-family: var(--font-body, 'Nunito', sans-serif);
+  font-family: var(--font-body, 'Quicksand', sans-serif);
   font-size: clamp(0.9rem, 3vw, 1.1rem);
-  color: rgba(255, 255, 255, 0.6);
+  color: #6d28d9;
   margin: 0;
   animation: spirit-hint-pulse 2s ease-in-out infinite;
 }
@@ -75,18 +75,14 @@
   justify-content: center;
   gap: 12px;
   padding: 24px 20px;
-  border-radius: 28px;
-  border: 4px solid rgba(255, 255, 255, 0.15);
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0.02) 100%
-  );
+  border-radius: 32px;
+  border: 4px solid rgba(139, 92, 246, 0.15);
+  background: rgba(255, 255, 255, 0.9);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 8px 24px rgba(139, 92, 246, 0.12),
+    0 4px 12px rgba(244, 114, 182, 0.08);
   cursor: pointer;
-  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   /* No text selection */
   user-select: none;
@@ -98,25 +94,24 @@
 }
 
 .spirit-animal-picker__card:focus-visible {
-  outline: 3px solid var(--card-color, #fbbf24);
+  outline: 3px solid var(--card-color, #8b5cf6);
   outline-offset: 4px;
 }
 
 /* Focused card — the one in center view */
 .spirit-animal-picker__card--focused {
-  border-color: var(--card-color, #fbbf24);
+  border-color: var(--card-color, #8b5cf6);
   transform: scale(1.08);
   box-shadow:
-    0 12px 40px rgba(0, 0, 0, 0.4),
-    0 0 20px color-mix(in srgb, var(--card-color, #fbbf24) 40%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    0 12px 32px rgba(139, 92, 246, 0.2),
+    0 4px 16px color-mix(in srgb, var(--card-color, #8b5cf6) 25%, transparent);
 }
 
 /* Confirmed card — selection made */
 .spirit-animal-picker__card--confirmed {
   transform: scale(1.15);
   border-color: var(--card-color, #fbbf24);
-  animation: spirit-card-confirm 0.5s ease-out;
+  animation: spirit-card-confirm 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Card emoji — large illustration */
@@ -133,18 +128,18 @@
 
 /* Card name — secondary text label */
 .spirit-animal-picker__card-name {
-  font-family: var(--font-heading, 'Fredoka One', cursive);
+  font-family: var(--font-heading, 'Baloo 2', cursive);
   font-size: clamp(1.2rem, 4vw, 1.5rem);
-  color: #fff;
+  color: #2d1b69;
   text-align: center;
   opacity: 0.9;
 }
 
 /* Tap hint on focused card */
 .spirit-animal-picker__card-tap-hint {
-  font-family: var(--font-body, 'Nunito', sans-serif);
+  font-family: var(--font-body, 'Quicksand', sans-serif);
   font-size: 0.85rem;
-  color: var(--card-color, #fbbf24);
+  color: var(--card-color, #8b5cf6);
   position: absolute;
   bottom: 16px;
   animation: spirit-tap-hint 1.2s ease-in-out infinite;
@@ -162,12 +157,12 @@
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.25);
-  transition: background 0.3s ease, transform 0.3s ease;
+  background: rgba(139, 92, 246, 0.2);
+  transition: background 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .spirit-animal-picker__dot--active {
-  background: var(--dot-color, #fbbf24);
+  background: var(--dot-color, #8b5cf6);
   transform: scale(1.4);
 }
 

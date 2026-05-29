@@ -1,5 +1,6 @@
 /* ============================================================
    CelebrationAnimator — Processing Animation Styles
+   Bubbly, joyful celebration for kids!
    Requirements: 8.4, 8.5, 8.7
    ============================================================ */
 
@@ -63,11 +64,11 @@
 }
 
 .celebration-animator__dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: #fbbf24;
-  animation: dot-bounce 1s ease-in-out infinite;
+  animation: dot-bounce 1s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
 }
 
 .celebration-animator__dot--1 {
@@ -77,7 +78,7 @@
 
 .celebration-animator__dot--2 {
   animation-delay: 0.2s;
-  background: #a78bfa;
+  background: #8b5cf6;
 }
 
 .celebration-animator__dot--3 {
@@ -102,17 +103,17 @@
     opacity: 1;
   }
   50% {
-    transform: scale(1.3) translateY(-6px);
+    transform: scale(1.4) translateY(-8px);
     opacity: 0.7;
   }
 }
 
 @keyframes dot-bounce {
   0%, 100% {
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
   50% {
-    transform: translateY(-12px);
+    transform: translateY(-14px) scale(1.2);
   }
 }
 

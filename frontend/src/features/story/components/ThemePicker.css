@@ -1,6 +1,6 @@
 /* ============================================================
    THEME PICKER — Adventure theme selection cards
-   "Choose your adventure" — exciting, inviting, no reading required.
+   "Choose your adventure" — like picking a storybook from a shelf!
    Requirements: 7.3, 7.4, 7.5, 8.1, 8.2, 8.7, 8.8
    ============================================================ */
 
@@ -20,7 +20,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  animation: headerFadeIn 600ms ease-out both;
+  animation: headerFadeIn 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .theme-picker__title-icon {
@@ -29,10 +29,10 @@
 }
 
 .theme-picker__title-text {
-  font-family: var(--font-heading, 'Fredoka One', 'Quicksand', sans-serif);
+  font-family: var(--font-heading, 'Baloo 2', 'Quicksand', sans-serif);
   font-size: 22px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
+  color: #2d1b69;
   text-align: center;
   letter-spacing: 0.02em;
 }
@@ -57,23 +57,22 @@
   /* Minimum 120px height (Req 7.4), aim for 160-180px for inviting feel */
   min-height: 160px;
   padding: 20px 16px;
-  /* Warm rounded card style (Req 8.2) */
-  background: var(--theme-bg, linear-gradient(145deg, #333, #555));
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-radius: 24px;
+  /* Warm bubbly card style (Req 8.2) */
+  background: var(--theme-bg, linear-gradient(145deg, #ffffff, #f5f3ff));
+  border: 3px solid rgba(139, 92, 246, 0.15);
+  border-radius: 28px;
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.25),
-    0 2px 8px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    0 6px 20px rgba(139, 92, 246, 0.1),
+    0 3px 10px rgba(244, 114, 182, 0.08);
   /* Interaction */
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   /* Smooth transitions */
-  transition: transform 200ms ease, box-shadow 200ms ease, opacity 200ms ease;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease, opacity 200ms ease;
   /* Entrance animation */
-  animation: cardSlideUp 500ms ease-out both;
+  animation: cardSlideUp 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 .theme-picker__card:nth-child(1) {
@@ -92,17 +91,17 @@
 .theme-picker__card:not(:disabled):active {
   transform: scale(0.95);
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.3),
-    0 1px 4px rgba(0, 0, 0, 0.2);
+    0 3px 10px rgba(139, 92, 246, 0.15),
+    0 1px 4px rgba(244, 114, 182, 0.1);
 }
 
 /* ── Selected state — glow + scale up ────────────── */
 .theme-picker__card--selected {
   transform: scale(1.03);
-  border-color: rgba(255, 255, 255, 0.6);
+  border-color: #8b5cf6;
   box-shadow:
-    0 0 20px rgba(255, 255, 255, 0.3),
-    0 8px 32px rgba(0, 0, 0, 0.3);
+    0 6px 24px rgba(139, 92, 246, 0.25),
+    0 3px 12px rgba(244, 114, 182, 0.15);
   animation: selectedPulse 800ms ease-in-out infinite alternate;
 }
 
@@ -121,8 +120,8 @@
 .theme-picker__emoji {
   font-size: 3.5rem;
   line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-  transition: transform 200ms ease;
+  filter: drop-shadow(0 2px 4px rgba(139, 92, 246, 0.15));
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .theme-picker__card:not(:disabled):active .theme-picker__emoji {
@@ -134,10 +133,9 @@
   font-family: var(--font-body, 'Quicksand', sans-serif);
   font-size: 18px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
+  color: #2d1b69;
   text-align: center;
   letter-spacing: 0.01em;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 /* ── Keyframe Animations ─────────────────────────── */
@@ -145,18 +143,18 @@
 @keyframes headerFadeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-10px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 @keyframes cardSlideUp {
   from {
     opacity: 0;
-    transform: translateY(30px) scale(0.95);
+    transform: translateY(30px) scale(0.9);
   }
   to {
     opacity: 1;
@@ -178,13 +176,13 @@
 @keyframes selectedPulse {
   from {
     box-shadow:
-      0 0 20px rgba(255, 255, 255, 0.3),
-      0 8px 32px rgba(0, 0, 0, 0.3);
+      0 6px 24px rgba(139, 92, 246, 0.25),
+      0 3px 12px rgba(244, 114, 182, 0.15);
   }
   to {
     box-shadow:
-      0 0 30px rgba(255, 255, 255, 0.5),
-      0 8px 32px rgba(0, 0, 0, 0.3);
+      0 8px 32px rgba(139, 92, 246, 0.35),
+      0 4px 16px rgba(244, 114, 182, 0.2);
   }
 }
 
@@ -213,7 +211,7 @@
   .theme-picker__card--selected {
     animation: none;
     transform: none;
-    border-color: rgba(255, 255, 255, 0.6);
+    border-color: #8b5cf6;
   }
 
   .theme-picker__card--dimmed {
@@ -233,21 +231,20 @@
 @media (prefers-contrast: more) {
   .theme-picker__card {
     border-width: 4px;
-    border-color: rgba(255, 255, 255, 0.7);
+    border-color: #2d1b69;
   }
 
   .theme-picker__name {
-    color: #fff;
+    color: #1e1b4b;
     font-weight: 800;
-    text-shadow: none;
   }
 
   .theme-picker__title-text {
-    color: #fff;
+    color: #1e1b4b;
   }
 
   .theme-picker__card--selected {
-    border-color: #fff;
+    border-color: #4c1d95;
   }
 }
 
@@ -281,7 +278,7 @@
   .theme-picker__card {
     min-height: 130px;
     padding: 16px 12px;
-    border-radius: 20px;
+    border-radius: 22px;
   }
 
   .theme-picker__emoji {

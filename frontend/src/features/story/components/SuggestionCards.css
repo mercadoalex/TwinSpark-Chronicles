@@ -1,6 +1,6 @@
 /* ============================================================
-   SUGGESTION CARDS (Sparks) — Illustrated inspiration cards
-   Voice-first storytelling for 6-8yo twins on iPad
+   SUGGESTION CARDS (Sparks) — Fun illustrated inspiration tiles
+   Bubbly storybook feel for 6-8yo twins on iPad
    Requirements: 8.2, 8.7
    ============================================================ */
 
@@ -15,7 +15,7 @@
 
 /* ── Entrance animation when cards appear ────────── */
 .suggestion-cards--active {
-  animation: cardsSlideIn 400ms ease-out both;
+  animation: cardsSlideIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
 /* ── Disabled state — not tappable ───────────────── */
@@ -37,29 +37,30 @@
   padding: 10px 12px;
   flex: 1;
   max-width: 140px;
-  /* Warm rounded card style (Req 8.2) */
-  background: rgba(255, 255, 255, 0.12);
-  border: 2px solid rgba(255, 255, 255, 0.18);
-  border-radius: 18px;
+  /* Warm bubbly card style (Req 8.2) */
+  background: rgba(255, 255, 255, 0.9);
+  border: 3px solid rgba(139, 92, 246, 0.15);
+  border-radius: 22px;
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.15),
-    0 1px 4px rgba(0, 0, 0, 0.1);
+    0 4px 12px rgba(139, 92, 246, 0.1),
+    0 2px 6px rgba(244, 114, 182, 0.08);
   /* Interaction */
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   /* Smooth transitions */
-  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms ease, background 150ms ease;
 }
 
 .suggestion-cards__card:not(:disabled):active {
-  /* Tap feedback — brief scale animation (Req 8.2) */
+  /* Tap feedback — bouncy scale animation (Req 8.2) */
   transform: scale(0.92);
   box-shadow:
-    0 2px 6px rgba(0, 0, 0, 0.2),
-    0 0px 2px rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.2);
+    0 2px 6px rgba(139, 92, 246, 0.15),
+    0 1px 3px rgba(244, 114, 182, 0.1);
+  background: #ffffff;
+  border-color: rgba(139, 92, 246, 0.3);
 }
 
 .suggestion-cards__card:disabled {
@@ -70,12 +71,12 @@
 .suggestion-cards__illustration {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: 16px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(244, 114, 182, 0.08));
   flex-shrink: 0;
 }
 
@@ -83,7 +84,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
 /* Colorful placeholder when no illustration URL */
@@ -97,7 +98,7 @@
   font-family: var(--font-body, 'Quicksand', sans-serif);
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: #2d1b69;
   text-align: center;
   line-height: 1.2;
   max-width: 100%;
@@ -112,11 +113,11 @@
 @keyframes cardsSlideIn {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(16px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -142,12 +143,12 @@
 @media (prefers-contrast: more) {
   .suggestion-cards__card {
     border-width: 3px;
-    border-color: rgba(255, 255, 255, 0.5);
-    background: rgba(0, 0, 0, 0.6);
+    border-color: #2d1b69;
+    background: #ffffff;
   }
 
   .suggestion-cards__label {
-    color: #fff;
+    color: #1e1b4b;
     font-weight: 700;
   }
 }
@@ -176,7 +177,7 @@
     min-width: 80px;
     min-height: 80px;
     padding: 8px 10px;
-    border-radius: 14px;
+    border-radius: 18px;
   }
 
   .suggestion-cards__illustration {
