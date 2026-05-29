@@ -120,10 +120,12 @@ export const useSetupStore = create(
       {
         name: 'setup-storage',
         partialize: (state) => ({
-          // ✅ NEVER persist privacyAccepted - must accept every session
+          privacyAccepted: state.privacyAccepted,
           language: state.language,
           child1: state.child1,
           child2: state.child2,
+          isComplete: state.isComplete,
+          currentStep: state.currentStep,
         })
       }
     ),
