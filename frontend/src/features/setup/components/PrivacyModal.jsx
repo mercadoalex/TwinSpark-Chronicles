@@ -10,66 +10,50 @@ function PrivacyModal({ onAccept, t }) {
   return (
     <div className="privacy-overlay" style={{
       position: 'fixed', inset: 0,
-      background: 'rgba(7, 11, 26, 0.95)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
+      background: 'linear-gradient(160deg, #e8deff 0%, #dbeafe 40%, #fce7f3 80%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 10000, padding: '20px',
-      animation: 'fadeIn 0.4s var(--ease-smooth)',
     }}>
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="privacy-modal-heading"
-        className="glass-panel"
         style={{
-        padding: '44px',
-        borderRadius: 'var(--radius-xl)',
-        maxWidth: '640px',
-        width: '100%',
-        textAlign: 'center',
-        animation: 'fadeInUp 0.5s var(--ease-bounce)',
-        position: 'relative',
-        overflow: 'hidden',
-      }}>
-        {/* Subtle glow orb */}
-        <div style={{
-          position: 'absolute', top: '-60px', right: '-60px',
-          width: '200px', height: '200px',
-          background: 'radial-gradient(circle, rgba(167,139,250,0.15), transparent 70%)',
-          borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none',
-        }} />
+          padding: '40px 32px',
+          borderRadius: '32px',
+          maxWidth: '500px',
+          width: '100%',
+          textAlign: 'center',
+          background: '#ffffff',
+          boxShadow: '0 8px 40px rgba(139, 92, 246, 0.15), 0 4px 16px rgba(244, 114, 182, 0.1)',
+          border: '2px solid rgba(139, 92, 246, 0.15)',
+        }}>
 
         {/* Lock icon */}
         <div style={{
-          width: '64px', height: '64px', margin: '0 auto 20px',
-          background: 'linear-gradient(135deg, var(--color-violet), var(--color-coral))',
+          width: '72px', height: '72px', margin: '0 auto 20px',
+          background: 'linear-gradient(135deg, #8b5cf6, #f472b6)',
           borderRadius: '50%', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', fontSize: '2rem',
-          boxShadow: '0 8px 30px rgba(167, 139, 250, 0.3)',
+          justifyContent: 'center', fontSize: '2.2rem',
+          boxShadow: '0 6px 20px rgba(139, 92, 246, 0.3)',
         }}>🔒</div>
 
         <h2 id="privacy-modal-heading" style={{
-          fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 700,
+          fontFamily: 'var(--font-display, "Baloo 2", cursive)',
+          fontSize: '1.8rem', fontWeight: 700,
           marginBottom: '16px',
-          background: 'linear-gradient(135deg, var(--color-gold), var(--color-coral))',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
+          color: '#2d1b69',
         }}>
           {t?.parentalConsent || 'Parent / Guardian Notice'}
         </h2>
 
         <p style={{
           fontSize: '1.05rem', lineHeight: 1.7, fontWeight: 500,
-          color: 'rgba(255,255,255,0.75)', marginBottom: '24px',
+          color: '#4a4a6a', marginBottom: '24px',
         }}>
-          {t?.privacyMessage || (
-            <>
-              <span style={{ color: 'var(--color-gold)' }}>TwinSpark Chronicles</span> is
-              an interactive storytelling experience for children ages 4–8.
-            </>
-          )}
+          <strong style={{ color: '#8b5cf6' }}>TwinSpark Chronicles</strong> is
+          an interactive storytelling experience for children ages 4–8.
         </p>
 
         {/* Feature pills */}
@@ -85,9 +69,9 @@ function PrivacyModal({ onAccept, t }) {
           ].map((f, i) => (
             <span key={i} style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px',
-              padding: '8px 16px', borderRadius: 'var(--radius-full)',
-              background: 'var(--color-glass)', border: '1px solid var(--color-glass-border)',
-              fontSize: '0.9rem', fontWeight: 600, color: 'rgba(255,255,255,0.8)',
+              padding: '8px 16px', borderRadius: '20px',
+              background: '#f3f0ff', border: '1px solid #e0d4fc',
+              fontSize: '0.9rem', fontWeight: 600, color: '#5b21b6',
             }}>
               {f.icon} {f.label}
             </span>
@@ -96,23 +80,23 @@ function PrivacyModal({ onAccept, t }) {
 
         {/* Privacy note */}
         <div style={{
-          padding: '16px 20px', borderRadius: 'var(--radius-md)',
-          background: 'rgba(52, 211, 153, 0.06)',
-          border: '1px solid rgba(52, 211, 153, 0.2)',
-          marginBottom: '28px', textAlign: 'left',
+          padding: '16px 20px', borderRadius: '16px',
+          background: '#ecfdf5',
+          border: '1px solid #a7f3d0',
+          marginBottom: '24px', textAlign: 'left',
         }}>
           <p style={{
-            fontSize: '0.95rem', color: 'rgba(255,255,255,0.8)',
+            fontSize: '0.95rem', color: '#1e4a3a',
             lineHeight: 1.6, margin: 0, fontWeight: 500,
           }}>
-            <span style={{ color: 'var(--color-emerald)' }}>✓ Privacy First</span> — We
+            <span style={{ color: '#059669', fontWeight: 700 }}>✓ Privacy First</span> — We
             do not collect or store personal data. All interactions are real-time and
             deleted immediately.
           </p>
         </div>
 
         <p style={{
-          fontSize: '0.85rem', color: 'rgba(255,255,255,0.4)',
+          fontSize: '0.85rem', color: '#8a8aaa',
           marginBottom: '24px', fontStyle: 'italic',
         }}>
           By clicking below, you confirm you are a parent/guardian and consent to your
@@ -121,19 +105,28 @@ function PrivacyModal({ onAccept, t }) {
 
         <button
           onClick={onAccept}
-          className="btn-magic"
           style={{
             padding: '16px 48px', fontSize: '1.15rem',
-            background: 'linear-gradient(135deg, var(--color-emerald), #059669)',
-            boxShadow: '0 8px 30px rgba(52, 211, 153, 0.3)',
-            minHeight: '44px',
+            background: 'linear-gradient(135deg, #34d399, #059669)',
+            boxShadow: '0 6px 20px rgba(52, 211, 153, 0.3)',
+            minHeight: '56px',
+            border: 'none',
+            borderRadius: '28px',
+            color: '#ffffff',
+            fontWeight: 700,
+            cursor: 'pointer',
+            fontFamily: 'var(--font-body, "Quicksand", sans-serif)',
+            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
           }}
+          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)'; }}
+          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
         >
           ✓ {t?.accept || 'I Accept & Continue'}
         </button>
 
         <p style={{
-          fontSize: '0.8rem', color: 'rgba(255,255,255,0.3)',
+          fontSize: '0.8rem', color: '#a0a0c0',
           marginTop: '20px',
         }}>
           {t?.privacyFooter || 'You can exit at any time using the Exit button.'}
