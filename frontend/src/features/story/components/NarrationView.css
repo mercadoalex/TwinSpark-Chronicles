@@ -1,0 +1,238 @@
+/* ============================================================
+   NARRATION VIEW — Single-narrative, portrait-optimized
+   Voice-first storytelling for 6-8yo twins on iPad
+   Requirements: 5.1, 5.2, 5.3, 5.4, 5.6, 8.2, 8.7, 8.8, 11.1, 11.2, 11.3, 11.4, 11.6
+   ============================================================ */
+
+.narration-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  /* Safe-area insets for iPad notch/home indicator (Req 11.6) */
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* ── Scene Illustration (top 50-60%) ─────────────── */
+.narration-view__scene {
+  position: relative;
+  flex: 0 0 55%;
+  min-height: 50%;
+  max-height: 60%;
+  overflow: hidden;
+  border-radius: 0 0 var(--radius-lg, 28px) var(--radius-lg, 28px);
+  background: linear-gradient(135deg, #2d1b69, #1a1a2e);
+}
+
+.narration-view__illustration {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 400ms ease-in-out;
+}
+
+.narration-view__illustration--active {
+  opacity: 1;
+}
+
+.narration-view__illustration--exiting {
+  opacity: 0;
+}
+
+/* Placeholder gradient when no illustration is available */
+.narration-view__placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    #667eea 0%,
+    #764ba2 25%,
+    #f093fb 50%,
+    #f5576c 75%,
+    #ffd452 100%
+  );
+  background-size: 300% 300%;
+  animation: placeholderShift 8s ease-in-out infinite;
+}
+
+.narration-view__placeholder-icon {
+  font-size: 4rem;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes placeholderShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Gradient fade at bottom of scene for text readability */
+.narration-view__scene-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to top, var(--color-bg-deep, #0f0a1e), transparent);
+  pointer-events: none;
+}
+
+/* Active twin avatar overlay on scene (Req 5.6) */
+.narration-view__avatar-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 16px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  border: 3px solid var(--avatar-color, rgba(255, 255, 255, 0.6));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px var(--avatar-color, rgba(255, 255, 255, 0.3));
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 2;
+  overflow: hidden;
+}
+
+.narration-view__avatar-overlay img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Narration Text (middle 15-20%) ──────────────── */
+.narration-view__text-area {
+  flex: 0 0 18%;
+  min-height: 15%;
+  max-height: 20%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  overflow-y: auto;
+}
+
+.narration-view__narration {
+  font-family: var(--font-body, 'Quicksand', sans-serif);
+  font-size: 22px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+  margin: 0;
+}
+
+/* Sentence spans for TTS highlighting */
+.narration-view__sentence {
+  transition: color 0.2s ease, background-color 0.2s ease;
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.narration-view__sentence--highlighted {
+  color: #fff;
+  background-color: rgba(251, 191, 36, 0.25);
+  font-weight: 600;
+}
+
+/* ── Interaction Controls Slot (bottom 25-30%) ───── */
+.narration-view__controls {
+  flex: 1;
+  min-height: 25%;
+  max-height: 30%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  /* Positioned in lower third for thumb-reach (Req 11.3) */
+}
+
+/* ── Animations ──────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* ── Reduced Motion (Req 8.7) ────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .narration-view__illustration {
+    transition: opacity 100ms linear;
+  }
+
+  .narration-view__placeholder {
+    animation: none;
+    background-position: 50% 50%;
+  }
+
+  .narration-view__placeholder-icon {
+    animation: none;
+  }
+
+  .narration-view__sentence {
+    transition: none;
+  }
+}
+
+/* ── High Contrast Mode (Req 8.8) ────────────────── */
+@media (prefers-contrast: more) {
+  .narration-view__scene {
+    border: 3px solid rgba(255, 255, 255, 0.6);
+  }
+
+  .narration-view__avatar-overlay {
+    border-width: 4px;
+  }
+
+  .narration-view__narration {
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .narration-view__sentence--highlighted {
+    background-color: rgba(251, 191, 36, 0.45);
+    outline: 2px solid rgba(251, 191, 36, 0.7);
+  }
+
+  .narration-view__controls {
+    border-top: 2px solid rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* ── Portrait iPad optimization (Req 11.1) ───────── */
+@media (max-width: 1024px) and (orientation: portrait) {
+  .narration-view__narration {
+    font-size: 22px;
+  }
+
+  .narration-view__scene {
+    flex: 0 0 55%;
+  }
+}
+
+/* Smaller phones — slightly reduce scene area */
+@media (max-width: 480px) {
+  .narration-view__scene {
+    flex: 0 0 50%;
+    min-height: 45%;
+  }
+
+  .narration-view__narration {
+    font-size: 20px;
+    padding: 8px 16px;
+  }
+}

@@ -106,6 +106,10 @@ app.add_middleware(TraceIDMiddleware)
 # Include monitoring API routes
 app.include_router(monitoring_router)
 
+# Include story loop WebSocket router (new voice-first interaction model)
+from app.api.story_loop_ws import router as story_loop_router
+app.include_router(story_loop_router)
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -974,6 +978,7 @@ async def _get_story_archive_service() -> StoryArchiveService:
     if _story_archive_service is None:
         await orchestrator._ensure_db_initialized()
         _story_archive_service = StoryArchiveService(db=orchestrator._db_conn)
+        await _story_archive_service._ensure_tables()
     return _story_archive_service
 
 

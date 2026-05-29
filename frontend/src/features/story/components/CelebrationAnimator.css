@@ -1,0 +1,146 @@
+/* ============================================================
+   CelebrationAnimator — Processing Animation Styles
+   Requirements: 8.4, 8.5, 8.7
+   ============================================================ */
+
+/* ── Processing container ──────────────────────────── */
+.celebration-animator__processing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+/* ── Orbiting stars ────────────────────────────────── */
+.celebration-animator__orbit {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  animation: orbit-spin 3s linear infinite;
+}
+
+.celebration-animator__star {
+  position: absolute;
+  font-size: 20px;
+  animation: star-bounce 1.2s ease-in-out infinite;
+}
+
+.celebration-animator__star--1 {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  animation-delay: 0s;
+}
+
+.celebration-animator__star--2 {
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  animation-delay: 0.3s;
+}
+
+.celebration-animator__star--3 {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  animation-delay: 0.6s;
+}
+
+.celebration-animator__star--4 {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  animation-delay: 0.9s;
+}
+
+/* ── Bouncing dots ─────────────────────────────────── */
+.celebration-animator__bounce {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.celebration-animator__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fbbf24;
+  animation: dot-bounce 1s ease-in-out infinite;
+}
+
+.celebration-animator__dot--1 {
+  animation-delay: 0s;
+  background: #f472b6;
+}
+
+.celebration-animator__dot--2 {
+  animation-delay: 0.2s;
+  background: #a78bfa;
+}
+
+.celebration-animator__dot--3 {
+  animation-delay: 0.4s;
+  background: #34d399;
+}
+
+/* ── Keyframes ─────────────────────────────────────── */
+
+@keyframes orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes star-bounce {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.3) translateY(-6px);
+    opacity: 0.7;
+  }
+}
+
+@keyframes dot-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+/* ── Reduced motion: replace with simple opacity pulse (Req 8.7) ── */
+@media (prefers-reduced-motion: reduce) {
+  .celebration-animator__orbit {
+    animation: none;
+  }
+
+  .celebration-animator__star {
+    animation: none;
+    opacity: 1;
+  }
+
+  .celebration-animator__dot {
+    animation: none;
+  }
+
+  .celebration-animator__processing {
+    animation: reduced-motion-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes reduced-motion-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

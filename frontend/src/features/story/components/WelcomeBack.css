@@ -1,0 +1,222 @@
+/* ============================================================
+   WELCOME BACK — Session resume animation
+   Shows both twins' avatars with a fun bounce-in entrance
+   and a "Welcome back!" message. Auto-dismisses after 2s.
+   Requirements: 7.2, 8.2, 8.7
+   ============================================================ */
+
+.welcome-back {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(30, 20, 60, 0.95) 0%,
+    rgba(15, 10, 40, 0.98) 100%
+  );
+  animation: welcomeFadeIn 300ms ease-out both;
+}
+
+/* ── Avatars container ───────────────────────────── */
+.welcome-back__avatars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+}
+
+/* ── Individual avatar ───────────────────────────── */
+.welcome-back__avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: 4px solid var(--twin-color, #fff);
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--twin-color, #fff) 40%, transparent),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Left avatar bounces in from the left */
+.welcome-back__avatar--left {
+  animation: bounceInLeft 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 100ms;
+}
+
+/* Right avatar bounces in from the right */
+.welcome-back__avatar--right {
+  animation: bounceInRight 600ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 250ms;
+}
+
+/* ── Avatar emoji/icon ───────────────────────────── */
+.welcome-back__avatar-icon {
+  font-size: 3rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* ── Welcome message ─────────────────────────────── */
+.welcome-back__message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: messagePopIn 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 500ms;
+}
+
+.welcome-back__text {
+  font-family: var(--font-heading, 'Fredoka One', 'Quicksand', sans-serif);
+  font-size: 28px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.welcome-back__sparkle {
+  font-size: 1.5rem;
+  animation: sparkleRotate 1.5s ease-in-out infinite;
+}
+
+/* ── Keyframe Animations ─────────────────────────── */
+
+@keyframes welcomeFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bounceInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-80px) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes bounceInRight {
+  from {
+    opacity: 0;
+    transform: translateX(80px) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes messagePopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.6) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes sparkleRotate {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: rotate(15deg) scale(1.2);
+    opacity: 0.7;
+  }
+}
+
+/* ── Reduced Motion (Req 8.7) ────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .welcome-back {
+    animation: none;
+    opacity: 1;
+  }
+
+  .welcome-back__avatar--left,
+  .welcome-back__avatar--right {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .welcome-back__message {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .welcome-back__sparkle {
+    animation: none;
+  }
+}
+
+/* ── High Contrast Mode (Req 8.8) ────────────────── */
+@media (prefers-contrast: more) {
+  .welcome-back__avatar {
+    border-width: 5px;
+    border-color: #fff;
+  }
+
+  .welcome-back__text {
+    color: #fff;
+    text-shadow: none;
+  }
+}
+
+/* ── Portrait iPad optimization ──────────────────── */
+@media (max-width: 1024px) and (orientation: portrait) {
+  .welcome-back__avatars {
+    gap: 40px;
+  }
+
+  .welcome-back__avatar {
+    width: 110px;
+    height: 110px;
+  }
+
+  .welcome-back__avatar-icon {
+    font-size: 3.5rem;
+  }
+
+  .welcome-back__text {
+    font-size: 32px;
+  }
+}
+
+/* ── Smaller phones ──────────────────────────────── */
+@media (max-width: 480px) {
+  .welcome-back__avatars {
+    gap: 24px;
+  }
+
+  .welcome-back__avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .welcome-back__avatar-icon {
+    font-size: 2.5rem;
+  }
+
+  .welcome-back__text {
+    font-size: 22px;
+  }
+}
